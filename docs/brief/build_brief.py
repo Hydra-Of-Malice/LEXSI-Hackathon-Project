@@ -97,11 +97,12 @@ B(["Close at least <b>half</b> of the worst-language refusal gap to Global.",
 
 H("Where we are today")
 P("The private repository is set up. Data builds from the real sources, with the leakage check passing. Judges, "
-  "statistics, the run ledger and all four kit integrations are written. 26 tests pass. Next: the day-1 GPU smoke "
-  "test (reproduce the gap on about 200 prompts, a first EAP-IG run on Tiny Aya), then the full baseline "
-  "(4–5 Nov). Along the way we found gaps in the kits, all of them English-only defaults "
-  "(refusal detection, benchmark loaders, cross-language circuit tasks). We plan to contribute fixes upstream as "
-  "pull requests.")
+  "statistics, the run ledger and all four kit integrations are written, and 28 tests pass. Everything runs on our "
+  "own hardware (an Apple M1 Max with 64 GB, and free Kaggle T4s), with a free pair of 8B judges. The pre-registered "
+  "32B judges score the headline numbers, and we report how far the two pairs agree. Next: the day-1 smoke test "
+  "(reproduce the gap on about 200 prompts, a first EAP-IG run on Tiny Aya), then the full baseline (4–5 Nov). "
+  "We plan to contribute the kit gaps we found (English-only refusal detection, benchmark loaders, cross-language "
+  "circuit tasks) upstream as pull requests.")
 
 H("What we would value your view on")
 B(["Do the success thresholds above look right to you?",

@@ -44,9 +44,10 @@ The full design is in [SPEC.md](SPEC.md) (pre-registered metrics, thresholds and
 | Piece | State |
 |---|---|
 | Data build from real sources (Aya red-teaming, MultiJail, XSTest), group splits, leakage check | ✅ runs |
-| Judges, statistics, report tables, ledger | ✅ unit-tested (26 tests) |
+| Judges, statistics, report tables, ledger | ✅ unit-tested |
 | Generation, capability eval, AuditKIT bridge, CircuitKIT stage, SafeTune arms, GGUF verify | ✅ written against the kits' source, ⏳ first GPU run = day-1 smoke test |
-| Translations (Tamil, Hinglish, benign look-alikes) | ⏳ needs `HF_TOKEN` with inference credits |
+| Runs on CUDA, Apple Silicon (MPS) or CPU; free local judge pair and translator (no inference credits needed) | ✅ written and unit-tested (28 tests); ⏳ MPS path first runs on the M1 Max |
+| Translations (Tamil, Hinglish, benign look-alikes) | ⏳ `build-data --translate --translator local` on the M1 Max |
 | Results | ⏳ none yet |
 
 ## Quick start
@@ -57,16 +58,21 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/Scripts/python.exe 
 .venv/Scripts/python.exe -m langsafe.cli build-data --no-curatorkit
 ```
 
-On a GPU box (Colab/Kaggle T4), open [`notebooks/00_day1_smoke_test.ipynb`](notebooks/00_day1_smoke_test.ipynb), or run:
+**Who runs what, where** (M1 Max, Kaggle, laptop, HF router), plus the Mac setup: [docs/RUNBOOK.md](docs/RUNBOOK.md).
+Day-1 smoke test on any machine: `JUDGES=local bash scripts/day1.sh`. On Kaggle/Colab, open
+[`notebooks/00_day1_smoke_test.ipynb`](notebooks/00_day1_smoke_test.ipynb).
+
+Full pipeline:
 
 ```bash
 bash scripts/install_kits.sh
-export HF_TOKEN=...                       # Tiny Aya licences accepted; inference credits for the judges
-langsafe build-data --translate
+hf auth login                             # Tiny Aya + Aya Expanse 8B licences accepted
+langsafe build-data --translate --translator local
 langsafe generate --model CohereLabs/tiny-aya-global --tag global-base --family fire
 langsafe generate --model CohereLabs/tiny-aya-fire   --tag fire-base   --family fire
-langsafe judge --tag global-base && langsafe judge --tag fire-base
-langsafe report --tags global-base,fire-base --family fire
+langsafe judge --tag global-base --judges local && langsafe judge --tag fire-base --judges local
+langsafe report --tags global-base,fire-base --family fire --judges local
+# --judges router: the pre-registered 32B pair on the HF router (needs inference credits); rules: provisional only
 langsafe capability --model CohereLabs/tiny-aya-fire --tag fire-base
 langsafe ledger-verify
 ```

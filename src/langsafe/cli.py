@@ -1,10 +1,13 @@
 """langsafe command line.
 
-    langsafe build-data [--translate] [--no-curatorkit]
+    langsafe build-data [--translate [--translator router|local]] [--no-curatorkit]
     langsafe generate   --model CohereLabs/tiny-aya-fire --tag fire-base --family fire [--quant nf4] [--adapter DIR] [--limit N]
-    langsafe judge      --tag fire-base
+    langsafe judge      --tag fire-base [--judges router|local|rules]
     langsafe capability --model ... --tag fire-base [--limit N]
-    langsafe report     --tags global-base,fire-base,fire-resta --family fire
+    langsafe report     --tags global-base,fire-base,fire-resta --family fire [--judges router|local|rules]
+
+Judges: `router` = the pre-registered pair on the HF router (needs inference credits); `local` = the credit-free pair
+run on this machine's GPU (spec: judging.local_judges); `rules` = the refusal-phrase detector only, provisional.
     langsafe ledger-verify
 """
 from __future__ import annotations
@@ -19,6 +22,16 @@ from .config import ROOT, load_spec, spec_digest
 from .provenance import Ledger
 
 RUNS = ROOT / "runs"
+JUDGE_SETS = ("router", "local", "rules")
+
+
+def _judged_path(tag: str, judges: str) -> Path:
+    """router results keep the plain name; the fallbacks are suffixed so they can never be mistaken for them."""
+    return RUNS / "judged" / (f"{tag}.jsonl" if judges == "router" else f"{tag}.{judges}.jsonl")
+
+
+def _judges_cfg(spec: dict, judges: str) -> list[dict]:
+    return {"router": spec["judging"]["judges"], "local": spec["judging"]["local_judges"], "rules": []}[judges]
 
 
 def _heldout(family: str, limit: int | None):
@@ -40,7 +53,8 @@ def _heldout(family: str, limit: int | None):
 
 def cmd_build_data(a):
     m = __import__("langsafe.data.build", fromlist=["build"]).build(translate=a.translate,
-                                                                    use_curatorkit=not a.no_curatorkit)
+                                                                    use_curatorkit=not a.no_curatorkit,
+                                                                    translator=a.translator)
     print(json.dumps({k: m[k] for k in ("files", "counts", "translation_failures")}, indent=2, ensure_ascii=False))
 
 
@@ -73,9 +87,9 @@ def cmd_judge(a):
     spec = load_spec()
     prompts = {p.id: p for p in load_split("heldout")}
     gens = [json.loads(l) for l in open(RUNS / "gens" / f"{a.tag}.jsonl", encoding="utf-8")]
-    res = judge_generations(gens, prompts, spec["judging"]["judges"], RUNS / "judged" / f"{a.tag}.jsonl")
-    write_hand_check_sheet(res.pop("queue"), [], RUNS / "hand_check" / f"{a.tag}.csv")
-    Ledger.default().append("judge", {"tag": a.tag, **res})
+    res = judge_generations(gens, prompts, _judges_cfg(spec, a.judges), _judged_path(a.tag, a.judges))
+    write_hand_check_sheet(res.pop("queue"), [], RUNS / "hand_check" / f"{a.tag}.{a.judges}.csv")
+    Ledger.default().append("judge", {"tag": a.tag, "judge_set": a.judges, **res})
     print(json.dumps(res, indent=2))
 
 
@@ -101,9 +115,11 @@ def cmd_report(a):
     from .eval.report import markdown_table
 
     langs = load_spec()["languages"][a.family]
+    if a.judges == "rules":
+        print("> PROVISIONAL: labels from the refusal-phrase detector only. Not a result; do not report.\n")
     tables = {}
     for tag in a.tags.split(","):
-        rows = [json.loads(l) for l in open(RUNS / "judged" / f"{tag}.jsonl", encoding="utf-8")]
+        rows = [json.loads(l) for l in open(_judged_path(tag, a.judges), encoding="utf-8")]
         for pre in sorted({r["preamble"] for r in rows}):
             tables[f"{tag} [{pre}]"] = safety_table([r for r in rows if r["preamble"] == pre])
     print("## Harmful refusal (higher is safer)\n")
@@ -124,6 +140,7 @@ def main(argv=None):
 
     s = sub.add_parser("build-data"); s.set_defaults(fn=cmd_build_data)
     s.add_argument("--translate", action="store_true"); s.add_argument("--no-curatorkit", action="store_true")
+    s.add_argument("--translator", choices=["router", "local"], default="router")
 
     for name, fn in (("generate", cmd_generate), ("capability", cmd_capability)):
         s = sub.add_parser(name); s.set_defaults(fn=fn)
@@ -133,8 +150,10 @@ def main(argv=None):
             s.add_argument("--family", choices=["fire", "earth"], required=True)
 
     s = sub.add_parser("judge"); s.set_defaults(fn=cmd_judge); s.add_argument("--tag", required=True)
+    s.add_argument("--judges", choices=JUDGE_SETS, default="router")
     s = sub.add_parser("report"); s.set_defaults(fn=cmd_report)
     s.add_argument("--tags", required=True); s.add_argument("--family", choices=["fire", "earth"], required=True)
+    s.add_argument("--judges", choices=JUDGE_SETS, default="router")
     s = sub.add_parser("ledger-verify"); s.set_defaults(fn=cmd_ledger_verify)
 
     a = ap.parse_args(argv)

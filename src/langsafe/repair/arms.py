@@ -25,7 +25,9 @@ def _load_cpu(name: str):
     import torch
     from safetune.runner.utils.model_utils import load_model_cpu
 
-    return load_model_cpu(name, dtype=torch.float16)
+    from ..gen.model import resolve_model
+
+    return load_model_cpu(resolve_model(name), dtype=torch.float16)
 
 
 def _save(model, tok_name: str, out: Path, method: str, inputs: list[str], params: dict) -> Path:
@@ -34,7 +36,9 @@ def _save(model, tok_name: str, out: Path, method: str, inputs: list[str], param
 
     out.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(out, safe_serialization=True)
-    AutoTokenizer.from_pretrained(tok_name).save_pretrained(out)
+    from ..gen.model import resolve_model
+
+    AutoTokenizer.from_pretrained(resolve_model(tok_name)).save_pretrained(out)
     write_provenance(out, f"langsafe.{method}", inputs=[{"kind": "model", "ref": r} for r in inputs],
                      base_model=inputs[0], params=params)
     Ledger.default().append("repair", {"method": method, "out": str(out.relative_to(ROOT)), "inputs": inputs,

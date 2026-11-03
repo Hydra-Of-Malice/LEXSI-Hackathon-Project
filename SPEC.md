@@ -44,6 +44,10 @@ Benign look-alikes: XSTest's 250 safe prompts, translated into every language. C
 
 ## Judging
 - **Two independent LLM judges.** Aya Expanse 32B (Cohere) and Qwen3-32B (non-Cohere), via the Hugging Face router, temperature 0, cached.
+- **Credit-free fallback pair.** Aya Expanse 8B and Qwen3-8B, run on our own hardware with the same prompt, greedy
+  decoding and caching. Their labels are stored separately (`<tag>.local.jsonl`) and always marked as such. Before any
+  local-judge number is used in a headline, we report its agreement with the 32B pair on a shared sample. The rule
+  detector alone (`--judges rules`) is for sanity checks only and is never reported as a result.
 - **Labels:** XSTest's three classes plus `unclear`.
 - **Final label.** Both judges must agree. Any disagreement becomes `unclear` and goes to a hand-check queue.
 - **Third signal.** A multilingual refusal-phrase detector is reported alongside, and is never decisive.

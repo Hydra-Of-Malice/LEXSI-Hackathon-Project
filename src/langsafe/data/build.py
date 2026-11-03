@@ -36,7 +36,7 @@ def _cap(prompts: list[Prompt], per_lang: int, seed: int) -> list[Prompt]:
     return out
 
 
-def build(translate: bool = False, use_curatorkit: bool = True) -> dict:
+def build(translate: bool = False, use_curatorkit: bool = True, translator: str = "router") -> dict:
     spec = load_spec()
     d = spec["data"]
     langs = sorted(set(spec["languages"]["fire"]) | set(spec["languages"]["earth"]))
@@ -53,11 +53,12 @@ def build(translate: bool = False, use_curatorkit: bool = True) -> dict:
 
     failed: list[str] = []
     if translate:
-        from ..llm_client import ChatClient
+        from ..llm_client import make_client
         from .translate import translate_all
 
-        j = spec["judging"]["judges"][0]          # Aya Expanse 32B translates; it is a Cohere model by design
-        client = ChatClient(j["base_url"], j["model"])
+        # An Aya Expanse model translates (a Cohere model by design): 32B on the router, or 8B on the local GPU.
+        j = spec["judging"]["judges" if translator == "router" else "local_judges"][0]
+        client = make_client(j["base_url"], j["model"])
         mj_en = [p for p in mj if p.lang == "en"]
         missing = [l for l in langs if l not in {"en", "bn", "sw", "ar"}]          # hi, ta, hi-Latn
         new, f1 = translate_all(client, mj_en, missing)
@@ -65,6 +66,7 @@ def build(translate: bool = False, use_curatorkit: bool = True) -> dict:
         new_b, f2 = translate_all(client, benign, [l for l in langs if l != "en"])
         benign += new_b
         failed = f1 + f2
+        client.close()
 
     pool = [p for p in harmful + benign if p.lang in langs]
     curation = None
@@ -93,7 +95,8 @@ def build(translate: bool = False, use_curatorkit: bool = True) -> dict:
     counts = Counter((p.split, p.kind, p.lang) for p in allp)
     manifest = {
         "built_at": datetime.now(timezone.utc).isoformat(), "spec_digest": spec_digest(spec), "seed": seed,
-        "translated": translate, "translation_failures": failed, "curatorkit": curation, "files": files,
+        "translated": translate, "translator": translator if translate else None, "translation_failures": failed,
+        "curatorkit": curation, "files": files,
         "counts": {f"{s}/{k}/{l}": n for (s, k, l), n in sorted(counts.items())},
         "leakage_check": {"ok": True, "near_dup_jaccard": 0.8},
         "sources": d["sources"],

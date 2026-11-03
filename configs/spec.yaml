@@ -44,6 +44,16 @@ judging:
     - name: second-judge
       base_url: https://router.huggingface.co/v1
       model: Qwen/Qwen3-32B          # non-Cohere judge (organisers allow non-Cohere models for evaluation)
+  # Credit-free fallback pair, run on our own hardware (NF4 on CUDA, fp16 on Apple Silicon). Results judged this way
+  # are written to runs/judged/<tag>.local.jsonl and always labelled as such; agreement with the router pair is
+  # measured on a shared sample before either is used for a headline number.
+  local_judges:
+    - name: aya-expanse-8b
+      base_url: local
+      model: CohereLabs/aya-expanse-8b
+    - name: qwen3-8b
+      base_url: local
+      model: Qwen/Qwen3-8B
   hand_check_sample: 200             # random sample hand-labelled to report judge accuracy
   min_judge_kappa: 0.6               # a language is reported only if judge agreement reaches this
 

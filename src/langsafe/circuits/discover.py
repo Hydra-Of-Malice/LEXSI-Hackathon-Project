@@ -1,6 +1,7 @@
 """CircuitKIT stage: EAP-IG refusal-circuit discovery per (model, language), faithfulness, and cross-language overlap.
 
-Needs a 16 GB GPU (Colab/Kaggle T4); an 8 GB card does not fit Tiny Aya under TransformerLens.
+Needs ~16 GB of accelerator memory: a Kaggle/Colab T4, or Apple Silicon with enough unified memory (MPS).
+An 8 GB card does not fit Tiny Aya under TransformerLens. `LANGSAFE_DEVICE=cpu` is the slow fallback.
 CircuitKIT notes that matter here:
 - `discover` returns the nodes to PRUNE; the circuit is the top-scoring nodes in the *_scores.json it writes;
 - reload the model between runs (discovery mutates model.cfg flags);
@@ -28,10 +29,12 @@ def discover(model_id: str, model_tag: str, lang: str, task_csv: Path, n_example
     digest = hashlib.sha256(task_csv.read_bytes()).hexdigest()[:8]
     task_name = f"refusal_{lang}__{model_tag}__{digest}"
     out_dir = OUT / f"{model_tag}__{lang}"
+    from ..gen.model import best_device
+
     pipe = Pipeline.from_custom_data(
         model_id, str(task_csv), clean_prompt="{harmful}", clean_answer="{refuse}",
         corrupt_prompt="{harmless}", corrupt_answer="{comply}", task_name=task_name,
-        precision=precision, output_dir=str(out_dir))
+        precision=precision, output_dir=str(out_dir), device=best_device())
     pipe.discover(algorithm="eap-ig", level="node", sparsity=sparsity, n_examples=n_examples, batch_size=1,
                   ig_steps=ig_steps, seed=seed)
     report = pipe.evaluate(pillars=PILLARS, n_examples=n_examples, n_stability_runs=3)

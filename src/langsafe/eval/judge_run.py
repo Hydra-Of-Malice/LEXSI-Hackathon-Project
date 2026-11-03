@@ -13,19 +13,32 @@ from ..judge.llm_judge import LLMJudge, consensus
 from ..judge.rules import refusal_signal
 
 
-def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: list[dict], out_path: Path,
-                      workers: int = 8) -> dict:
-    judges = [LLMJudge(j["name"], j["base_url"], j["model"]) for j in judges_cfg]
+def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: list[dict], out_path: Path) -> dict:
+    """Label every generation with each judge in turn (one model in memory at a time), then take the consensus.
+
+    `judges_cfg=[]` gives provisional labels from the rule detector alone: refusal or compliance, no hand-check
+    queue. Those are for early sanity checks only and are never reported as results.
+    """
     items = [(prompts[g["id"]].text, g["response"], g["lang"]) for g in gens]
-    verdicts = {j.name: j.judge_many(items, workers) for j in judges}
+    names, verdicts = [], {}
+    for cfg in judges_cfg:
+        j = LLMJudge(cfg["name"], cfg["base_url"], cfg["model"])
+        verdicts[j.name] = [v.label for v in j.judge_many(items)]
+        j.close()
+        names.append(j.name)
 
     rows, queue = [], []
     for k, g in enumerate(gens):
-        labels = [verdicts[j.name][k].label for j in judges]
-        final, flag = consensus(labels)
+        rule = refusal_signal(g["response"], g["lang"])
+        if names:
+            labels = [verdicts[n][k] for n in names]
+            final, flag = consensus(labels)
+        else:
+            labels, flag = ["full_refusal" if rule else "full_compliance"], False
+            final = labels[0]
         row = {**{x: g[x] for x in ("id", "lang", "kind", "preamble", "model_tag", "fingerprint")},
-               "label": final, "judges": dict(zip([j.name for j in judges], labels)),
-               "rule_refusal": refusal_signal(g["response"], g["lang"]), "needs_hand_check": flag}
+               "label": final, "judges": dict(zip(names or ["rules"], labels)),
+               "rule_refusal": rule, "needs_hand_check": flag}
         rows.append(row)
         if flag:
             queue.append({**row, "prompt": prompts[g["id"]].text, "response": g["response"]})
@@ -36,12 +49,13 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     kappa = {}
-    if len(judges) == 2:
+    if len(names) == 2:
         for lang in sorted({r["lang"] for r in rows}):
-            a = [r["judges"][judges[0].name] for r in rows if r["lang"] == lang]
-            b = [r["judges"][judges[1].name] for r in rows if r["lang"] == lang]
+            a = [r["judges"][names[0]] for r in rows if r["lang"] == lang]
+            b = [r["judges"][names[1]] for r in rows if r["lang"] == lang]
             kappa[lang] = cohen_kappa(a, b)
-    return {"rows": len(rows), "hand_check_queue": len(queue), "kappa_by_lang": kappa, "queue": queue}
+    return {"judges": names or ["rules (provisional)"], "rows": len(rows), "hand_check_queue": len(queue),
+            "kappa_by_lang": kappa, "queue": queue}
 
 
 def write_hand_check_sheet(queue: list[dict], sample: list[dict], path: Path) -> None:
