@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.env
+
+# Model outputs on harmful prompts are never committed or published (Cohere AUP; responsible release).
+runs/gens/
+runs/generations/
+runs/hand_check/
+runs/llm_cache.sqlite
+runs/checkpoints/
+runs/curatorkit/
+runs/circuit_tasks/
+cache/
+*.gguf
+*.safetensors
+*.pt
+
+# Built data is reproducible from `langsafe build-data`; the manifest (with hashes) is committed.
+data/raw/
+data/processed/*.jsonl

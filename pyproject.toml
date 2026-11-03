@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langsafe"
+version = "0.1.0"
+description = "Find, repair and verify per-language safety drift in Tiny Aya's regional models with the Lexsi stack"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Aditya Arnav" }, { name = "Pallab Das" }]
+dependencies = [
+    "pyyaml>=6",
+    "numpy>=1.26",
+    "datasets>=3.0",
+    "huggingface_hub>=0.30",
+    "openai>=1.40",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# Model work: generation, capability eval, 4-bit verify. Install on a GPU box (Colab/Kaggle T4, local RTX).
+gpu = [
+    "torch>=2.4",
+    "transformers>=5.15,<6",
+    "accelerate>=1.0",
+    "bitsandbytes>=0.45",
+    "peft>=0.14",
+]
+# The Lexsi kits are installed from their GitHub repos; see scripts/install_kits.sh.
+dev = ["pytest>=8", "reportlab>=4"]
+
+[project.scripts]
+langsafe = "langsafe.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
