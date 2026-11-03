@@ -15,6 +15,17 @@ Fire and 77.5% for Earth (Tiny Aya tech report, Table 7). This project:
 > **Thesis.** A repair located with CircuitKIT and applied with SafeTune restores per-language safety without raising
 > benign over-refusal or hurting capability, and it still holds at 4-bit.
 
+## Start here (team)
+
+| Read | For |
+|---|---|
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Which machine runs what, Mac (M1 Max) setup, the day-1 command |
+| [docs/brief/mentor_brief.pdf](docs/brief/mentor_brief.pdf) | One-page summary we share with mentors |
+| [docs/proposal/](docs/proposal/Lexsi_Hackathon_Proposal_Multilingual_Safety_Repair.pdf) | Full 10-page proposal with references |
+| [SPEC.md](SPEC.md) | Pre-registered metrics, thresholds and rules (don't change after freeze without an amendment) |
+| [docs/research/](docs/research/README.md) | Hackathon rules, judging, models, kit deep-dives, Discord clarifications, idea ranking |
+| [docs/UPSTREAM.md](docs/UPSTREAM.md) | Gaps in the Lexsi kits and the PRs we plan |
+
 ## Pipeline
 
 ```
