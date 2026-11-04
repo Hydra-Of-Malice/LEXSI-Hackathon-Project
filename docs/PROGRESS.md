@@ -15,6 +15,8 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - Native readers for Hindi/Hinglish, Bengali and Tamil, to review translations and hand-label a sample.
 - HF credits, for the 32B judges that verify the free local judges.
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
+- The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
+  team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
 - **00:35** HF login done on the laptop. Global, Fire, Base and Aya Expanse are accessible; Earth still needs its

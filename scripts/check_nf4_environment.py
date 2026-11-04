@@ -319,8 +319,8 @@ def build_plan(args) -> dict:
 
 def check_runtime(plan: dict, min_free_gib: float) -> dict:
     """Called only by explicit remote --check-hardware/--execute, never --dry-run."""
-    if platform.system() != 'Linux':
-        raise ValueError('Genuine Linux CUDA hardware is required; NF4 is not executed on this Mac')
+    if platform.system() not in {'Linux', 'Windows'}:
+        raise ValueError('Genuine CUDA hardware is required; NF4 is not executed on a Mac')
     remote_software = software()
     remote_code = code_identity()
     if remote_code.get('content_sha256') != plan.get('code', {}).get('content_sha256'):
