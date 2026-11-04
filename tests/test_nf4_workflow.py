@@ -122,7 +122,7 @@ def test_offline_plan_preserves_full_prompts_and_precision_matched_trio(handoff)
     selected_generation = next(args for args in generations if args[args.index('--tag') + 1] == 'fire-resta-0p1-nf4')
     assert selected_generation[selected_generation.index('--model') + 1] == str(handoff['source'] / 'checkpoints' / 'fire-resta-a0.1')
     assert plan['code']['content_sha256'] and plan['source_evidence']['files']
-    assert plan['selected_checkpoint_target'].endswith('/checkpoints/fire-resta-0p1')
+    assert Path(plan['selected_checkpoint_target']).parts[-2:] == ('checkpoints', 'fire-resta-0p1')
 
 
 @pytest.mark.parametrize('mutation,expected', [

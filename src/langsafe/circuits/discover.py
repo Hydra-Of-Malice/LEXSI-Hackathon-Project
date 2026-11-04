@@ -34,6 +34,12 @@ def discover(model_id: str, model_tag: str, lang: str, task_csv: Path, n_example
 
     if n_examples < 1 or ig_steps < 1 or not 0 <= sparsity <= 1:
         raise ValueError("discovery requires positive example/IG counts and sparsity in [0, 1]")
+    from ..gen.model import best_device, resolve_model
+
+    # An 8 GB card does not fit Tiny Aya under TransformerLens, so discovery can run on the CPU by itself.
+    device = os.environ.get("LANGSAFE_CIRCUIT_DEVICE") or best_device()
+    if device == "cpu" and precision == "float16":
+        precision = "float32"
     task_csv = Path(task_csv).resolve()
     digest = hashlib.sha256(task_csv.read_bytes()).hexdigest()[:8]
     settings = {"precision": precision, "n_examples": n_examples, "ig_steps": ig_steps,
@@ -42,7 +48,6 @@ def discover(model_id: str, model_tag: str, lang: str, task_csv: Path, n_example
     setting_hash = hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()[:8]
     task_name = f"refusal_{lang}__{model_tag}__{digest}_{setting_hash}"
     out_dir = OUT / f"{model_tag}__{lang}" / f"{digest}-{setting_hash}"
-    from ..gen.model import best_device, resolve_model
 
     parity = parity_result
     if parity is not None and parity.get("model") != model_id:
@@ -57,7 +62,7 @@ def discover(model_id: str, model_tag: str, lang: str, task_csv: Path, n_example
     pipe = Pipeline.from_custom_data(
         resolve_model(model_id), str(task_csv), clean_prompt="{harmful}", clean_answer="{refuse}",
         corrupt_prompt="{harmless}", corrupt_answer="{comply}", task_name=task_name,
-        precision=precision, output_dir=str(out_dir), device=best_device())
+        precision=precision, output_dir=str(out_dir), device=device)
     try:
         # Pinned CircuitKIT's NormalizedTaskSpec ignores data_params.num_examples
         # for EAP. Its template loader does honor data.max_records, before
@@ -193,6 +198,33 @@ def node_scores(scores_json: str | Path) -> dict[str, float]:
     return scores
 
 
+_NODE_LAYER = re.compile(r"(?:A|MLP |L)(\d+)")
+
+
+def layer_mass(scores: dict[str, float]) -> dict[int, float]:
+    """Total absolute circuit score per layer. Node names: A<layer>.<head>, MLP <layer>, L<layer>.<neuron>."""
+    mass: dict[int, float] = {}
+    for name, value in scores.items():
+        match = _NODE_LAYER.match(name)
+        if match:
+            layer = int(match.group(1))
+            mass[layer] = mass.get(layer, 0.0) + abs(value)
+    if not mass:
+        raise ValueError("no node name identifies a layer")
+    return mass
+
+
+def top_layers(scores: dict[str, float], fraction: float) -> list[int]:
+    """The top `fraction` of layers by circuit mass.
+
+    SafeTune's node-level mask keeps every layer holding any top-20% node. Those nodes are spread through the model,
+    so on Tiny Aya it selected 30 of 36 layers, which is not a localised edit.
+    """
+    mass = layer_mass(scores)
+    count = max(1, round((max(mass) + 1) * fraction))
+    return sorted(sorted(mass, key=lambda layer: (-mass[layer], layer))[:count])
+
+
 def top_k(scores: dict[str, float], k: int) -> set[str]:
     return set(sorted(scores, key=scores.get, reverse=True)[:k])
 
@@ -216,9 +248,13 @@ def overlap_matrix(circuits: dict[str, str | Path], k: int = 50) -> dict:
     """circuits: {"global/hi": scores_json, "fire/hi": ...} -> pairwise top-k Jaccard and full-ranking Spearman."""
     s = {name: node_scores(p) for name, p in circuits.items()}
     names = sorted(s)
+    def rank(a, b):
+        value = spearman(s[a], s[b])
+        return value if math.isfinite(value) else None
+
     return {"k": k,
             "jaccard": {a: {b: jaccard(top_k(s[a], k), top_k(s[b], k)) for b in names} for a in names},
-            "spearman": {a: {b: spearman(s[a], s[b]) for b in names} for a in names}}
+            "spearman": {a: {b: rank(a, b) for b in names} for a in names}}
 
 
 def merge_scores(paths: list[str | Path], out: Path, model: str) -> Path:

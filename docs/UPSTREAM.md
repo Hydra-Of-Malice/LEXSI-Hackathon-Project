@@ -18,6 +18,9 @@ the pull requests we plan to open.
 - ⭐ **No MultiJail or Aya red-teaming benchmark loaders.** The built-in refusal checks and the WildGuard judge are English.
 - **`RefusalDirectionTrainer` can't take a config.** Its default alpha=20 breaks Tiny Aya, and ReSta's default alpha=1.0 also breaks it.
 - **`build_safety_lora_config` ignores `layer_subset`**, so a circuit-guided LoRA still trains every layer.
+- ⭐ **`circuit_info_from_node_scores` turns a top-20% node set into nearly the whole model.** It keeps every layer holding
+  any selected node, which on Tiny Aya was 30 of 36 layers, so "circuit-restricted" edits are not restricted. PR: rank
+  layers by total node score (`top_layers` in `src/langsafe/circuits/discover.py`).
 - **`QReSafeTrainer` never passes `pre_quant_model`.** `evaluate()` without `tokenizer=` fails, and `examples/demos/full_pipeline.py` has this bug.
 
 ## CircuitKIT (e71d5e1)

@@ -11,10 +11,12 @@ from ..languages import GMMLU_CONFIGS
 TEMPLATE = "{q}\n\nA. {a}\nB. {b}\nC. {c}\nD. {d}\n\nAnswer with only the letter (A, B, C or D)."
 
 
-def load_items(lang: str, limit: int | None = None, repo: str = "CohereLabs/Global-MMLU-Lite") -> list[dict]:
+def load_items(lang: str, limit: int | None = None, repo: str = "CohereLabs/Global-MMLU-Lite",
+               split: str = "test") -> list[dict]:
+    """`test` measures capability; `dev` is reserved for knob selection, so tuning never sees the test items."""
     from datasets import load_dataset
 
-    ds = load_dataset(repo, GMMLU_CONFIGS[lang], split="test")
+    ds = load_dataset(repo, GMMLU_CONFIGS[lang], split=split)
     items = [dict(r) for r in ds]
     return items[:limit] if limit else items
 

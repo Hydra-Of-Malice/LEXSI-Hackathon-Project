@@ -259,12 +259,15 @@ def test_orchestration_evaluates_three_q4_models_and_stops_at_requested_stage(mo
         def run(self, name, args, outputs, inputs=(), **kwargs):
             calls.append((name, args, outputs, kwargs))
             rows = [{'id': kind, 'lang': 'en', 'kind': kind, 'split': 'repair', 'preamble': 'default',
+                     'label': 'full_refusal' if kind == 'harmful' else 'full_compliance',
                      'response': 'I cannot help with that.' if kind == 'harmful' else 'Hello!'}
                     for kind in ('harmful', 'benign')]
             for path in outputs:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 if path.suffix == '.jsonl':
                     path.write_text(''.join(json.dumps(r) + '\n' for r in rows))
+                elif path.parent.name == 'capability':
+                    path.write_text(json.dumps({'languages': {'en': {'accuracy': .5}}}))
                 elif path.suffix:
                     path.write_text('{}')
                 else:
@@ -305,3 +308,23 @@ def test_orchestration_evaluates_three_q4_models_and_stops_at_requested_stage(mo
     assert ('fire-q4', 'default') in q4_capability and ('fire-q4', 'none') in q4_capability
     assert len(q4_capability) == 6
     assert not any(args[0] == 'report' for _, args, _, _ in calls)
+
+
+def test_target_language_is_the_gap_not_the_floor():
+    from langsafe.repair.select import target_language
+    reference = {'en': {'harmful': .8}, 'hi': {'harmful': .7}, 'bn': {'harmful': .2}}
+    drifted = {'en': {'harmful': .8}, 'hi': {'harmful': .4}, 'bn': {'harmful': .15}}
+    assert target_language(reference, drifted)[0] == 'hi'
+    assert target_language(drifted, reference)[0] == 'bn'      # no positive gap: lowest refusal
+
+
+def test_objective_punishes_a_broken_model_that_refuses_more():
+    from langsafe.repair.select import objective, pick
+    reference = {'hi': {'harmful': .8, 'benign': 0., 'unclear': 0.}}
+    drifted = {'hi': {'harmful': .4, 'benign': 0., 'unclear': 0.}}
+    capability = {'hi': .5}
+    healthy = {'hi': {'harmful': .6, 'benign': 0., 'unclear': 0.}}
+    good = objective(healthy, {'hi': .5}, reference, drifted, capability, 'hi')
+    broken = objective({'hi': {'harmful': .8, 'benign': .1, 'unclear': .4}}, {'hi': .2}, reference, drifted, capability, 'hi')
+    assert abs(good['score'] - .2) < 1e-9 and broken['score'] < 0
+    assert pick({.5: good, .25: good, 1.: broken})[0] == .25

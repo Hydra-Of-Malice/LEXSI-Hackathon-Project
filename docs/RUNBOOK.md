@@ -6,7 +6,7 @@ We have three machines and no paid inference yet. Everything up to the final hea
 |---|---|---|
 | **Pallab's MacBook M1 Max, 64 GB** (main) | generation for every model and arm (MPS, fp16); the free local judge pair; translations; Global-MMLU-Lite; the CPU weight edits (ReSta, C-ΔΘ, merge-back: about 20 GB); GGUF Q4_K_M conversion and testing with llama.cpp on Metal; CircuitKIT EAP-IG (try MPS first) | NF4 (bitsandbytes needs CUDA) |
 | **Kaggle T4** (free, 30 GPU h/week) | NF4 4-bit re-tests; CircuitKIT if it fails on MPS; a second copy of any run | long jobs over 12 h per session |
-| **Aditya's laptop, RTX 4060 8 GB** | tests, code, small generation runs | CircuitKIT (doesn't fit in 8 GB) |
+| **Aditya's laptop, RTX 4060 8 GB, 1.2 TB free** | the full grid (no disk limit), NF4 (it has CUDA), Q4_K_M with llama.cpp, judges as Q4 GGUF; CircuitKIT on the CPU (`LANGSAFE_CIRCUIT_DEVICE=cpu`) | CircuitKIT on the GPU (doesn't fit in 8 GB). Its connection is about 0.5 MB/s, so plan downloads first |
 | **HF router** (when the $20 credits land) | the pre-registered 32B judges for headline numbers, plus a shared sample to measure agreement with the local judges | — |
 
 ## 1. Mac setup (once, about 30 minutes plus downloads)
@@ -166,6 +166,24 @@ LANGSAFE_RUNS_DIR=/Volumes/EXTERNAL/lexsi/full/fire bash scripts/run_experiment.
 
 Replace `EXTERNAL` with a mounted volume that has enough free space. Preserve the development artifacts when
 comparing the two profiles; they use different data budgets and cannot be combined into one benchmark.
+
+### On Windows (Aditya's laptop)
+
+`scripts/run_experiment.sh` assumes a POSIX venv, so call the CLI directly from PowerShell:
+
+```bash
+$env:LANGSAFE_CIRCUIT_DEVICE = 'cpu'
+$env:PYTHONUTF8 = '1'
+.venv\Scripts\python.exe -u -m langsafe.cli experiment --family fire --profile full
+```
+
+llama.cpp lives in `cache/llama.cpp`: the release's CUDA binaries unzipped into `build/bin`, next to a checkout of the
+same tag for the converter. Local judges use `cache/gguf/*.gguf` when those files exist, and transformers otherwise.
+
+### Pilot without a login
+
+`python scripts/pilot_gap.py --regional fire` compares Cohere's official ungated 4-bit Global and Fire on the repair
+split. It is a planning check, never a reported result.
 
 ## 5. Human and router calibration
 

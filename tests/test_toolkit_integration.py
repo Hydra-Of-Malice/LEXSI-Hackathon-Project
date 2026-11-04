@@ -496,6 +496,7 @@ def test_pinned_safetune_weight_arithmetic_round_trips_on_cpu(monkeypatch, tmp_p
     assert torch.equal(state["model.layers.0.self_attn.q_proj.weight"], torch.full((2, 2), want))
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX installer script")
 def test_mac_installer_preserves_runtime_and_does_not_resolve_cuda_dependencies(tmp_path):
     harness = tmp_path / "harness.py"
     log = tmp_path / "calls.jsonl"
@@ -557,6 +558,8 @@ def test_saved_repair_provenance_contains_runtime_and_local_input_lineage(tmp_pa
     monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", lambda _: tokenizer)
     monkeypatch.setattr("langsafe.gen.model.resolve_model", lambda _: str(source))
     monkeypatch.setattr(arms.Ledger, "default", lambda: SimpleNamespace(append=lambda *a, **k: None))
+    monkeypatch.setattr(arms, "_load_cpu", lambda _: None)
+    monkeypatch.setattr(arms, "edit_stats", lambda *a: {"edit_l2": 1.0})
     model = SimpleNamespace(save_pretrained=lambda out, **kwargs: (out / "model.safetensors").write_bytes(b"weights"))
     out = arms._save(model, "fire", tmp_path / "repaired", "resta", ["fire"], {"alpha": .25})
     record = json.loads((out / "lexsi_provenance.json").read_text())
@@ -658,3 +661,48 @@ def test_cli_records_real_auditkit_outputs_with_precision_identity(monkeypatch, 
     final = json.loads((directory / 'fire-q4.rules.json').read_text())
     assert final['fingerprint'] != revised['fingerprint']
     assert final['predictions'][0]['raw_output'] == 'Good morning!'
+
+
+def test_top_layers_ranks_layers_by_mass_not_node_membership():
+    scores = {"A0.0": .1, "A1.0": .9, "A1.1": .8, "MLP 2": .7, "A3.0": .05, "MLP 4": .05, "A5.0": .05, "MLP 6": .05,
+              "A7.0": .05, "MLP 8": .05, "A9.0": .05}
+    assert circuits.layer_mass(scores)[1] == pytest.approx(1.7)
+    assert circuits.top_layers(scores, .2) == [1, 2]
+
+
+def test_edit_stats_records_what_changed_and_where():
+    import torch
+
+    def model(value):
+        state = {"model.layers.3.mlp.up_proj.weight": torch.full((2,), value), "model.norm.weight": torch.ones(2)}
+        return SimpleNamespace(state_dict=lambda: state)
+
+    stats = arms.edit_stats(model(2.), model(1.))
+    assert stats["edited_tensors"] == 1 and stats["edited_layers"] == [3]
+    assert stats["edit_l2"] == pytest.approx(2 ** .5)
+
+
+@pytest.mark.parametrize("vector,seed,negative,layers", [("safety", None, "base", [1]), ("drift", None, "fire", [1]),
+                                                        ("safety", 7, "base", None)])
+def test_circuit_vectors_and_random_control_stay_outside_the_circuit(monkeypatch, tmp_path, vector, seed, negative, layers):
+    seen = {}
+
+    def apply(target, positive, neg, circuit_info, *, strength, layer_subset, target_modules):
+        seen.update(negative=neg, layers=layer_subset)
+
+    info = SimpleNamespace(layer_suggestions=SimpleNamespace(layer_subset=[0, 1, 2, 3], target_modules=["q_proj"]))
+    module(monkeypatch, "safetune.core.circuit_kit.adapter", circuit_info_from_node_scores=lambda *a, **k: info,
+           load_circuit_info_from_file=lambda *a, **k: info)
+    module(monkeypatch, "safetune.recover", apply_ctheta=apply)
+    monkeypatch.setattr(arms, "load_spec", lambda: {"models": {"base": "base", "reference": "global"}})
+    state = {f"model.layers.{i}.self_attn.q_proj.weight": SimpleNamespace(shape=(2, 2)) for i in range(4)}
+    monkeypatch.setattr(arms, "_load_cpu", lambda name: SimpleNamespace(state_dict=lambda: state, name=name))
+    monkeypatch.setattr(arms, "_save", lambda *a, **k: Path("saved"))
+    scores = tmp_path / "scores.json"
+    scores.write_text(json.dumps({"node_scores": {"A0.0": .1, "A1.0": .9, "A2.0": .1, "A3.0": .1}}))
+    arms.circuit("fire", str(scores), .5, "fire", top_fraction=.25, vector=vector, random_seed=seed)
+    assert seen["negative"].name == negative
+    if layers:
+        assert seen["layers"] == layers
+    else:
+        assert len(seen["layers"]) == 1 and 1 not in seen["layers"]

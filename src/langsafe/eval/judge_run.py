@@ -118,7 +118,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     items = [(prompts[g["id"]].text, g["response"], g["lang"]) for g in gens]
     verdicts = {}
     for cfg in judges_cfg:
-        kwargs = {k: cfg[k] for k in ("quant", "dtype", "batch_size", "checkpoint_identity", "cache_path") if k in cfg}
+        kwargs = {k: cfg[k] for k in ("quant", "dtype", "batch_size", "checkpoint_identity", "cache_path", "gguf")
+                  if k in cfg}
         judge = LLMJudge(cfg["name"], cfg["base_url"], cfg["model"], **kwargs)
         try:
             result = judge.judge_many(items)
@@ -130,7 +131,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
 
     judge_set = ("rules" if not names else "local" if all(cfg["base_url"] == "local" for cfg in judges_cfg)
                  else "router" if all(cfg["base_url"] != "local" for cfg in judges_cfg) else "mixed")
-    judge_models = {cfg["name"]: {k: cfg[k] for k in ("model", "base_url", "quant", "dtype", "checkpoint_identity") if k in cfg}
+    judge_models = {cfg["name"]: {k: cfg[k] for k in ("model", "base_url", "quant", "dtype", "checkpoint_identity", "gguf")
+                                  if k in cfg}
                     for cfg in judges_cfg}
     rubric_hash = hashlib.sha256(SYSTEM.encode()).hexdigest()
     rows, queue = [], []

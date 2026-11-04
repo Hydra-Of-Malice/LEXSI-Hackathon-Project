@@ -1,12 +1,14 @@
 """SafeTune repair arms. Weight-space arms run on CPU (about 20 GB of RAM for three fp16 models); steering runs on GPU.
 
 Arms (configs/spec.yaml):
-  resta        Fire + a * (Global - Base)                        whole model           SafeTune apply_resta
-  circuit      Fire + s * (Global - Base), only CircuitKIT layers   circuit-restricted    SafeTune apply_ctheta
-  merge_back   (1 - l) * Fire + l * Global                       naive baseline        SafeTune apply_wise_ft
-  steer        add a refusal direction at one layer at run time   inference-time        SafeTune RefusalDirectionModel
+  resta          Fire + a * (Global - Base)                          whole model          SafeTune apply_resta
+  circuit        Fire + s * (Global - Base), top CircuitKIT layers   circuit-restricted   SafeTune apply_ctheta
+  merge_back     (1 - l) * Fire + l * Global                         whole model          SafeTune apply_wise_ft
+  circuit_merge  Fire + l * (Global - Fire), top CircuitKIT layers   circuit-restricted   SafeTune apply_ctheta
+  steer          add a refusal direction at one layer at run time    inference-time       SafeTune RefusalDirectionModel
 
-`resta` and `circuit` use the same safety vector, so their difference isolates the effect of CircuitKIT's localisation.
+Each circuit-restricted arm has a whole-model twin with the same vector, and a control that applies it to the same
+number of randomly chosen non-circuit layers. Twin and control together isolate what CircuitKIT's localisation adds.
 Knobs (alpha, strength, lambda, steering strength) are chosen on the *repair* split only (see select.py), never on
 held-out data. SafeTune's defaults (ReSta alpha=1, steering alpha=20) break Tiny Aya, so every knob is explicit.
 """
@@ -16,6 +18,7 @@ import json
 import importlib.metadata
 import math
 import os
+import random
 from pathlib import Path
 
 from ..config import ROOT, load_spec
@@ -74,10 +77,28 @@ def _load_cpu(name: str):
     return load_model_cpu(resolve_model(name), dtype=torch.float16)
 
 
+def edit_stats(model, original) -> dict:
+    """How much was edited: comparing arms is only fair if the size and location of each edit are on record."""
+    before = original.state_dict()
+    total = weights = 0.0
+    tensors, layers = 0, set()
+    for key, value in model.state_dict().items():
+        old = before[key].float()
+        change = float((value.float() - old).pow(2).sum())
+        weights += float(old.pow(2).sum())
+        if change > 0:
+            total += change
+            tensors += 1
+            layers.update(int(part) for part in key.split(".") if part.isdigit())
+    return {"edit_l2": math.sqrt(total), "relative_edit_l2": math.sqrt(total / weights) if weights else 0.0,
+            "edited_tensors": tensors, "edited_layers": sorted(layers)}
+
+
 def _save(model, tok_name: str, out: Path, method: str, inputs: list[str], params: dict) -> Path:
     from safetune.provenance import input_entry, write_provenance
     from transformers import AutoTokenizer
 
+    params = {**params, **edit_stats(model, _load_cpu(inputs[0]))}
     out.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(out, safe_serialization=True)
     from ..gen.model import resolve_model
@@ -114,51 +135,77 @@ def resta(drifted: str, alpha: float, family: str) -> Path:
                  [drifted, m["base"], m["reference"]], {"alpha": alpha, "dare": False, "device": "cpu"})
 
 
-def circuit(drifted: str, scores_json: str, strength: float, family: str, top_fraction: float = 0.2) -> Path:
-    """C-ΔΘ restricted to the layers/modules CircuitKIT ranked highest (its *_scores.json, read by SafeTune's adapter)."""
+def circuit(drifted: str, scores_json: str, strength: float, family: str, top_fraction: float = 0.2,
+            vector: str = "safety", random_seed: int | None = None) -> Path:
+    """C-ΔΘ restricted to the layers CircuitKIT ranked highest (its *_scores.json, read by SafeTune's adapter).
+
+    vector: `safety` is Global - Base (the ReSta vector); `drift` is Global - Fire (the merge-back vector).
+    random_seed: the control. Same vector and strength on as many randomly chosen layers outside the circuit.
+    """
     from safetune.core.circuit_kit.adapter import load_circuit_info_from_file
     from safetune.recover import apply_ctheta
 
     _finite_knob("strength", strength)
     if not math.isfinite(top_fraction) or not 0 < top_fraction <= 1:
         raise ValueError("top_fraction must be in (0, 1]")
+    if vector not in ("safety", "drift"):
+        raise ValueError(f"unknown repair vector: {vector}")
     m = load_spec()["models"]
     scores_path = Path(scores_json).expanduser()
     if not scores_path.is_absolute():
         scores_path = ROOT / scores_path
     scores_path = scores_path.resolve()
     scores_data = json.loads(scores_path.read_text(encoding="utf-8"))
+    ranked_layers = None
     if scores_data.get("node_scores"):
         from safetune.core.circuit_kit.adapter import circuit_info_from_node_scores
-        from ..circuits.discover import node_scores
+        from ..circuits.discover import layer_mass, node_scores, top_layers
 
         # CircuitKIT interop fields are already selected at its default 20%.
         # SafeTune otherwise ignores top_fraction when those fields exist.
-        info = circuit_info_from_node_scores(node_scores(scores_path), top_fraction=top_fraction,
-                                             raw_output_path=str(scores_path))
+        values = node_scores(scores_path)
+        info = circuit_info_from_node_scores(values, top_fraction=top_fraction, raw_output_path=str(scores_path))
+        ranked_layers = top_layers(values, top_fraction)
     else:
         info = load_circuit_info_from_file(str(scores_path), top_fraction=top_fraction)
     if info is None:
         raise ValueError(f"no usable circuit info in {scores_json}")
     suggestions = getattr(info, "layer_suggestions", None)
-    layers = list(getattr(suggestions, "layer_subset", None) or [])
+    layers = ranked_layers or list(getattr(suggestions, "layer_subset", None) or [])
     modules = list(getattr(suggestions, "target_modules", None) or [])
     if not layers or any(type(layer) is not int or layer < 0 for layer in layers):
         raise ValueError("circuit must specify a nonempty valid layer subset")
     if not modules or any(not isinstance(module, str) or not module.strip() for module in modules):
         raise ValueError("circuit must specify target modules")
+    circuit_layers = layers
+    if random_seed is not None:
+        if ranked_layers is None:
+            raise ValueError("the random-layer control needs CircuitKIT node scores")
+        outside = sorted(set(layer_mass(values)) - set(layers))
+        if len(outside) < len(layers):
+            raise ValueError("too few non-circuit layers for a matched random control")
+        layers = sorted(random.Random(random_seed).sample(outside, len(layers)))
     model = _load_cpu(drifted)
     keys = _circuit_keys(model, layers, modules)
-    aligned, base = _load_cpu(m["reference"]), _load_cpu(m["base"])
-    _compatible(model, aligned, base, keys=keys)
-    apply_ctheta(model, aligned, base, info, strength=strength, layer_subset=layers, target_modules=modules)
+    negative_name = m["base"] if vector == "safety" else drifted
+    aligned, negative = _load_cpu(m["reference"]), _load_cpu(negative_name)
+    _compatible(model, aligned, negative, keys=keys)
+    apply_ctheta(model, aligned, negative, info, strength=strength, layer_subset=layers, target_modules=modules)
     from ..quant.gguf import file_sha256
 
     params = {"strength": strength, "top_fraction": top_fraction, "scores": str(scores_path),
-              "scores_sha256": file_sha256(scores_path), "matched_parameters": len(keys),
-              "layer_subset": layers, "target_modules": modules}
-    return _save(model, drifted, CKPT / f"{family}-circuit-s{strength}-top{top_fraction}", "ctheta",
-                 [drifted, m["reference"], m["base"]], params)
+              "scores_sha256": file_sha256(scores_path), "matched_parameters": len(keys), "vector": vector,
+              "layer_subset": layers, "circuit_layers": circuit_layers, "random_seed": random_seed,
+              "target_modules": modules}
+    return _save(model, drifted, circuit_checkpoint(family, strength, top_fraction, vector, random_seed), "ctheta",
+                 [drifted, m["reference"], negative_name], params)
+
+
+def circuit_checkpoint(family: str, strength: float, top_fraction: float, vector: str = "safety",
+                       random_seed: int | None = None) -> Path:
+    name = "circuit" if vector == "safety" else "circuit_merge"
+    control = "" if random_seed is None else f"-rand{random_seed}"
+    return CKPT / f"{family}-{name}-s{strength}-top{top_fraction}{control}"
 
 
 def merge_back(drifted: str, lam: float, family: str) -> Path:

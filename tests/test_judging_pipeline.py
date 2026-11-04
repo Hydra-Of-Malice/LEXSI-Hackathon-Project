@@ -386,3 +386,19 @@ def test_hosted_close_releases_openai_and_database(monkeypatch, tmp_path):
     with pytest.raises(sqlite3.ProgrammingError):
         client._cache.get("key")
     client.close()
+
+
+def test_make_client_uses_a_gguf_only_when_the_file_is_here(tmp_path, monkeypatch):
+    import langsafe.llm_client as clients
+
+    gguf = tmp_path / "judge.gguf"
+    gguf.write_bytes(b"weights")
+    monkeypatch.setattr(clients, "ROOT", tmp_path)
+    present = clients.make_client("local", "some/model", gguf="judge.gguf", cache_path=tmp_path / "a.sqlite")
+    missing = clients.make_client("local", "some/model", gguf="other.gguf", quant=None, cache_path=tmp_path / "b.sqlite")
+    assert isinstance(present, clients.ServerChatClient) and isinstance(missing, clients.LocalChatClient)
+    messages = [{"role": "user", "content": "hi"}]
+    present._cache.put(present._cache.key(messages, {"temperature": 0, "max_tokens": 200}), "cached")
+    assert present.chat(messages, max_tokens=200) == "cached" and present._server is None
+    present.close()
+    missing.close()

@@ -17,7 +17,18 @@ from urllib.request import urlopen
 
 from .config import ROOT, load_spec, spec_digest
 from .experiment import ExperimentState, atomic_json, capability_path, checkpoint_identity, file_sha256
-from .repair.select import pick, quick_rates
+from .repair.select import judged_rates, objective, pick, target_language
+
+
+CIRCUIT_ARMS = ('circuit', 'circuit_merge')
+
+
+def _circuit_checkpoint(directory: Path, family: str, knob: float, top_fraction: float, vector: str,
+                        seed: int | None) -> Path:
+    # Mirrors repair.arms.circuit_checkpoint; importing it here would pull in the kits before a stage needs them.
+    name = 'circuit' if vector == 'safety' else 'circuit_merge'
+    control = '' if seed is None else f'-rand{seed}'
+    return directory / 'checkpoints' / f'{family}-{name}-s{knob}-top{top_fraction}{control}'
 
 
 def _rows(path: Path) -> list[dict]:
@@ -31,7 +42,8 @@ class StageRunner:
         self.state = ExperimentState(self.directory / 'experiment.json', identity)
         self.python = python or sys.executable
         self.env = dict(os.environ, LANGSAFE_RUNS_DIR=str(self.directory),
-                        LANGSAFE_DATA_DIR=str(self.directory / 'data'), PYTORCH_ENABLE_MPS_FALLBACK='1')
+                        LANGSAFE_DATA_DIR=str(self.directory / 'data'), PYTORCH_ENABLE_MPS_FALLBACK='1',
+                        PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
 
     def settings(self, args: list[str], inputs: list[Path] = (), optional_inputs: list[Path] = ()) -> dict:
         inputs = list(inputs)
@@ -75,7 +87,8 @@ class StageRunner:
         with log.open('a', encoding='utf-8') as stream:
             process = subprocess.Popen([python or self.python, '-u', '-m', 'langsafe.cli', *args],
                                        cwd=ROOT, env=self.env, stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT, text=True, bufsize=1)
+                                       stderr=subprocess.STDOUT, text=True, bufsize=1,
+                                       encoding='utf-8', errors='replace')
             try:
                 for line in process.stdout:
                     stream.write(line); stream.flush()
@@ -205,103 +218,157 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
     circuit_summary = None
     if not skip_circuit:
         circuit_python = os.environ.get('LANGSAFE_CIRCUIT_PYTHON')
-        if not circuit_python and (ROOT / '.venv-kits' / 'bin' / 'python').exists():
-            circuit_python = str(ROOT / '.venv-kits' / 'bin' / 'python')
-        summaries = []
-        for lang in experiments.get('circuit_languages', ['en']):
-            tag = 'global-circuit'
-            output = runner.directory / 'circuits' / f'{tag}__{lang}' / 'summary.json'
-            runner.run('circuit-' + lang, ['circuit', '--model', baseline_models['global'], '--tag', tag,
-                                          '--lang', lang, '--pairs', str(experiments.get('circuit_pairs', 32)),
-                                          '--examples', str(experiments.get('circuit_examples', 16)),
-                                          '--ig-steps', str(experiments.get('circuit_ig_steps', 3))],
-                       [output.parent, runner.directory / 'circuit_tasks' / f'refusal_{lang}__{tag}__default.csv'],
-                       python=circuit_python)
-            summaries.append(json.loads(output.read_text()))
-        from .circuits.discover import merge_scores
+        kits_python = ROOT / '.venv-kits' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+        if not circuit_python and kits_python.exists():
+            circuit_python = str(kits_python)
+        summaries, overlap_inputs = [], {}
+        for model_name, model in baseline_models.items():
+            for lang in experiments.get('circuit_languages', ['en']):
+                tag = f'{model_name}-circuit'
+                output = runner.directory / 'circuits' / f'{tag}__{lang}' / 'summary.json'
+                runner.run(f'{tag}-{lang}', ['circuit', '--model', model, '--tag', tag,
+                                             '--lang', lang, '--pairs', str(experiments.get('circuit_pairs', 32)),
+                                             '--examples', str(experiments.get('circuit_examples', 16)),
+                                             '--ig-steps', str(experiments.get('circuit_ig_steps', 3))],
+                           [output.parent, runner.directory / 'circuit_tasks' / f'refusal_{lang}__{tag}__default.csv'],
+                           python=circuit_python)
+                row = json.loads(output.read_text(encoding='utf-8'))
+                overlap_inputs[f'{model_name}/{lang}'] = row['scores_json']
+                if model_name == 'global':     # the repair edits toward Global, so Global's circuit defines the mask
+                    summaries.append(row)
+        from .circuits.discover import merge_scores, overlap_matrix
         scores = [Path(row['scores_json']) for row in summaries]
         scores = [p if p.is_absolute() else ROOT / p for p in scores]
         circuit_summary = runner.directory / 'circuits' / 'merged-scores.json'
         merge_scores(scores, circuit_summary, baseline_models['global'])
+        atomic_json(runner.directory / 'circuits' / 'overlap.json', overlap_matrix(overlap_inputs))
     if stop_after == 'circuit':
         return
-    reference_rates = quick_rates(_rows(runner.directory / 'gens' / 'global-repair.jsonl'))
-    original_rates = quick_rates(_rows(runner.directory / 'gens' / f'{family}-repair.jsonl'))
-    available = {lang: values['harmful'] for lang, values in original_rates.items() if 'harmful' in values}
-    if not available:
-        raise ValueError('No harmful repair-split baseline available')
-    worst_language = min(available, key=available.get)
-    selection = {'split': 'repair', 'preamble': 'default', 'scorer': 'multilingual phrase signal (development selection only)',
-                 'worst_language': worst_language, 'reference_rates': reference_rates,
-                 'drifted_rates': original_rates, 'arms': {}, 'omitted': []}
-    selected_descriptors = {}
+    def weights(identifier: str, knob: float, arm: dict, seed: int | None = None) -> Path:
+        """Build a weight-space candidate and return its checkpoint."""
+        top_fraction = arm.get('top_fraction', 0.2)
+        args = ['repair', '--family', family, '--arm', identifier, '--knob', str(knob)]
+        inputs = []
+        if identifier == 'resta':
+            checkpoint = runner.directory / 'checkpoints' / f'{family}-resta-a{knob}'
+        elif identifier == 'merge_back':
+            checkpoint = runner.directory / 'checkpoints' / f'{family}-merge-l{knob}'
+        else:
+            vector = 'safety' if identifier == 'circuit' else 'drift'
+            checkpoint = _circuit_checkpoint(runner.directory, family, knob, top_fraction, vector, seed)
+            args += ['--scores', str(circuit_summary), '--top-fraction', str(top_fraction)]
+            args += ['--random-seed', str(seed)] if seed is not None else []
+            inputs = [circuit_summary]
+        suffix = str(knob).replace('.', 'p') + (f'-rand{seed}' if seed is not None else '')
+        runner.run(f'{family}-{identifier}-{suffix}-weights', args, [checkpoint], inputs)
+        return checkpoint
+
+    def repair_evidence(tag: str, model: str, descriptor: dict | None = None) -> None:
+        """Short repair-split answers, and capability on the MMLU dev split: everything selection may look at."""
+        artifact = runner.directory / 'gens' / f'{tag}-repair.jsonl'
+        runner.run(tag + '-repair', ['generate', '--family', family, '--split', 'repair', '--tag', tag + '-repair',
+                                     '--limit', str(repair_limit), '--preamble', 'default',
+                                     '--max-new-tokens', str(experiments.get('selection_max_new_tokens', 64)),
+                                     '--batch-size', str(batch), *_model_args(model, descriptor)],
+                   [artifact], [data_manifest])
+        runner.run(tag + '-repair-capability', ['capability', '--tag', tag + '-repair', '--family', family,
+                                                '--preamble', 'default', '--mmlu-split', 'dev',
+                                                *_model_args(model, descriptor)],
+                   [capability_path(runner.directory, tag + '-repair', 'default')])
+
+    # Generate everything first, so one load of each judge labels every candidate.
+    for tag, model in baseline_models.items():
+        repair_evidence(tag, model)
+    candidates = {}
+    direction = runner.directory / 'checkpoints' / f'{family}-steer-default'
     for arm in spec['repair_arms']:
         identifier = arm['id']
-        if identifier == 'circuit' and skip_circuit:
-            selection['omitted'].append({'arm': identifier, 'reason': 'explicit --skip-circuit'})
+        if identifier in CIRCUIT_ARMS and skip_circuit:
             continue
-        candidates = {}
-        descriptors = {}
-        direction = runner.directory / 'checkpoints' / f'{family}-steer-default'
         if identifier == 'steer':
             runner.run('steer-direction', ['repair', '--family', family, '--arm', 'steer', '--limit', str(repair_limit)],
                        [direction / 'refusal_direction.pt', direction / 'meta.json'], [data_manifest])
+        candidates[identifier] = {}
         for knob in arm['values']:
-            suffix = str(knob).replace('.', 'p')
-            tag = f'{family}-{identifier}-{suffix}'
-            descriptor = {'arm': identifier, 'knob': knob}
-            if identifier == 'resta':
-                checkpoint = runner.directory / 'checkpoints' / f'{family}-resta-a{knob}'
-            elif identifier == 'circuit':
-                checkpoint = runner.directory / 'checkpoints' / f'{family}-circuit-s{knob}-top{arm.get("top_fraction", 0.2)}'
-            elif identifier == 'merge_back':
-                checkpoint = runner.directory / 'checkpoints' / f'{family}-merge-l{knob}'
+            tag = f"{family}-{identifier}-{str(knob).replace('.', 'p')}"
+            descriptor = {'arm': identifier, 'knob': knob, 'tag': tag}
+            if identifier == 'steer':
+                descriptor.update(model=baseline_models[family], steering=str(direction))
             else:
-                checkpoint = Path(baseline_models[family])
-                descriptor['steering'] = str(direction)
-            if identifier != 'steer':
-                args = ['repair', '--family', family, '--arm', identifier, '--knob', str(knob)]
-                inputs = []
-                if identifier == 'circuit':
-                    args += ['--scores', str(circuit_summary), '--top-fraction', str(arm.get('top_fraction', 0.2))]
-                    inputs = [circuit_summary]
-                runner.run(tag + '-weights', args, [checkpoint], inputs)
-            model_id = baseline_models[family] if identifier == 'steer' else str(checkpoint)
-            descriptor.update(model=model_id, tag=tag)
-            descriptors[knob] = descriptor
-            args = ['generate', '--family', family, '--split', 'repair', '--tag', tag + '-repair',
-                    '--limit', str(repair_limit), '--preamble', 'default',
-                    '--max-new-tokens', str(experiments.get('selection_max_new_tokens', 64)), '--batch-size', str(batch),
-                    *_model_args(model_id, descriptor)]
-            artifact = runner.directory / 'gens' / f'{tag}-repair.jsonl'
-            runner.run(tag + '-repair', args, [artifact], [data_manifest])
-            candidates[knob] = quick_rates(_rows(artifact))
-        chosen, reason = pick(candidates, reference_rates, original_rates, spec['thresholds']['over_refusal_increase_max'])
-        selection['arms'][identifier] = {'knob': chosen, 'reason': reason,
-                                        'candidates': {str(k): v for k, v in candidates.items()},
-                                        'selected': descriptors[chosen]}
+                descriptor['model'] = str(weights(identifier, knob, arm))
+            repair_evidence(tag, descriptor['model'], descriptor)
+            candidates[identifier][knob] = descriptor
+    if not candidates:
+        raise ValueError('No repair arms were evaluated')
+    repair_tags = [t + '-repair' for t in baseline_models] + [d['tag'] + '-repair' for arm in candidates.values()
+                                                              for d in arm.values()]
+    repair_gens = [runner.directory / 'gens' / f'{tag}.jsonl' for tag in repair_tags]
+    runner.run('repair-judge-warm', ['judge-warm', '--tags', ','.join(repair_tags), '--split', 'repair',
+                                     '--judges', judges], [], repair_gens)
+
+    def judged_repair(tag: str) -> tuple[dict, dict]:
+        """A tag's repair-split rates from the two-judge consensus, and its dev-split accuracy by language."""
+        path = runner.directory / 'judged' / (f'{tag}-repair.jsonl' if judges == 'router' else f'{tag}-repair.{judges}.jsonl')
+        runner.run(tag + '-repair-judge', ['judge', '--tag', tag + '-repair', '--split', 'repair', '--judges', judges],
+                   [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}-repair.jsonl'])
+        capability = json.loads(capability_path(runner.directory, tag + '-repair', 'default').read_text(encoding='utf-8'))
+        return judged_rates(_rows(path)), {lang: cell['accuracy'] for lang, cell in capability['languages'].items()}
+
+    reference_rates, _ = judged_repair('global')
+    original_rates, original_capability = judged_repair(family)
+    worst_language, target_reason = target_language(reference_rates, original_rates)
+    selection = {'split': 'repair', 'preamble': 'default', 'scorer': 'two-judge consensus', 'judges': judges,
+                 'capability_split': 'dev', 'worst_language': worst_language, 'target_reason': target_reason,
+                 'reference_rates': reference_rates, 'drifted_rates': original_rates,
+                 'drifted_capability': original_capability, 'arms': {}, 'omitted': []}
+    if skip_circuit:
+        selection['omitted'] = [{'arm': arm, 'reason': 'explicit --skip-circuit'} for arm in CIRCUIT_ARMS]
+    selected_descriptors = {}
+    for identifier, descriptors in candidates.items():
+        evidence, scored = {}, {}
+        for knob, descriptor in descriptors.items():
+            rates, capability = judged_repair(descriptor['tag'])
+            evidence[str(knob)] = {'rates': rates, 'capability': capability}
+            scored[knob] = objective(rates, capability, reference_rates, original_rates, original_capability,
+                                     worst_language)
+            evidence[str(knob)]['objective'] = scored[knob]
+        chosen, reason = pick(scored)
+        selection['arms'][identifier] = {'knob': chosen, 'reason': reason, 'candidates': evidence,
+                                         'selected': descriptors[chosen]}
         selected_descriptors[identifier] = descriptors[chosen]
         atomic_json(runner.directory / 'selection.json', selection)
-    # This comparison uses repair data only; held-out evaluations never choose a candidate.
+
     def score(descriptor):
-        rates = selection['arms'][descriptor['arm']]['candidates'][str(descriptor['knob'])]
-        harmful = min(v.get('harmful', 0) for v in rates.values())
-        penalty = max([max(0, rates[l].get('benign', 0) - original_rates.get(l, {}).get('benign', 0)) for l in rates] or [0])
-        return harmful - 2 * penalty
-    if not selected_descriptors:
-        raise ValueError('No repair arms were evaluated')
+        return selection['arms'][descriptor['arm']]['candidates'][str(descriptor['knob'])]['objective']['score']
+
+    # This comparison uses repair data only; held-out evaluations never choose a candidate.
     # A steering vector cannot be represented by a plain quantized checkpoint.
     weight_candidates = [d for d in selected_descriptors.values() if not d.get('steering')]
     winner = max(weight_candidates or list(selected_descriptors.values()), key=score)
     selection['selected_for_quantization'] = winner
+    # The localisation control: the best circuit arm's vector and knob, on random layers outside the circuit.
+    circuit_selected = [d for d in selected_descriptors.values() if d['arm'] in CIRCUIT_ARMS]
+    controls = []
+    if circuit_selected:
+        best_circuit = max(circuit_selected, key=score)
+        arm = next(a for a in spec['repair_arms'] if a['id'] == best_circuit['arm'])
+        for seed in experiments.get('control_seeds', []):
+            knob = best_circuit['knob']
+            checkpoint = weights(best_circuit['arm'], knob, arm, seed)
+            controls.append({'arm': best_circuit['arm'], 'knob': knob, 'random_seed': seed, 'model': str(checkpoint),
+                             'tag': f"{best_circuit['tag']}-rand{seed}"})
+        selection['controls'] = controls
     atomic_json(runner.directory / 'selection.json', selection)
-    for descriptor in selected_descriptors.values():
+    evaluated = [*selected_descriptors.values(), *controls]
+    for descriptor in evaluated:
         tag = descriptor['tag']
         runner.run(tag + '-heldout', ['generate', '--family', family, '--tag', tag, '--batch-size', str(batch),
                                      *_model_args(descriptor['model'], descriptor)],
                    [runner.directory / 'gens' / f'{tag}.jsonl'], [data_manifest])
         _capability_stages(runner, tag, descriptor['model'], family, spec, descriptor)
-    evaluation_tags = ['global', family] + [d['tag'] for d in selected_descriptors.values()]
+    evaluation_tags = ['global', family] + [d['tag'] for d in evaluated]
+    runner.run('heldout-judge-warm', ['judge-warm', '--tags', ','.join(evaluation_tags), '--judges', judges], [],
+               [runner.directory / 'gens' / f'{tag}.jsonl' for tag in evaluation_tags])
     for tag in evaluation_tags:
         path = runner.directory / 'judged' / (f'{tag}.jsonl' if judges == 'router' else f'{tag}.{judges}.jsonl')
         runner.run(tag + '-judge-' + judges, ['judge', '--tag', tag, '--judges', judges],
@@ -316,7 +383,8 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
             raise ValueError('Only steering was available; no compatible weight checkpoint for Q4 export')
         server_binary = os.environ.get('LANGSAFE_LLAMA_SERVER') or shutil.which('llama-server')
         if not server_binary:
-            server_binary = str(ROOT / 'cache' / 'llama.cpp' / 'build' / 'bin' / 'llama-server')
+            server_binary = str(ROOT / 'cache' / 'llama.cpp' / 'build' / 'bin'
+                                / ('llama-server.exe' if os.name == 'nt' else 'llama-server'))
         # All three precision-matched checkpoints are evaluated on the same inputs.
         quantization_models = [*baseline_models.items(), (winner['tag'], winner['model'])]
         for source_tag, source_model in quantization_models:

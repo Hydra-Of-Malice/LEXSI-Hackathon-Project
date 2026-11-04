@@ -185,9 +185,10 @@ def cmd_capability(a):
     settings = {'model': a.model, 'quant': a.quant, 'adapter': a.adapter,
                 'steering': a.steering, 'strength': a.strength, 'gguf': a.gguf,
                 'languages': languages, 'limit': a.limit, 'preamble': a.preamble or 'default',
+                'mmlu_split': a.mmlu_split,
                 'spec': spec_digest(spec), 'checkpoint_identity': checkpoint_identity(a.model),
                 'variant': _variant(a), 'gguf_sha256': file_sha256(a.gguf) if a.gguf else None}
-    prepared = {lang: load_items(lang, a.limit) for lang in languages}
+    prepared = {lang: load_items(lang, a.limit, split=a.mmlu_split) for lang in languages}
     hashes = {lang: hashlib.sha256(json.dumps(items, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
               for lang, items in prepared.items()}
     settings['data_sha256'] = hashes
@@ -231,9 +232,27 @@ def cmd_capability(a):
                 record['accuracy'] = record['correct'] / record['n']
                 atomic_json(path, result)
                 print(f'{a.tag}/{language}: {record["n"]}/{len(items)}; {record["correct"]} correct', flush=True)
-    result['complete'] = all(result['languages'][l]['n'] == len(load_items(l, a.limit)) for l in languages)
+    result['complete'] = all(result['languages'][l]['n'] == len(prepared[l]) for l in languages)
     atomic_json(path, result)
     _ledger('capability', {'tag': a.tag, 'model': a.model, 'artifact': str(path), 'sha256': file_sha256(path)})
+
+
+def cmd_judge_warm(a):
+    """Fill the verdict cache for many tags with one load of each judge; the per-tag `judge` stages then hit the cache."""
+    from .data.build import load_split
+    from .judge.llm_judge import LLMJudge
+    prompts = {p.id: p for p in load_split(a.split)}
+    items = [(prompts[row['id']].text, row['response'], row['lang'])
+             for tag in a.tags.split(',') for row in _read_rows(RUNS / 'gens' / f'{tag}.jsonl')]
+    for cfg in _judges_cfg(load_spec(), a.judges):
+        kwargs = {k: cfg[k] for k in ('quant', 'dtype', 'batch_size', 'checkpoint_identity', 'cache_path', 'gguf')
+                  if k in cfg}
+        judge = LLMJudge(cfg['name'], cfg['base_url'], cfg['model'], **kwargs)
+        try:
+            judge.judge_many(items)
+        finally:
+            judge.close()
+    print(f'{len(items)} responses warmed for {a.judges} judges', flush=True)
 
 
 def cmd_circuit(a):
@@ -272,7 +291,13 @@ def cmd_repair(a):
     elif a.arm == 'circuit':
         if not a.scores:
             raise ValueError('circuit repair requires --scores')
-        output = arms.circuit(model_id, a.scores, a.knob, a.family, top_fraction=a.top_fraction)
+        output = arms.circuit(model_id, a.scores, a.knob, a.family, top_fraction=a.top_fraction,
+                              random_seed=a.random_seed)
+    elif a.arm == 'circuit_merge':
+        if not a.scores:
+            raise ValueError('circuit repair requires --scores')
+        output = arms.circuit(model_id, a.scores, a.knob, a.family, top_fraction=a.top_fraction, vector='drift',
+                              random_seed=a.random_seed)
     elif a.arm == 'merge_back':
         output = arms.merge_back(model_id, a.knob, a.family)
     else:
@@ -394,6 +419,8 @@ def main(argv=None):
         command.add_argument('--quant', choices=['nf4']); command.add_argument('--adapter')
         command.add_argument('--steering'); command.add_argument('--strength', type=float)
         command.add_argument('--limit', type=int); command.add_argument('--batch-size', type=int)
+        if name == 'capability':
+            command.add_argument('--mmlu-split', choices=['test','dev'], default='test')
         command.add_argument('--preamble', choices=['default','none'])
         command.add_argument('--gguf'); command.add_argument('--server', default='http://127.0.0.1:8080')
         if name == 'generate':
@@ -404,6 +431,9 @@ def main(argv=None):
     command = sub.add_parser('judge'); command.set_defaults(fn=cmd_judge)
     command.add_argument('--tag', required=True); command.add_argument('--judges', choices=JUDGE_SETS, default='local')
     command.add_argument('--split', choices=['repair','heldout'], default='heldout'); command.add_argument('--calibration')
+    command = sub.add_parser('judge-warm'); command.set_defaults(fn=cmd_judge_warm)
+    command.add_argument('--tags', required=True); command.add_argument('--judges', choices=JUDGE_SETS, default='local')
+    command.add_argument('--split', choices=['repair','heldout'], default='heldout')
     command = sub.add_parser('calibrate'); command.set_defaults(fn=cmd_calibrate)
     command.add_argument('--tag', required=True); command.add_argument('--judges', choices=['local','router'], default='local')
     command.add_argument('--sheet'); command.add_argument('--compare-router', action='store_true')
@@ -417,7 +447,8 @@ def main(argv=None):
     command.add_argument('--task-csv'); command.add_argument('--no-parity-check', action='store_true')
     command = sub.add_parser('repair'); command.set_defaults(fn=cmd_repair)
     command.add_argument('--family', choices=['fire','earth'], required=True); command.add_argument('--model')
-    command.add_argument('--arm', choices=['resta','circuit','merge_back','steer'], required=True)
+    command.add_argument('--arm', choices=['resta','circuit','circuit_merge','merge_back','steer'], required=True)
+    command.add_argument('--random-seed', type=int)
     command.add_argument('--knob', type=float, default=0.1); command.add_argument('--scores')
     command.add_argument('--top-fraction', type=float, default=0.2); command.add_argument('--layer', type=int, default=24)
     command.add_argument('--limit', type=int, default=20)

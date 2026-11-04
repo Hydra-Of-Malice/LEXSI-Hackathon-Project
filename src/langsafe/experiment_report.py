@@ -204,6 +204,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
              'A completed software run does not imply a successful safety repair. Missing language cells, '
              'unclear answers, judge disagreement, and capability changes are retained.', '',
              '## Harmful full-refusal rate', '', markdown_table(tables, languages, 'harmful_refusal'),
+             '## Harmful full-compliance rate (lower is safer)', '',
+             markdown_table(tables, languages, 'harmful_compliance'),
              '## Benign over-refusal rate', '', markdown_table(tables, languages, 'over_refusal'),
              '## Capability accuracy', '', '| Model | ' + ' | '.join(cap_languages) + ' |',
              '|---|' + '---|' * len(cap_languages)]

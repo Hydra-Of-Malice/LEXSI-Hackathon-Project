@@ -1,8 +1,9 @@
 """Chat clients for judging and translation, with an on-disk cache.
 
-Two backends share one interface (`chat`, `chat_many`, `close`):
+Three backends share one interface (`chat`, `chat_many`, `close`):
 - `ChatClient`: any OpenAI-compatible endpoint (the Hugging Face router by default; billed to inference credits).
 - `LocalChatClient`: the same model family run locally in NF4 on CUDA or FP16 on MPS (no credits).
+- `ServerChatClient`: a local GGUF behind llama-server (no credits, and a third of the download on a slow link).
 
 Calls are cached by backend, checkpoint identity, precision, messages and parameters.
 `make_client(base_url="local", ...)` picks the local backend.
@@ -13,9 +14,14 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import shutil
+import socket
 import sqlite3
+import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -245,7 +251,93 @@ class LocalChatClient:
             self._cache.close()
 
 
-def make_client(base_url: str, model: str, **kwargs) -> ChatClient | LocalChatClient:
+def llama_server_binary() -> str:
+    name = "llama-server.exe" if os.name == "nt" else "llama-server"
+    return (os.environ.get("LANGSAFE_LLAMA_SERVER") or shutil.which("llama-server")
+            or str(ROOT / "cache" / "llama.cpp" / "build" / "bin" / name))
+
+
+class ServerChatClient:
+    """A GGUF model behind a private llama-server. It starts on the first cache miss and stops on close(), so a fully
+    cached re-run starts nothing. Requests run in parallel slots; each slot holds `slot_context` tokens."""
+
+    def __init__(self, model: str, gguf: str | Path, batch_size: int = 4, cache_path: Path | None = None,
+                 slot_context: int = 3072, **_ignored):
+        self.model, self.gguf = model, Path(gguf)
+        self.batch_size, self.slot_context = batch_size, slot_context
+        identity = {"backend": "llama-server-gguf", "model": model, "gguf": self.gguf.name,
+                    "gguf_bytes": self.gguf.stat().st_size}
+        self._cache = _Cache(_cache_path(cache_path), json.dumps(identity, sort_keys=True))
+        self._server = self._url = None
+
+    def _start(self) -> None:
+        if self._server is not None:
+            return
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        self._url = f"http://127.0.0.1:{port}"
+        self._server = subprocess.Popen(
+            [llama_server_binary(), "-m", str(self.gguf), "--host", "127.0.0.1", "--port", str(port), "-ngl", "99",
+             "-np", str(self.batch_size), "-c", str(self.slot_context * self.batch_size)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(600):
+            if self._server.poll() is not None:
+                raise RuntimeError(f"llama-server exited while loading {self.gguf}")
+            try:
+                with urllib.request.urlopen(self._url + "/health", timeout=2) as response:
+                    if response.status == 200:
+                        return
+            except (OSError, ValueError):
+                time.sleep(1)
+        raise RuntimeError("llama-server did not become ready")
+
+    def _complete(self, messages: list[dict], params: dict) -> str:
+        body = json.dumps({"messages": messages, "temperature": 0, "seed": 0, "max_tokens": params["max_tokens"],
+                           "chat_template_kwargs": {"enable_thinking": False}}).encode()
+        request = urllib.request.Request(self._url + "/v1/chat/completions", data=body,
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request, timeout=900) as response:
+            return json.loads(response.read())["choices"][0]["message"].get("content") or ""
+
+    def chat(self, messages: list[dict], **params) -> str:
+        return self.chat_many([messages], **params)[0]
+
+    def chat_many(self, batch: list[list[dict]], **params) -> list[str]:
+        from tqdm import tqdm
+
+        params = {"temperature": 0, "max_tokens": 512, **params}
+        keys = [self._cache.key(m, params) for m in batch]
+        out = [self._cache.get(k) for k in keys]
+        todo = [i for i, v in enumerate(out) if v is None]
+        if not todo:
+            return out
+        self._start()
+
+        def run(i: int) -> None:
+            out[i] = self._complete(batch[i], params)
+            self._cache.put(keys[i], out[i])
+
+        with ThreadPoolExecutor(self.batch_size) as pool:
+            list(tqdm(pool.map(run, todo), total=len(todo), desc=f"gguf {self.model}", leave=False))
+        return out
+
+    def close(self) -> None:
+        if self._server is not None:
+            self._server.terminate()
+            try:
+                self._server.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                self._server.kill()
+                self._server.wait()
+            self._server = None
+        self._cache.close()
+
+
+def make_client(base_url: str, model: str, *, gguf: str | None = None, **kwargs):
+    """`gguf` is used when that file is on this machine; otherwise the transformers backend loads the same model."""
     if base_url == "local":
+        if gguf and (ROOT / gguf).is_file():
+            return ServerChatClient(model, ROOT / gguf, **kwargs)
         return LocalChatClient(model, **kwargs)
     return ChatClient(base_url, model, **kwargs)

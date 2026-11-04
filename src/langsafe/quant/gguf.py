@@ -101,6 +101,8 @@ def quantize_gguf(source: str | Path, out: str | Path, llama_cpp_dir: str | Path
     """Quantize through llama-quantize; no inference server is started here."""
     source, out, kit = Path(source), Path(out), Path(llama_cpp_dir)
     executable = kit / "build" / "bin" / "llama-quantize"
+    if not executable.exists() and executable.with_suffix(".exe").exists():
+        executable = executable.with_suffix(".exe")
     if not executable.is_file():
         raise FileNotFoundError(f"build llama.cpp's llama-quantize first: {executable}")
     if not source.is_file():

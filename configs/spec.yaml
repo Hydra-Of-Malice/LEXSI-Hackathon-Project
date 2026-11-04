@@ -48,8 +48,9 @@ experiment:
   family: fire
   local_batch_size: 2
   capability_batch_size: 1
-  repair_per_cell: 20
-  selection_max_new_tokens: 64
+  repair_per_cell: 40
+  selection_max_new_tokens: 96
+  control_seeds: [1, 2, 3]       # random-layer controls for the best circuit arm
   circuit_pairs: 32
   circuit_examples: 16
   circuit_ig_steps: 3
@@ -73,9 +74,11 @@ judging:
     - name: aya-expanse-8b
       base_url: local
       model: CohereLabs/aya-expanse-8b
+      gguf: cache/gguf/aya-expanse-8b-Q4_K_M.gguf    # used when present (8 GB GPU, slow link); else transformers
     - name: qwen3-8b
       base_url: local
       model: Qwen/Qwen3-8B
+      gguf: cache/gguf/Qwen3-8B-Q4_K_M.gguf
   hand_check_sample: 200             # random sample hand-labelled to report judge accuracy
   min_judge_kappa: 0.6               # a language is reported only if judge agreement reaches this
 
@@ -95,13 +98,17 @@ repair_arms:             # knobs are chosen on the repair split only (src/langsa
   - id: resta             # Fire + a(Global - Base), whole model
     knob: alpha
     values: [0.1, 0.25, 0.4]
-  - id: circuit           # same vector, only CircuitKIT's top layers/modules (SafeTune C-ΔΘ)
+  - id: circuit           # same vector, only CircuitKIT's top 20% of layers (SafeTune C-ΔΘ)
     knob: strength
-    values: [0.5, 1.0, 1.5]
+    values: [0.1, 0.25, 0.4, 0.7, 1.0]   # includes ReSta's alphas, so step sizes can be compared directly
     top_fraction: 0.2
   - id: merge_back        # (1 - l) Fire + l Global (SafeTune WiSE-FT)
     knob: lambda
     values: [0.25, 0.5]
+  - id: circuit_merge     # Fire + l (Global - Fire), only CircuitKIT's top 20% of layers (SafeTune C-ΔΘ)
+    knob: lambda
+    values: [0.25, 0.5, 0.75, 1.0]
+    top_fraction: 0.2
   - id: steer             # refusal direction at layer 24, run time (SafeTune RefusalDirectionModel)
     knob: strength
     values: [0.5, 1.0, 2.0]
