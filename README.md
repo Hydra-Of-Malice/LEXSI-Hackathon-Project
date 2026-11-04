@@ -19,6 +19,7 @@ Fire and 77.5% for Earth (Tiny Aya tech report, Table 7). This project:
 
 | Read | For |
 |---|---|
+| [docs/PROGRESS.md](docs/PROGRESS.md) | What is running now, who owns what, what needs a person |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | Which machine runs what, Mac (M1 Max) setup, the day-1 command |
 | [docs/brief/mentor_brief.pdf](docs/brief/mentor_brief.pdf) | One-page summary we share with mentors |
 | [docs/proposal/](docs/proposal/Lexsi_Hackathon_Proposal_Multilingual_Safety_Repair.pdf) | Full 10-page proposal with references |
