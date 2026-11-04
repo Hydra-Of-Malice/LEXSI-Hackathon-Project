@@ -7,15 +7,18 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Downloading the 4-bit models for the pilot | Full Fire run: baseline, circuits, repairs, 4-bit checks |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | 4-bit Global vs Fire pilot on the repair split; downloading the full Global, Fire and Base weights | Full Fire run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything (see 4 Nov) |
-| Aditya | HF login and the four model licences | Send the brief to mentors |
+| Aditya | Accept the `tiny-aya-earth` licence (needed only for the Earth run) | Send the brief to mentors |
 
 ## Still needs a person
-- Hugging Face login and licences on the laptop (blocking the full run).
 - Native readers for Hindi/Hinglish, Bengali and Tamil, to review translations and hand-label a sample.
 - HF credits, for the 32B judges that verify the free local judges.
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
+
+## 5 November 2026
+- **00:35** HF login done on the laptop. Global, Fire, Base and Aya Expanse are accessible; Earth still needs its
+  licence accepted. Full weights are downloading while the 4-bit pilot runs.
 
 ## 4 November 2026
 - **23:10** Still waiting on the HF login on the laptop. llama.cpp (CUDA build) is installed. The first 4-bit download
