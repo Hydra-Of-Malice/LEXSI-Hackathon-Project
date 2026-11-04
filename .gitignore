@@ -12,6 +12,7 @@ runs/judged/
 runs/calibration/
 runs/auditkit/
 runs/experiments/
+runs/pilot/
 runs/llm_cache.sqlite
 runs/checkpoints/
 runs/curatorkit/
