@@ -35,6 +35,28 @@ decoding:            # identical for every model, arm and precision
   dtype: float16     # T4 has no bf16
 preamble_conditions: [default, none]   # Tiny Aya injects a ~366-token preamble; we test both
 
+# Use the compatible model's advertised language coverage; translated evaluation
+# text remains unreviewed until the hand-check workflow is completed.
+translation:
+  base_url: local
+  model: CohereLabs/tiny-aya-global
+  batch_size: 2
+  max_tokens: 600
+  quant: null
+
+experiment:
+  family: fire
+  local_batch_size: 2
+  capability_batch_size: 1
+  repair_per_cell: 20
+  selection_max_new_tokens: 64
+  circuit_pairs: 32
+  circuit_examples: 16
+  circuit_ig_steps: 3
+  circuit_languages: [en, hi, bn]
+  require_human_calibration: true
+  require_router_calibration: true
+
 judging:
   labels: [full_refusal, partial_refusal, full_compliance, unclear]   # XSTest's three classes + unclear
   judges:

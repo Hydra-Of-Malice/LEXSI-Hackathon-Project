@@ -52,41 +52,54 @@ The full design is in [SPEC.md](SPEC.md) (pre-registered metrics, thresholds and
 
 ## Status
 
-| Piece | State |
-|---|---|
-| Data build from real sources (Aya red-teaming, MultiJail, XSTest), group splits, leakage check | ✅ runs |
-| Judges, statistics, report tables, ledger | ✅ unit-tested |
-| Generation, capability eval, AuditKIT bridge, CircuitKIT stage, SafeTune arms, GGUF verify | ✅ written against the kits' source, ⏳ first GPU run = day-1 smoke test |
-| Runs on CUDA, Apple Silicon (MPS) or CPU; free local judge pair and translator (no inference credits needed) | ✅ written and unit-tested (28 tests); ⏳ MPS path first runs on the M1 Max |
-| Translations (Tamil, Hinglish, benign look-alikes) | ⏳ `build-data --translate --translator local` on the M1 Max |
-| Results | ⏳ none yet |
+The executable experiment now connects data preparation, original-model baselines, circuit discovery, all four
+repair arms, selection on repair data, held-out evaluation, the two local judges, AuditKIT, Q4 export, and reports.
+Generation and capability support both preamble conditions. Stages resume only when their inputs, settings, and
+saved artifacts match. The development profile uses small real samples and is separate from the canonical spec.
+
+The real development run completed all four arms and nine FP16/Q4 model variants: 702 held-out responses,
+1,404 individual judge verdicts, and 1,080 capability decisions. All 126 tests pass, the 65 active stage records
+verify, and the selected checkpoint runs the benign demo. Q4 inference measured about 78–80 decode tokens/s
+on the M1 Max. **No repair passed acceptance:** improvements are mixed, capability drops remain, and judging
+is uncalibrated. See [development results](docs/DEVELOPMENT_RESULTS.md) for scores, limits, and local artifacts.
+The full benchmark needs more storage; human/translation review, mentor freeze, and CUDA NF4 remain pending.
+
+The current Mac inventory, completed full-data stage, storage constraint, and
+review-sheet paths are in [Mac status](docs/MAC_STATUS.md). The portable CUDA
+plan is in [CUDA evaluation](docs/CUDA_EVALUATION.md).
+
+Scientific acceptance is separate from software completion. Unreviewed translations, missing human/router
+calibration, missing precision conditions, and incomplete evaluation cells cannot produce a successful repair claim.
+The draft spec remains unfrozen; nobody's labels or mentor approval are generated automatically.
 
 ## Quick start
 
 ```bash
-uv venv --python 3.12 .venv && uv pip install --python .venv/Scripts/python.exe -e ".[dev]"
-.venv/Scripts/python.exe -m pytest -q                        # CPU tests
-.venv/Scripts/python.exe -m langsafe.cli build-data --no-curatorkit
+uv venv --python 3.12 .venv
+LANGSAFE_PYTHON=.venv/bin/python bash scripts/install_kits.sh --repair
+.venv/bin/python -m pytest -q
 ```
 
 **Who runs what, where** (M1 Max, Kaggle, laptop, HF router), plus the Mac setup: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 Day-1 smoke test on any machine: `JUDGES=local bash scripts/day1.sh`. On Kaggle/Colab, open
 [`notebooks/00_day1_smoke_test.ipynb`](notebooks/00_day1_smoke_test.ipynb).
 
-Full pipeline:
+Run the complete local integration experiment, then the larger configured experiment:
 
 ```bash
-bash scripts/install_kits.sh
-hf auth login                             # Tiny Aya + Aya Expanse 8B licences accepted
-langsafe build-data --translate --translator local
-langsafe generate --model CohereLabs/tiny-aya-global --tag global-base --family fire
-langsafe generate --model CohereLabs/tiny-aya-fire   --tag fire-base   --family fire
-langsafe judge --tag global-base --judges local && langsafe judge --tag fire-base --judges local
-langsafe report --tags global-base,fire-base --family fire --judges local
-# --judges router: the pre-registered 32B pair on the HF router (needs inference credits); rules: provisional only
-langsafe capability --model CohereLabs/tiny-aya-fire --tag fire-base
-langsafe ledger-verify
+bash scripts/run_experiment.sh --family fire --profile development
+.venv/bin/python -m langsafe.cli status --directory runs/experiments/development/fire
+
+bash scripts/run_experiment.sh --family fire --profile full
 ```
+
+Rerun the same command after an interruption. Results, checkpoints, logs, audit sheets, and the hash-verified stage
+manifest are isolated under `runs/experiments/<profile>/<family>/`. `report.md` and `report.json` contain aggregate
+results and explicit validation gaps. See the [runbook](docs/RUNBOOK.md) for CircuitKIT's separate environment,
+llama.cpp, calibration, and the interactive demo. Only one model job should use the accelerator at a time.
+
+This is the hackathon's repair-without-retraining track: the weight arms apply compatible checkpoint deltas or
+interpolation, and steering adds an activation direction. No gradient-training claim is made for these methods.
 
 ## Responsible release
 - Only prompts, labels, metrics, adapters/checkpoints of **repaired** models and logs are published.

@@ -7,6 +7,7 @@ Dedup runs per language: a multilingual run would treat parallel translations as
 from __future__ import annotations
 
 import json
+import os
 from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
@@ -14,7 +15,7 @@ from pathlib import Path
 from ..config import ROOT
 from .records import Prompt, write_jsonl
 
-WORK = ROOT / "runs" / "curatorkit"
+WORK = Path(os.environ.get('LANGSAFE_RUNS_DIR', ROOT / 'runs')) / 'curatorkit'
 
 
 def _to_sample(row: dict):

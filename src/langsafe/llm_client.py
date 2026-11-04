@@ -2,14 +2,15 @@
 
 Two backends share one interface (`chat`, `chat_many`, `close`):
 - `ChatClient`: any OpenAI-compatible endpoint (the Hugging Face router by default; billed to inference credits).
-- `LocalChatClient`: the same model family run on the local GPU in NF4 (Kaggle T4 or a laptop; no credits).
+- `LocalChatClient`: the same model family run locally in NF4 on CUDA or FP16 on MPS (no credits).
 
-Every call is cached by a hash of (model, messages, params), so re-running an evaluation never re-pays for, or
-silently changes, a judgement that was already made. `make_client(base_url="local", ...)` picks the local backend.
+Calls are cached by backend, checkpoint identity, precision, messages and parameters.
+`make_client(base_url="local", ...)` picks the local backend.
 """
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import sqlite3
@@ -23,6 +24,50 @@ from .config import ROOT
 CACHE_PATH = ROOT / "runs" / "llm_cache.sqlite"
 
 
+def _cache_path(path: Path | None) -> Path:
+    if path is not None:
+        return Path(path)
+    return Path(os.environ.get('LANGSAFE_RUNS_DIR', ROOT / 'runs')) / 'llm_cache.sqlite'
+
+
+def _version(package: str) -> str:
+    try:
+        return importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        return "uninstalled"
+
+
+def _checkpoint_identity(model: str) -> dict:
+    """Record cached revision or local file identity without loading weights or accessing the network.
+
+    Weight metadata detects replaced local files without hashing multi-gigabyte checkpoints on every cache hit.
+    This is cache invalidation evidence, not a substitute for the experiment's full weight provenance hash.
+    """
+    path = Path(model).expanduser()
+    if not path.is_dir():
+        try:
+            from huggingface_hub import try_to_load_from_cache
+
+            cached = try_to_load_from_cache(model, "config.json")
+            if isinstance(cached, str):
+                path = Path(cached).parent
+        except (ImportError, OSError, ValueError):
+            pass
+    if not path.is_dir():
+        return {"model": model, "revision": "unknown"}
+    identity = {"path": str(path.resolve()), "files": []}
+    for item in sorted(path.iterdir()):
+        if item.is_file() and (item.suffix in {".json", ".safetensors", ".bin", ".model", ".jinja"}):
+            stat = item.stat()
+            entry = {"name": item.name, "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+            if item.suffix in {".json", ".jinja"}:
+                entry["sha256"] = hashlib.sha256(item.read_bytes()).hexdigest()
+            identity["files"].append(entry)
+    if path.parent.name == "snapshots":
+        identity["revision"] = path.name
+    return identity
+
+
 class _Cache:
     def __init__(self, path: Path, model_key: str):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -30,6 +75,7 @@ class _Cache:
         self._db.execute("CREATE TABLE IF NOT EXISTS cache (k TEXT PRIMARY KEY, v TEXT)")
         self._lock = threading.Lock()
         self.model_key = model_key
+        self._closed = False
 
     def key(self, messages: list[dict], params: dict) -> str:
         blob = json.dumps({"m": self.model_key, "msgs": messages, "p": params}, sort_keys=True, ensure_ascii=False)
@@ -45,10 +91,16 @@ class _Cache:
             self._db.execute("INSERT OR REPLACE INTO cache VALUES (?, ?)", (k, v))
             self._db.commit()
 
+    def close(self) -> None:
+        with self._lock:
+            if not self._closed:
+                self._db.close()
+                self._closed = True
+
 
 class ChatClient:
-    def __init__(self, base_url: str, model: str, api_key_env: str = "HF_TOKEN", cache_path: Path = CACHE_PATH,
-                 max_retries: int = 5, workers: int = 8):
+    def __init__(self, base_url: str, model: str, api_key_env: str = "HF_TOKEN", cache_path: Path | None = None,
+                 max_retries: int = 5, workers: int = 8, checkpoint_identity: str | None = None):
         from openai import OpenAI
 
         key = os.environ.get(api_key_env)
@@ -58,7 +110,13 @@ class ChatClient:
         self.model = model
         self.max_retries = max_retries
         self.workers = workers
-        self._cache = _Cache(cache_path, model)
+        if max_retries < 1 or workers < 1:
+            self.client.close()
+            raise ValueError("max_retries and workers must be positive")
+        identity = {"backend": "openai-compatible", "base_url": base_url.rstrip("/"), "model": model,
+                    "checkpoint": checkpoint_identity, "precision": "provider-controlled"}
+        self._cache = _Cache(_cache_path(cache_path), json.dumps(identity, sort_keys=True))
+        self._closed = False
 
     def chat(self, messages: list[dict], **params) -> str:
         params = {"temperature": 0, "max_tokens": 512, **params}
@@ -85,30 +143,50 @@ class ChatClient:
             return list(ex.map(lambda m: self.chat(m, **params), batch))
 
     def close(self) -> None:
-        pass
+        if not self._closed:
+            self._closed = True
+            try:
+                self.client.close()
+            finally:
+                self._cache.close()
 
 
 class LocalChatClient:
     """Greedy, batched generation on the local GPU. The model loads on the first cache miss, so a fully cached
-    re-run needs no GPU. Cache keys carry a `local:` prefix and the quantisation, so they never collide with the
-    hosted model of the same name."""
+    re-run needs no model. Backend, device, precision, runtime versions and checkpoint identity keep local
+    verdicts separate from hosted verdicts and changed checkpoints."""
 
-    def __init__(self, model: str, quant: str | None = "auto", batch_size: int = 8, cache_path: Path = CACHE_PATH):
+    def __init__(self, model: str, quant: str | None = "auto", batch_size: int = 8, cache_path: Path | None = None,
+                 dtype: str = "float16", checkpoint_identity: str | None = None):
+        from .gen.model import best_device, resolve_model
+
+        try:
+            device = best_device()
+        except ImportError:
+            device = "unavailable"
         if quant == "auto":            # NF4 on CUDA; fp16 elsewhere (an 8B judge in fp16 is ~16 GB, fine on a 64 GB Mac)
-            from .gen.model import best_device
-
-            quant = "nf4" if best_device() == "cuda" else None
+            quant = "nf4" if device == "cuda" else None
+        if batch_size < 1:
+            raise ValueError("batch_size must be positive")
         self.model = model
+        self._resolved_model = resolve_model(model)
         self.quant = quant
+        self.dtype = dtype
         self.batch_size = batch_size
-        self._cache = _Cache(cache_path, f"local:{model}:{quant}")
+        identity = {"backend": "local-transformers", "model": model, "quant": quant, "dtype": dtype,
+                    "effective_dtype": "float32" if device == "cpu" and dtype == "float16" else dtype,
+                    "device": device, "checkpoint": _checkpoint_identity(self._resolved_model),
+                    "declared_checkpoint": checkpoint_identity, "torch": _version("torch"),
+                    "transformers": _version("transformers")}
+        self._cache = _Cache(_cache_path(cache_path), json.dumps(identity, sort_keys=True))
         self._m = self._tok = None
+        self._closed = False
 
     def _load(self):
         if self._m is None:
             from .gen.model import load
 
-            self._m, self._tok = load(self.model, dtype="float16", quant=self.quant)
+            self._m, self._tok = load(self._resolved_model, dtype=self.dtype, quant=self.quant)
             self._tok.padding_side = "left"
             if self._tok.pad_token is None:
                 self._tok.pad_token = self._tok.eos_token
@@ -148,14 +226,23 @@ class LocalChatClient:
         return out
 
     def close(self) -> None:
-        if self._m is not None:
-            import gc
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            if self._m is not None or self._tok is not None:
+                import gc
 
-            import torch
+                import torch
 
-            self._m = self._tok = None
-            gc.collect()
-            torch.cuda.empty_cache()
+                self._m = self._tok = None
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                if torch.backends.mps.is_available():
+                    torch.mps.empty_cache()
+        finally:
+            self._cache.close()
 
 
 def make_client(base_url: str, model: str, **kwargs) -> ChatClient | LocalChatClient:

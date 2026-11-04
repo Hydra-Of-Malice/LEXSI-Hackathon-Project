@@ -50,12 +50,13 @@ def scorers() -> list:
     return [judged_full_refusal, rule_refusal, unclear]
 
 
-def record_run(samples: list, variant: str, out_dir: Path, tags: list[str] | None = None):
+def record_run(samples: list, variant: str, out_dir: Path, tags: list[str] | None = None,
+               metadata: dict | None = None):
     """Evaluate precomputed outputs with our scorers and save the AuditKIT run (JSON + lexsi_provenance.json)."""
     import auditkit as ak
 
-    cfg = ak.RunConfig(temperature=0.0, extra={"variant": variant})
-    result = ak.evaluate(samples, "precomputed", scorers(), config=cfg, experiment_name="langsafe",
+    cfg = ak.RunConfig(temperature=0.0, extra={**(metadata or {}), "variant": variant})
+    result = ak.evaluate(samples, "precomputed", scorers(), config=cfg,
                          tags=(tags or []) + [variant])
     out_dir.mkdir(parents=True, exist_ok=True)
     result.save(str(out_dir / f"{variant}.json"), fmt="json")

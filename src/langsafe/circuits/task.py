@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -20,7 +21,7 @@ from ..config import ROOT
 from ..gen.generate import render_prompt
 from ..languages import name
 
-TASK_DIR = ROOT / "runs" / "circuit_tasks"
+TASK_DIR = Path(os.environ.get("LANGSAFE_RUNS_DIR", ROOT / "runs")) / "circuit_tasks"
 BOS_TEXT = "<BOS_TOKEN>"
 
 # Fallback answer openers if the reference model's own openers are not available yet.
@@ -81,12 +82,17 @@ def openers_from_judged(judged: list[dict], gens: dict, lang: str) -> tuple[str,
 def write_task_csv(tok, pairs: list[dict], lang: str, model_tag: str, openers: tuple[str, str],
                    preamble: str = "default") -> Path:
     refuse, comply = openers
+    if preamble not in {"default", "none"}:
+        raise ValueError(f"unsupported preamble condition: {preamble}")
+    if not pairs or not refuse.strip() or not comply.strip() or refuse == comply:
+        raise ValueError("circuit tasks need nonempty pairs and distinct answer openers")
 
     def render(text: str) -> str:
         s = render_prompt(tok, text, preamble)
-        return s[len(BOS_TEXT):] if s.startswith(BOS_TEXT) else s
+        bos = getattr(tok, "bos_token", None) or BOS_TEXT
+        return s[len(bos):] if s.startswith(bos) else s
 
-    path = TASK_DIR / f"refusal_{lang}__{model_tag}.csv"
+    path = TASK_DIR / f"refusal_{lang}__{model_tag}__{preamble}.csv"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["harmful", "harmless", "refuse", "comply"])

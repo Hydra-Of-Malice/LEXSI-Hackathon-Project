@@ -61,8 +61,14 @@ def leakage_report(prompts: list[Prompt], near_dup_jaccard: float = 0.8) -> dict
 
 
 def drop_leaks(prompts: list[Prompt], report: dict) -> list[Prompt]:
-    """Remove the repair side of every exact or near duplicate, so held-out data stays untouched."""
-    bad_ids = {rid for _, rid in report["near_dupes"]}
-    exact = set(report["exact_dupes"])
-    return [p for p in prompts
-            if not (p.split == "repair" and (p.id in bad_ids or (p.lang, p.text_hash) in exact))]
+    """Remove entire leaking repair groups, including translations without a matching text.
+
+    Removing only the matching language would still let repair see another version of a held-out item.
+    Held-out rows are retained, including when a group was accidentally assigned to both splits.
+    """
+    bad_ids = {rid for _, rid in report.get("near_dupes", [])}
+    exact = {tuple(pair) for pair in report.get("exact_dupes", [])}
+    bad_groups = set(report.get("groups_in_both", []))
+    bad_groups.update(p.group for p in prompts
+                      if p.split == "repair" and (p.id in bad_ids or (p.lang, p.text_hash) in exact))
+    return [p for p in prompts if not (p.split == "repair" and p.group in bad_groups)]

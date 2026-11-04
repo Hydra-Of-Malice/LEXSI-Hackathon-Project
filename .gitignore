@@ -8,14 +8,20 @@ __pycache__/
 runs/gens/
 runs/generations/
 runs/hand_check/
+runs/judged/
+runs/calibration/
+runs/auditkit/
+runs/experiments/
 runs/llm_cache.sqlite
 runs/checkpoints/
 runs/curatorkit/
 runs/circuit_tasks/
 cache/
+logs/
 *.gguf
 *.safetensors
 *.pt
+.venv-kits/
 
 # Built data is reproducible from `langsafe build-data`; the manifest (with hashes) is committed.
 data/raw/

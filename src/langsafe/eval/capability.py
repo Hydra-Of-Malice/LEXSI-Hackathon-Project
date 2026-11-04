@@ -29,8 +29,14 @@ def _letter_ids(tok) -> list[int]:
     return ids
 
 
-def accuracy(model, tok, items: list[dict], batch_size: int = 8) -> dict:
+def accuracy(model, tok, items: list[dict], batch_size: int = 8, preamble: str = "default") -> dict:
     import torch
+    import inspect
+
+    if not items or batch_size <= 0:
+        raise ValueError("Capability evaluation requires items and positive batch size")
+    forward = getattr(model, "forward", model.__call__)
+    projection = {"logits_to_keep": 1} if "logits_to_keep" in inspect.signature(forward).parameters else {}
 
     letters = _letter_ids(tok)
     tok.padding_side = "left"
@@ -38,10 +44,10 @@ def accuracy(model, tok, items: list[dict], batch_size: int = 8) -> dict:
     for i in range(0, len(items), batch_size):
         batch = items[i:i + batch_size]
         texts = [render_prompt(tok, TEMPLATE.format(q=r["question"], a=r["option_a"], b=r["option_b"],
-                                                    c=r["option_c"], d=r["option_d"])) for r in batch]
+                                                    c=r["option_c"], d=r["option_d"]), preamble) for r in batch]
         enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
         with torch.no_grad():
-            logits = model(**enc).logits[:, -1, :]
+            logits = model(**enc, **projection).logits[:, -1, :]
         picks = logits[:, letters].argmax(dim=-1).tolist()
         correct += [int("ABCD"[k] == r["answer"].strip().upper()) for k, r in zip(picks, batch)]
     return {"accuracy": sum(correct) / len(correct), "n": len(correct), "per_item": correct}

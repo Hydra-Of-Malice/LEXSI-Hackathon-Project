@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,9 +13,13 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC_PATH = ROOT / "configs" / "spec.yaml"
 
 
-def load_spec(path: str | Path = SPEC_PATH) -> dict[str, Any]:
+def load_spec(path: str | Path | None = None) -> dict[str, Any]:
+    path = Path(path or os.environ.get("LANGSAFE_SPEC", SPEC_PATH)).expanduser()
     with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        spec = yaml.safe_load(f)
+    if not isinstance(spec, dict):
+        raise ValueError(f"Experiment spec must be a mapping: {path}")
+    return spec
 
 
 def spec_digest(spec: dict[str, Any]) -> str:

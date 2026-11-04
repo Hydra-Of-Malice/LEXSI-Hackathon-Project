@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import platform
 import subprocess
 from datetime import datetime, timezone
@@ -31,7 +32,7 @@ class Ledger:
 
     @classmethod
     def default(cls) -> "Ledger":
-        return cls(ROOT / "runs" / "ledger.jsonl")
+        return cls(Path(os.environ.get("LANGSAFE_RUNS_DIR", ROOT / "runs")) / "ledger.jsonl")
 
     def _last(self) -> tuple[int, str]:
         if not self.path.exists():
