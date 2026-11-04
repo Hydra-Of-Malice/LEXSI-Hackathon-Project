@@ -19,6 +19,19 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **05:30** **Pilot result, and it matters.** On the repair split (4-bit, one judge, default preamble, full refusal), Fire is
+  *not* less safe than Global in English, Hindi or Bengali:
+
+  | Language | n | Global | Fire | p |
+  |---|---|---|---|---|
+  | English | 120 | 77.5% | 81.7% | 0.27 |
+  | Hindi | 111 | 75.7% | 79.3% | 0.42 |
+  | Bengali | 122 | 72.1% | 74.6% | 0.55 |
+
+  The report's 78.1% is Fire's worst of 10 MultiJail languages, and we assumed that was an Indic language. Now running
+  all 10 languages with and without the preamble (`scripts/pilot_multijail.py`, repair split only) to see where the gap
+  really is. **Hold the full Fire grid until this is back:** the answer may change the target languages.
+- **05:15** The first weight download died in a network outage. `scripts/fetch_models.sh` now retries until complete.
 - **00:35** HF login done on the laptop. Global, Fire, Base and Aya Expanse are accessible; Earth still needs its
   licence accepted. Full weights are downloading while the 4-bit pilot runs.
 

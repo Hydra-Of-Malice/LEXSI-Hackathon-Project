@@ -300,14 +300,18 @@ class ServerChatClient:
         with urllib.request.urlopen(request, timeout=900) as response:
             return json.loads(response.read())["choices"][0]["message"].get("content") or ""
 
-    def chat(self, messages: list[dict], **params) -> str:
-        return self.chat_many([messages], **params)[0]
+    def _raw(self, ids: list[int], params: dict) -> str:
+        body = json.dumps({"prompt": ids, "n_predict": params["max_tokens"], "temperature": 0, "top_k": 1, "seed": 0,
+                           "cache_prompt": True}).encode()
+        request = urllib.request.Request(self._url + "/completion", data=body,
+                                         headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(request, timeout=900) as response:
+            return json.loads(response.read())["content"].strip()
 
-    def chat_many(self, batch: list[list[dict]], **params) -> list[str]:
+    def _many(self, batch: list, call, params: dict) -> list[str]:
         from tqdm import tqdm
 
-        params = {"temperature": 0, "max_tokens": 512, **params}
-        keys = [self._cache.key(m, params) for m in batch]
+        keys = [self._cache.key(item, params) for item in batch]
         out = [self._cache.get(k) for k in keys]
         todo = [i for i, v in enumerate(out) if v is None]
         if not todo:
@@ -315,12 +319,22 @@ class ServerChatClient:
         self._start()
 
         def run(i: int) -> None:
-            out[i] = self._complete(batch[i], params)
+            out[i] = call(batch[i], params)
             self._cache.put(keys[i], out[i])
 
         with ThreadPoolExecutor(self.batch_size) as pool:
             list(tqdm(pool.map(run, todo), total=len(todo), desc=f"gguf {self.model}", leave=False))
         return out
+
+    def chat(self, messages: list[dict], **params) -> str:
+        return self.chat_many([messages], **params)[0]
+
+    def chat_many(self, batch: list[list[dict]], **params) -> list[str]:
+        return self._many(batch, self._complete, {"temperature": 0, "max_tokens": 512, **params})
+
+    def complete_many(self, batch: list[list[int]], **params) -> list[str]:
+        """Raw token prompts, for exact control of the chat template (such as stripping the preamble)."""
+        return self._many(batch, self._raw, {"raw": True, "max_tokens": 512, **params})
 
     def close(self) -> None:
         if self._server is not None:
