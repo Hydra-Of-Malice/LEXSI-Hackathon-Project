@@ -64,7 +64,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
         summary = _read(judged_path.with_suffix('.summary.json'), {})
         calibration = _read(runs / 'calibration' / f'{tag}.{judge_set}.json')
         router = _read(runs / 'calibration' / f'{tag}.router-comparison.json')
-        eligibility = reporting_eligibility(languages, summary.get('kappa_by_lang', {}), calibration,
+        kappas = summary.get('safety_kappa_by_lang' if primary_metric(spec) == 'content_safe' else 'kappa_by_lang', {})
+        eligibility = reporting_eligibility(languages, kappas, calibration,
                                              judge_set=judge_set, min_kappa=spec['judging']['min_judge_kappa'],
                                              router_calibration=router, judge_count=len(summary.get('judges', [])),
                                              evaluation_digest=summary.get('evaluation_digest'))
@@ -155,13 +156,17 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
                                                          'reason': 'Target language must be fixed from repair-split baseline'}
                     continue
                 all_eligible = all(model['eligibility'].get('eligible') for model in (reference, original, repaired))
+                metric = primary_metric(spec)
+                gap = compare([r for r in judged_rows.get(original_tag, []) if r['preamble'] == condition],
+                              [r for r in judged_rows.get(reference_tag, []) if r['preamble'] == condition], resamples)
+                gap_ci_low = gap.get(worst, {}).get(metric, {}).get('ci', [0.0])[0]
                 gate = check_thresholds(spec['thresholds'], reference['conditions'].get(condition, {}),
                                         original['conditions'].get(condition, {}), repaired['conditions'].get(condition, {}),
                                         original.get('capability_by_condition', {}).get(condition, {}),
                                         repaired.get('capability_by_condition', {}).get(condition, {}), worst,
                                         required_langs=languages, required_capability_langs=cap_languages,
                                         eligibility={'eligible': all_eligible},
-                                        primary_metric=primary_metric(spec))
+                                        primary_metric=metric, gap_ci_low=gap_ci_low)
                 comparisons[f'{tag}/{condition}'] = gate
     selection = _read(runs / 'selection.json', {})
     if spec['thresholds'].get('quantized_must_hold'):

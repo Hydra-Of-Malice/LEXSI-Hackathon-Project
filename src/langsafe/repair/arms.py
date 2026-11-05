@@ -1,4 +1,4 @@
-"""SafeTune repair arms. Weight-space arms run on CPU (about 20 GB of RAM for three fp16 models); steering runs on GPU.
+"""SafeTune repair arms. Weight-space arms run on CPU (allow 40-50 GB of commit at peak); steering runs on GPU.
 
 Arms (configs/spec.yaml):
   resta          Fire + a * (Global - Base)                          whole model          SafeTune apply_resta
@@ -14,6 +14,8 @@ held-out data. SafeTune's defaults (ReSta alpha=1, steering alpha=20) break Tiny
 """
 from __future__ import annotations
 
+import functools
+import gc
 import json
 import importlib.metadata
 import math
@@ -81,8 +83,11 @@ def edit_stats(model, original) -> dict:
     """How much was edited: comparing arms is only fair if the size and location of each edit are on record."""
     before = original.state_dict()
     total = weights = 0.0
-    tensors, layers = 0, set()
+    tensors, layers, seen = 0, set(), set()
     for key, value in model.state_dict().items():
+        if value.data_ptr() in seen:        # tied weights share storage: count lm_head and the embedding once
+            continue
+        seen.add(value.data_ptr())
         old = before[key].float()
         change = float((value.float() - old).pow(2).sum())
         weights += float(old.pow(2).sum())
@@ -131,6 +136,8 @@ def resta(drifted: str, alpha: float, family: str) -> Path:
     base, aligned = _load_cpu(m["base"]), _load_cpu(m["reference"])
     _compatible(model, base, aligned)
     apply_resta(model, base=base, aligned=aligned, alpha=alpha, dare=False, device="cpu")
+    del base, aligned
+    gc.collect()
     return _save(model, drifted, CKPT / f"{family}-resta-a{alpha}", "resta",
                  [drifted, m["base"], m["reference"]], {"alpha": alpha, "dare": False, "device": "cpu"})
 
@@ -188,9 +195,12 @@ def circuit(drifted: str, scores_json: str, strength: float, family: str, top_fr
     model = _load_cpu(drifted)
     keys = _circuit_keys(model, layers, modules)
     negative_name = m["base"] if vector == "safety" else drifted
-    aligned, negative = _load_cpu(m["reference"]), _load_cpu(negative_name)
+    aligned = _load_cpu(m["reference"])
+    negative = _load_cpu(negative_name) if vector == "safety" else model     # apply_ctheta writes only at the end
     _compatible(model, aligned, negative, keys=keys)
     apply_ctheta(model, aligned, negative, info, strength=strength, layer_subset=layers, target_modules=modules)
+    del aligned, negative
+    gc.collect()
     from ..quant.gguf import file_sha256
 
     params = {"strength": strength, "top_fraction": top_fraction, "scores": str(scores_path),
@@ -283,9 +293,16 @@ def extract_direction(model, tok, harmful: list[str], harmless: list[str], famil
     n_layers, _ = _model_dimensions(model)
     if type(pick_layer) is not int or not 0 <= pick_layer < n_layers:
         raise ValueError(f"pick_layer must be in [0, {n_layers})")
-    direction, layer, _ = extract_refusal_direction(model, _PreambleTokenizer(tok, preamble), harmful, harmless,
-        RefusalDirectionConfig(pick_layer=pick_layer, target_layers=[pick_layer], pool_method="last_token",
-                               normalize=True, select_directions=False))
+    forward = getattr(model, "forward", None)
+    if forward is not None:       # the extractor reads hidden states; full-sequence logits don't fit beside 8 GB of weights
+        model.forward = functools.partial(forward, logits_to_keep=1)
+    try:
+        direction, layer, _ = extract_refusal_direction(model, _PreambleTokenizer(tok, preamble), harmful, harmless,
+            RefusalDirectionConfig(pick_layer=pick_layer, target_layers=[pick_layer], pool_method="last_token",
+                                   normalize=True, select_directions=False))
+    finally:
+        if forward is not None:
+            del model.forward
     if layer != pick_layer:
         raise ValueError(f"SafeTune returned layer {layer} instead of requested layer {pick_layer}")
     _validate_direction(model, direction, int(layer))

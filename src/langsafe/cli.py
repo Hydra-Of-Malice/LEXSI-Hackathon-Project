@@ -277,7 +277,7 @@ def cmd_circuit(a):
             finally:
                 client.close()
         tokenizer = AutoTokenizer.from_pretrained(resolve_model(a.model))
-        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, DEFAULT_OPENERS[a.lang])
+        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, DEFAULT_OPENERS[a.lang], limit=a.examples)
     result = discover(a.model, a.tag, a.lang, task, n_examples=a.examples, ig_steps=a.ig_steps,
                       verify_parity=not a.no_parity_check)
     atomic_json(RUNS / 'circuits' / f'{a.tag}__{a.lang}' / 'summary.json', result)

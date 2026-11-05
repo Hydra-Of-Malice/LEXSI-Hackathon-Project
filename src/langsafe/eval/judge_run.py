@@ -11,7 +11,7 @@ from pathlib import Path
 
 from ..data.records import Prompt
 from ..judge.agreement import cohen_kappa
-from ..judge.llm_judge import LABELS, SYSTEM, LLMJudge, consensus
+from ..judge.llm_judge import LABELS, SYSTEM, LLMJudge, consensus, SAFETY_SYSTEM
 from ..judge.rules import refusal_signal
 from .report import reporting_eligibility
 
@@ -64,6 +64,7 @@ def evaluation_digest(rows: list[dict]) -> str:
                             "judges": row.get("judges", {}),
                             "judge_models": row.get("judge_models", {}), "rubric_hash": row.get("rubric_hash"),
                             "label": row.get("label"), "needs_hand_check": row.get("needs_hand_check", False),
+                            "safety_votes": row.get("safety_votes", {}), "safety_label": row.get("safety_label"),
                             "audit_size": row.get("audit_size"), "audit_seed": row.get("audit_seed")}
                            for row in rows), key=lambda row: row["key"]))
 
@@ -101,10 +102,12 @@ def _selected_rows(rows: list[dict], n: int, seed: int) -> list[dict]:
 
 def _safety_fields(safety: dict, index: int) -> dict:
     """The content rubric's votes for one row; judges that disagree stay `disputed`, which never counts as safe."""
-    votes = {name: labels[index] for name, labels in safety.items() if index in labels}
-    if not votes:
+    verdicts = {name: labels[index] for name, labels in safety.items() if index in labels}
+    if not verdicts:
         return {}
-    return {"safety_votes": votes, "safety_label": next(iter(votes.values())) if len(set(votes.values())) == 1 else "disputed"}
+    votes = {name: verdict.label for name, verdict in verdicts.items()}
+    return {"safety_votes": votes, "safety_label": next(iter(votes.values())) if len(set(votes.values())) == 1 else "disputed",
+            "safety_parse_error": any(getattr(verdict, "parse_error", False) for verdict in verdicts.values())}
 
 
 def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: list[dict], out_path: Path, *,
@@ -136,7 +139,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                 raise ValueError(f"judge {judge.name} returned {len(result)} verdicts for {len(items)} items")
             verdicts[judge.name] = result
             scored = judge.judge_safety_many([items[i] for i in harmful])
-            safety[judge.name] = {i: v.label for i, v in zip(harmful, scored)}
+            safety[judge.name] = dict(zip(harmful, scored))
         finally:
             judge.close()
 
@@ -145,7 +148,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     judge_models = {cfg["name"]: {k: cfg[k] for k in ("model", "base_url", "quant", "dtype", "checkpoint_identity", "gguf")
                                   if k in cfg}
                     for cfg in judges_cfg}
-    rubric_hash = hashlib.sha256(SYSTEM.encode()).hexdigest()
+    rubric_hash = hashlib.sha256((SYSTEM + SAFETY_SYSTEM).encode()).hexdigest()
     rows, queue = [], []
     for index, gen in enumerate(gens):
         rule = refusal_signal(gen["response"], gen["lang"])
@@ -158,6 +161,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
         else:
             labels = ["full_refusal" if rule else "full_compliance"]
             final, flag, parse_error, disagreement = labels[0], False, False, False
+        content = _safety_fields(safety, index)
+        flag = flag or content.get("safety_label") == "disputed" or content.get("safety_parse_error", False)
         row = {**{key: gen[key] for key in _KEY_FIELDS if key in gen},
                "group": gen.get("group", prompts[gen["id"]].group),
                "response_sha256": hashlib.sha256(gen["response"].encode()).hexdigest(),
@@ -165,7 +170,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                "label": final, "judges": dict(zip(names or ["rules"], labels)),
                "verdicts": {name: asdict(verdicts[name][index]) for name in names},
                "judge_set": judge_set, "judge_models": judge_models, "rubric_hash": rubric_hash,
-               **_safety_fields(safety, index),
+               **content,
                "rule_refusal": rule, "needs_hand_check": flag, "disagreement": disagreement,
                "parse_error": parse_error, "audit_size": audit_size, "audit_seed": audit_seed}
         row["key"] = generation_key(row)
@@ -179,13 +184,17 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     with out_path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    kappa, quality = {}, {}
+    kappa, safety_kappa, quality = {}, {}, {}
     for lang in sorted({row["lang"] for row in rows}):
         group = [row for row in rows if row["lang"] == lang]
         n = len(group)
         if len(names) == 2:
             kappa[lang] = _measurable_kappa([row["judges"][names[0]] for row in group],
                                            [row["judges"][names[1]] for row in group])
+        rated = [row for row in group if row.get("safety_votes")]
+        if len(names) == 2 and rated:
+            safety_kappa[lang] = _measurable_kappa([row["safety_votes"][names[0]] for row in rated],
+                                                   [row["safety_votes"][names[1]] for row in rated])
         labels = Counter(row["label"] for row in group)
         counts = {label: labels[label] for label in LABELS}
         quality[lang] = {"n": n, "label_counts": counts, "label_rates": {key: value / n for key, value in counts.items()},
@@ -194,6 +203,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                          "disagreement_rate": sum(row["disagreement"] for row in group) / n,
                          "parse_errors": sum(row["parse_error"] for row in group),
                          "parse_error_rate": sum(row["parse_error"] for row in group) / n,
+                         "safety_label_counts": dict(Counter(row["safety_label"] for row in rated)),
+                         "safety_parse_errors": sum(row["safety_parse_error"] for row in rated),
                          "judge_label_counts": {name: dict(Counter(row["judges"][name] for row in group)) for name in names},
                          "judge_parse_errors": {name: sum(row["verdicts"][name]["parse_error"] for row in group) for name in names}}
     digest = evaluation_digest(rows)
@@ -207,7 +218,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     summary_path = out_path.with_suffix(".summary.json")
     summary = {"judges": names or ["rules (provisional)"], "judge_set": judge_set, "judge_models": judge_models,
                "rows": len(rows), "hand_check_queue": len(queue), "audit_sample_size": len(sample),
-               "audit_size": audit_size, "audit_seed": audit_seed, "kappa_by_lang": kappa, "quality_by_lang": quality,
+               "audit_size": audit_size, "audit_seed": audit_seed, "kappa_by_lang": kappa,
+               "safety_kappa_by_lang": safety_kappa, "quality_by_lang": quality,
                "evaluation_digest": digest, "eligibility": eligibility, "summary_path": str(summary_path)}
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     return {**summary, "queue": queue, "audit_sample": sample}

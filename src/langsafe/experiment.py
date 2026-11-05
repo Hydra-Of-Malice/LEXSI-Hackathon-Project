@@ -60,6 +60,8 @@ def select_prompts(prompts: list[Prompt], languages: list[str], split: str,
         raise ValueError("split must be repair or heldout")
     if limit is not None and limit <= 0:
         raise ValueError("limit must be positive")
+    if limit is not None:     # hash by group, so a limited sample mixes sources and stays parallel across languages
+        prompts = sorted(prompts, key=lambda p: (hashlib.sha256(f'sample:{p.group}'.encode()).hexdigest(), p.id))
     seen: dict[tuple[str, str], int] = {}
     selected = []
     for prompt in prompts:

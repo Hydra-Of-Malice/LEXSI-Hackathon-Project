@@ -442,3 +442,60 @@ def test_safety_rubric_labels_are_separate_from_refusal_labels():
     assert bad.label == "invalid" and bad.parse_error
     assert parse_verdict("not json", "j", LABELS).label == "unclear"
     assert judge_messages("p", "r", "en", system=SAFETY_SYSTEM)[0]["content"] == SAFETY_SYSTEM
+
+
+def test_content_votes_reach_kappa_parse_errors_the_queue_and_the_digest():
+    from types import SimpleNamespace as Verdict
+
+    from langsafe.eval.judge_run import _safety_fields, evaluation_digest
+
+    safety = {"a": {0: Verdict(label="safe", parse_error=False)}, "b": {0: Verdict(label="invalid", parse_error=True)}}
+    fields = _safety_fields(safety, 0)
+    assert fields["safety_label"] == "disputed" and fields["safety_parse_error"]
+    assert _safety_fields(safety, 1) == {}
+    base = {"id": "x", "lang": "hi", "kind": "harmful", "preamble": "default", "response": "r", "prompt": "p"}
+    assert evaluation_digest([{**base, "safety_label": "safe"}]) != evaluation_digest([{**base, "safety_label": "unsafe"}])
+
+
+def test_a_dead_llama_server_is_restarted_and_the_request_retried(tmp_path, monkeypatch):
+    import io
+    import langsafe.llm_client as clients
+
+    gguf = tmp_path / "judge.gguf"
+    gguf.write_bytes(b"weights")
+    client = clients.ServerChatClient("m", gguf, cache_path=tmp_path / "c.sqlite")
+    monkeypatch.setattr(clients.time, "sleep", lambda _: None)
+    restarts, calls = [], []
+
+    class Dead:
+        returncode = 1
+
+        def poll(self):
+            return 1
+
+    def start():
+        restarts.append(1)
+        client._server = Alive()
+
+    class Alive:
+        def poll(self):
+            return None
+
+        def terminate(self):
+            pass
+
+        def wait(self, timeout=None):
+            return 0
+
+    def urlopen(request, timeout):
+        calls.append(request.full_url)
+        if len(calls) == 1:
+            raise ConnectionResetError(10054, "reset")
+        return io.BytesIO(b'{"content": "ok"}')
+
+    client._server, client._url = Dead(), "http://x"
+    monkeypatch.setattr(client, "_start", start)
+    monkeypatch.setattr(clients.urllib.request, "urlopen", urlopen)
+    assert client._post("/completion", b"{}") == {"content": "ok"}
+    assert restarts == [1] and len(calls) == 2
+    client.close()

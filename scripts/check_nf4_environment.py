@@ -58,10 +58,20 @@ def capability_file(tag: str, preamble: str) -> Path:
     return Path('capability') / (tag + ('.none' if preamble == 'none' else '') + '.json')
 
 
+def judge_ref(judge: dict) -> str:
+    """The GGUF a local judge really runs from, when it is on this machine."""
+    return judge['gguf'] if judge.get('gguf') and (ROOT / judge['gguf']).is_file() else judge['model']
+
+
 def checkpoint(model: str) -> tuple[Path, dict]:
     """Resolve only local directories/Hub cache; hash every checkpoint/tokenizer file."""
     from langsafe.gen.model import resolve_model
 
+    if str(model).endswith('.gguf'):
+        path = (ROOT / model).resolve()
+        files = {path.name: {'sha256': sha256(path), 'bytes': path.stat().st_size}}
+        return path, {'resolved_path': str(path), 'snapshot_revision': None, 'files': files,
+                      'content_sha256': digest(files), 'bytes': path.stat().st_size}
     path = Path(resolve_model(model)).expanduser()
     if not path.is_dir():
         from huggingface_hub import try_to_load_from_cache
@@ -271,7 +281,7 @@ def build_plan(args) -> dict:
     selected_checkpoint_source = str((source / 'checkpoints' / selected_path.name).resolve())
     resolved[selected['tag']] = selected_checkpoint_source
     model_refs[selected['tag']] = selected_checkpoint_source
-    judge_models = {judge['name']: judge['model'] for judge in judges} if args.judges == 'local' else {}
+    judge_models = {judge['name']: judge_ref(judge) for judge in judges} if args.judges == 'local' else {}
     source_identity['selected_checkpoint'] = {
         'tag': selected['tag'], 'source': selected_checkpoint_source,
         'files': identities[selected['tag']]['files'],
@@ -279,7 +289,7 @@ def build_plan(args) -> dict:
     }
     if args.judges == 'local':
         for judge in judges:
-            _, identity = checkpoint(judge['model'])
+            _, identity = checkpoint(judge_ref(judge))
             identities['judge:' + judge['name']] = identity
     stages = []
     for tag in models:
@@ -317,7 +327,7 @@ def build_plan(args) -> dict:
                            + identities[selected['tag']]['bytes'] + spec_path.stat().st_size)}
 
 
-def check_runtime(plan: dict, min_free_gib: float) -> dict:
+def check_runtime(plan: dict, min_free_gib: float, min_vram_gib: float = 12) -> dict:
     """Called only by explicit remote --check-hardware/--execute, never --dry-run."""
     if platform.system() not in {'Linux', 'Windows'}:
         raise ValueError('Genuine CUDA hardware is required; NF4 is not executed on a Mac')
@@ -349,8 +359,9 @@ def check_runtime(plan: dict, min_free_gib: float) -> dict:
         raise ValueError('bitsandbytes CUDA native library is unavailable')
     props = torch.cuda.get_device_properties(0)
     free, total = torch.cuda.mem_get_info(0)
-    if props.major < 7 or total < 12 * GIB or free < 8 * GIB:
-        raise ValueError('CUDA preflight requires compute capability >=7.0, >=12 GiB VRAM and >=8 GiB free; prefer 24 GiB')
+    if props.major < 7 or total < min_vram_gib * GIB or free < min(8, min_vram_gib * .75) * GIB:
+        raise ValueError(f'CUDA preflight requires compute capability >=7.0, >={min_vram_gib} GiB VRAM and enough free; '
+                         'prefer 24 GiB')
     # Exercise actual NF4 quantization/dequantization and a CUDA kernel without loading a checkpoint.
     test = torch.arange(128, device='cuda', dtype=torch.float16).reshape(2, 64) / 128
     packed, state = bnb.functional.quantize_4bit(test, blocksize=64, quant_type='nf4')
@@ -506,6 +517,7 @@ def main(argv=None) -> int:
     parser.add_argument('--allow-router', action='store_true', help='Explicitly authorize configured billed router requests during execution')
     parser.add_argument('--allow-development', action='store_true', help='Permit clearly marked development-only evidence')
     parser.add_argument('--min-free-gib', type=float, default=10, help='Output headroom in addition to copied evidence (default 10 GiB)')
+    parser.add_argument('--min-vram-gib', type=float, default=12, help='VRAM floor (default 12; a 2 GB NF4 model fits on 8 GB cards)')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--dry-run', action='store_true', help='Hash inputs/print plan only; never load torch or touch GPU/network')
     mode.add_argument('--check-hardware', action='store_true', help='On CUDA host: check NF4 kernel, storage, offline capability cache; no checkpoint loads')
@@ -524,7 +536,7 @@ def main(argv=None) -> int:
         if args.dry_run:
             print(json.dumps(plan, indent=2, ensure_ascii=False))
             return 0
-        hardware = check_runtime(plan, args.min_free_gib)
+        hardware = check_runtime(plan, args.min_free_gib, args.min_vram_gib)
         if args.check_hardware:
             print(json.dumps({**plan, 'status': 'preflight_passed_not_executed', 'hardware_checked': True, 'hardware': hardware}, indent=2))
         else:

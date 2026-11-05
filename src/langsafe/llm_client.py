@@ -11,6 +11,7 @@ Calls are cached by backend, checkpoint identity, precision, messages and parame
 from __future__ import annotations
 
 import hashlib
+import http.client
 import importlib.metadata
 import json
 import os
@@ -276,7 +277,17 @@ class ServerChatClient:
         identity = {"backend": "llama-server-gguf", "model": model, "gguf": self.gguf.name,
                     "gguf_bytes": self.gguf.stat().st_size}
         self._cache = _Cache(_cache_path(cache_path), json.dumps(identity, sort_keys=True))
+        self._log = _cache_path(cache_path).with_name("llama-server.log")
         self._server = self._url = None
+        self._restart_lock = threading.Lock()
+
+    def _revive(self) -> None:
+        """Bring back a server that died mid-run. Parallel requests all land here, so only the first one restarts it."""
+        with self._restart_lock:
+            if self._server is not None and self._server.poll() is not None:
+                print(f"llama-server exited with {self._server.returncode}; restarting", flush=True)
+                self._server = None
+                self._start()
 
     def _start(self) -> None:
         if self._server is not None:
@@ -285,10 +296,11 @@ class ServerChatClient:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         self._url = f"http://127.0.0.1:{port}"
-        self._server = subprocess.Popen(
-            [llama_server_binary(), "-m", str(self.gguf), "--host", "127.0.0.1", "--port", str(port), "-ngl", "99",
-             "-np", str(self.batch_size), "-c", str(self.slot_context * self.batch_size)],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        with open(self._log, "ab") as log:
+            self._server = subprocess.Popen(
+                [llama_server_binary(), "-m", str(self.gguf), "--host", "127.0.0.1", "--port", str(port), "-ngl", "99",
+                 "-np", str(self.batch_size), "-c", str(self.slot_context * self.batch_size)],
+                stdout=log, stderr=subprocess.STDOUT)
         for _ in range(600):
             if self._server.poll() is not None:
                 raise RuntimeError(f"llama-server exited while loading {self.gguf}")
@@ -313,6 +325,12 @@ class ServerChatClient:
                     raise RuntimeError(f"llama-server {error.code}: {detail}") from error
                 print(f"llama-server {error.code}, retrying: {detail}", flush=True)
                 time.sleep(2 ** attempt)
+            except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError) as error:
+                if attempt == attempts - 1:
+                    raise
+                print(f"llama-server connection failed ({type(error).__name__}), retrying", flush=True)
+                time.sleep(2 ** attempt)
+                self._revive()
         raise RuntimeError("unreachable")
 
     def _complete(self, messages: list[dict], params: dict) -> str:

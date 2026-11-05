@@ -55,7 +55,7 @@ class StageRunner:
             family = args[args.index('--family') + 1]
             arm = args[args.index('--arm') + 1]
             model_ids.append(spec['models']['drifted'][family])
-            if arm in ('resta', 'circuit', 'merge_back'):
+            if arm in ('resta', 'circuit', 'circuit_merge', 'merge_back'):
                 model_ids.append(spec['models']['reference'])
             if arm in ('resta', 'circuit'):
                 model_ids.append(spec['models']['base'])
@@ -104,7 +104,8 @@ class StageRunner:
             atomic_json(self.directory / 'last-failure.json', failure)
             atomic_json(self.directory / 'current-stage.json', {**failure, 'pid': os.getpid()})
             raise RuntimeError(f'Stage {name} failed (exit {code}); inspect {log}. Rerun resumes verified stages.')
-        self.state.record(name, settings, outputs, {'elapsed_seconds': time.perf_counter() - started})
+        if outputs:      # a cache-warming stage leaves nothing to verify; rerunning it is only cache hits
+            self.state.record(name, settings, outputs, {'elapsed_seconds': time.perf_counter() - started})
         atomic_json(self.directory / 'current-stage.json', {'stage': name, 'status': 'complete', 'pid': os.getpid()})
         failure_path = self.directory / 'last-failure.json'
         if failure_path.exists() and json.loads(failure_path.read_text()).get('stage') == name:
@@ -196,6 +197,8 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
                                      'judges': judges, 'skip_circuit': skip_circuit, 'skip_quantization': skip_quantization})
     os.environ.update({k: runner.env[k] for k in ('LANGSAFE_RUNS_DIR', 'LANGSAFE_DATA_DIR')})
     experiments = spec.get('experiment', {})
+    if judges == 'rules' and experiments.get('primary_safety_axis') == 'content':
+        raise ValueError('The phrase detector cannot score content safety; use local or router judges')
     data_manifest = runner.directory / 'data' / 'manifest.json'
     data_outputs = [data_manifest, runner.directory / 'data' / 'heldout.jsonl', runner.directory / 'data' / 'repair.jsonl']
     runner.run('data', ['build-data', '--family', family, '--translate', '--translator', 'local'], data_outputs)
@@ -204,12 +207,16 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
     repair_limit = int(experiments.get('repair_per_cell', 20))
     batch = int(experiments.get('local_batch_size', 2))
     baseline_models = {'global': spec['models']['reference'], family: spec['models']['drifted'][family]}
-    for tag, model in baseline_models.items():
-        runner.run(tag + '-repair', ['generate', '--family', family, '--split', 'repair', '--model', model,
-                                     '--tag', tag + '-repair', '--limit', str(repair_limit), '--preamble', 'default',
+
+    def repair_generation(tag: str, model: str, descriptor: dict | None = None) -> None:
+        runner.run(tag + '-repair', ['generate', '--family', family, '--split', 'repair', '--tag', tag + '-repair',
+                                     '--limit', str(repair_limit), '--preamble', 'default',
                                      '--max-new-tokens', str(experiments.get('selection_max_new_tokens', 64)),
-                                     '--batch-size', str(batch)],
+                                     '--batch-size', str(batch), *_model_args(model, descriptor)],
                    [runner.directory / 'gens' / f'{tag}-repair.jsonl'], [data_manifest])
+
+    for tag, model in baseline_models.items():
+        repair_generation(tag, model)
         runner.run(tag + '-heldout', ['generate', '--family', family, '--model', model, '--tag', tag,
                                       '--batch-size', str(batch)], [runner.directory / 'gens' / f'{tag}.jsonl'], [data_manifest])
         _capability_stages(runner, tag, model, family, spec)
@@ -265,12 +272,7 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
 
     def repair_evidence(tag: str, model: str, descriptor: dict | None = None) -> None:
         """Short repair-split answers, and capability on the MMLU dev split: everything selection may look at."""
-        artifact = runner.directory / 'gens' / f'{tag}-repair.jsonl'
-        runner.run(tag + '-repair', ['generate', '--family', family, '--split', 'repair', '--tag', tag + '-repair',
-                                     '--limit', str(repair_limit), '--preamble', 'default',
-                                     '--max-new-tokens', str(experiments.get('selection_max_new_tokens', 64)),
-                                     '--batch-size', str(batch), *_model_args(model, descriptor)],
-                   [artifact], [data_manifest])
+        repair_generation(tag, model, descriptor)
         runner.run(tag + '-repair-capability', ['capability', '--tag', tag + '-repair', '--family', family,
                                                 '--preamble', 'default', '--mmlu-split', 'dev',
                                                 *_model_args(model, descriptor)],
@@ -445,7 +447,7 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
     report = json.loads((runner.directory / 'report.json').read_text())
     status = {'software_run_complete': True, 'profile': profile, 'family': family,
               'evaluated_tags': evaluation_tags, 'scientific_validation': 'provisional pending real human/router calibration',
-              'all_four_repair_arms_evaluated': len(selected_descriptors) == 4,
+              'all_repair_arms_evaluated': len(selected_descriptors) == len(spec['repair_arms']),
               'empirical_repair_success': report['empirical_repair_success'],
               'validation_gaps': report['validation_gaps'], 'spec_frozen': spec.get('frozen', False),
               'nf4_cuda': 'not_executed', 'q4_evaluated': not skip_quantization,

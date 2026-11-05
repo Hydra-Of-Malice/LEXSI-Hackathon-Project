@@ -329,3 +329,32 @@ def test_objective_punishes_a_broken_model_that_refuses_more():
     broken = objective({'hi': {'harmful': .8, 'benign': .1, 'unclear': .4}}, {'hi': .2}, reference, drifted, capability, 'hi')
     assert abs(good['score'] - .2) < 1e-9 and broken['score'] < 0
     assert pick({.5: good, .25: good, 1.: broken})[0] == .25
+
+
+def test_a_stage_with_no_artifacts_completes_and_reruns_on_the_real_runner(tmp_path, monkeypatch):
+    import subprocess
+    import langsafe.experiment_run as experiment
+
+    class Done:
+        stdout = iter(['ok\n'])
+
+        def wait(self):
+            return 0
+
+    monkeypatch.setattr(experiment.subprocess, 'Popen', lambda *a, **k: Done())
+    runner = experiment.StageRunner(tmp_path / 'run', {'family': 'fire'})
+    runner.run('warm', ['judge-warm', '--tags', 'a'], [])
+    assert 'warm' not in runner.state.data.get('stages', {})
+
+
+def test_a_limited_sample_mixes_sources_and_stays_parallel_across_languages():
+    from langsafe.data.records import Prompt
+    from langsafe.experiment import select_prompts
+
+    rows = [Prompt(id=f'{source}-{i}::{lang}', group=f'{source}-{i}', lang=lang, kind='harmful', text='t', source=source,
+                   source_id=str(i), split='repair')
+            for source in ('aya', 'multijail', 'xstest') for i in range(30) for lang in ('en', 'hi')]
+    picked = select_prompts(rows, ['en', 'hi'], 'repair', limit=20)
+    assert {p.source for p in picked} == {'aya', 'multijail', 'xstest'}
+    by_lang = {lang: {p.group for p in picked if p.lang == lang} for lang in ('en', 'hi')}
+    assert by_lang['en'] == by_lang['hi'] and len(by_lang['en']) == 20

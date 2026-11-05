@@ -80,7 +80,8 @@ def openers_from_judged(judged: list[dict], gens: dict, lang: str) -> tuple[str,
 
 
 def write_task_csv(tok, pairs: list[dict], lang: str, model_tag: str, openers: tuple[str, str],
-                   preamble: str = "default") -> Path:
+                   preamble: str = "default", limit: int | None = None) -> Path:
+    """Write the task, keeping only pairs of equal token length (CircuitKIT drops the others) up to `limit`."""
     refuse, comply = openers
     if preamble not in {"default", "none"}:
         raise ValueError(f"unsupported preamble condition: {preamble}")
@@ -92,6 +93,14 @@ def write_task_csv(tok, pairs: list[dict], lang: str, model_tag: str, openers: t
         bos = getattr(tok, "bos_token", None) or BOS_TEXT
         return s[len(bos):] if s.startswith(bos) else s
 
+    def length(text: str) -> int:
+        return len(tok.encode(render(text), add_special_tokens=False))
+
+    aligned = [p for p in pairs if length(p["harmful"]) == length(p["harmless"])]
+    if not aligned:
+        raise ValueError(f"no {lang} minimal pair tokenises to equal lengths; translate more pairs")
+    print(f"{lang}: {len(aligned)} of {len(pairs)} pairs tokenise to equal lengths", flush=True)
+    pairs = aligned[:limit] if limit else aligned
     path = TASK_DIR / f"refusal_{lang}__{model_tag}__{preamble}.csv"
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:

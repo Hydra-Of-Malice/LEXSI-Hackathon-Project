@@ -461,7 +461,7 @@ def test_circuit_rejects_partly_missing_mask(monkeypatch, tmp_path, mask):
         arms.circuit("fire", str(scores), .5, "fire")
 
 
-@pytest.mark.parametrize("arm,want", [("resta", 3.), ("merge_back", 2.75), ("circuit", 4.)])
+@pytest.mark.parametrize("arm,want", [("resta", 3.), ("merge_back", 2.75), ("circuit", 4.), ("circuit_merge", 3.5)])
 def test_pinned_safetune_weight_arithmetic_round_trips_on_cpu(monkeypatch, tmp_path, arm, want):
     """Exercise the real pinned arithmetic on tiny tensors without any model load."""
     import torch
@@ -486,10 +486,10 @@ def test_pinned_safetune_weight_arithmetic_round_trips_on_cpu(monkeypatch, tmp_p
         torch.save(model.state_dict(), out)
         return out
     monkeypatch.setattr(arms, "_save", save)
-    if arm == "circuit":
+    if arm in ("circuit", "circuit_merge"):
         scores = tmp_path / "scores.json"
         scores.write_text(json.dumps({"node_scores": {"A0.0": 1.0}}))
-        out = arms.circuit("fire", str(scores), .5, "fire")
+        out = arms.circuit("fire", str(scores), .5, "fire", vector="safety" if arm == "circuit" else "drift")
     else:
         out = getattr(arms, arm)("fire", .25, "fire")
     state = torch.load(out, map_location="cpu", weights_only=True)

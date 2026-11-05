@@ -17,6 +17,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+import numpy as np                                                     # noqa: E402
+
 from langsafe.eval.stats import mcnemar_exact, paired_diff_ci          # noqa: E402
 
 TWINS = {"circuit": "resta", "circuit_merge": "merge_back"}
@@ -29,8 +31,8 @@ def judged(run: Path, tag: str, judges: str) -> dict:
     return {(r["id"], r["preamble"]): r for r in rows}
 
 
-def capability(run: Path, tag: str) -> dict:
-    path = run / "capability" / f"{tag}.json"
+def capability(run: Path, tag: str, preamble: str = "default") -> dict:
+    path = run / "capability" / (f"{tag}.json" if preamble == "default" else f"{tag}.none.json")
     return json.loads(path.read_text(encoding="utf-8")).get("languages", {}) if path.exists() else {}
 
 
@@ -43,10 +45,9 @@ def edit(descriptor: dict) -> dict:
     return {key: params.get(key) for key in ("relative_edit_l2", "edited_tensors", "edited_layers", "layer_subset")}
 
 
-def contrast(a: dict, b: dict, lang: str | None, kind: str, label: str, resamples: int,
-             field: str = "label") -> dict | None:
-    """Paired change from a to b in the rate of `label`, over prompts both runs answered."""
-    keys = sorted(k for k in set(a) & set(b) if a[k]["kind"] == kind and (lang is None or a[k]["lang"] == lang)
+def contrast(a: dict, b: dict, lang: str, kind: str, label: str, resamples: int, field: str = "label") -> dict | None:
+    """Paired change from a to b in the rate of `label` in one language, over prompts both runs answered."""
+    keys = sorted(k for k in set(a) & set(b) if a[k]["kind"] == kind and a[k]["lang"] == lang
                   and field in a[k] and field in b[k])
     if not keys:
         return None
@@ -56,30 +57,53 @@ def contrast(a: dict, b: dict, lang: str | None, kind: str, label: str, resample
     return {"delta": delta, "ci": [low, high], "p_mcnemar": mcnemar_exact(x, y), "n": len(keys)}
 
 
+def cluster_ci(differences: list[float], resamples: int) -> dict:
+    """Bootstrap over items. Each item's languages form one cluster, because translations aren't independent."""
+    values = np.array(differences, dtype=float)
+    draws = np.random.default_rng(20261103).integers(0, len(values), (resamples, len(values)))
+    means = values[draws].mean(axis=1)
+    return {"delta": float(values.mean()), "ci": [float(np.percentile(means, 2.5)), float(np.percentile(means, 97.5))],
+            "p_mcnemar": None, "n": len(values)}
+
+
+def clustered(a: dict, b: dict, kind: str, label: str, resamples: int, field: str = "label") -> dict | None:
+    """Paired change across all languages, with every language version of an item as one cluster."""
+    groups: dict = {}
+    for k in sorted(set(a) & set(b)):
+        if a[k]["kind"] == kind and field in a[k] and field in b[k]:
+            change = int(b[k][field] == label) - int(a[k][field] == label)
+            groups.setdefault(a[k].get("group", k[0]), []).append(change)
+    return cluster_ci([sum(v) / len(v) for v in groups.values()], resamples) if groups else None
+
+
 def capability_contrast(a: dict, b: dict, resamples: int) -> dict | None:
-    x, y = [], []
-    for lang in sorted(set(a) & set(b)):
-        first, second = a[lang].get("per_item", []), b[lang].get("per_item", [])
-        if first and len(first) == len(second):
-            x += first
-            y += second
-    if not x:
+    """Global-MMLU items are parallel across languages, so each item index is one cluster."""
+    languages = [lang for lang in sorted(set(a) & set(b)) if a[lang].get("per_item")
+                 and len(a[lang]["per_item"]) == len(b[lang].get("per_item", []))]
+    if not languages:
         return None
-    delta, low, high = paired_diff_ci(x, y, resamples)
-    return {"delta": delta, "ci": [low, high], "p_mcnemar": mcnemar_exact(x, y), "n": len(x)}
+    size = min(len(a[lang]["per_item"]) for lang in languages)
+    return cluster_ci([sum(b[lang]["per_item"][i] - a[lang]["per_item"][i] for lang in languages) / len(languages)
+                       for i in range(size)], resamples)
 
 
 def compare(run: Path, baseline: str, candidate: str, target: str, judges: str, resamples: int) -> dict:
-    """What moving from `baseline` to `candidate` does on the three axes."""
-    a, b = judged(run, baseline, judges), judged(run, candidate, judges)
-    return {"baseline": baseline, "candidate": candidate,
+    """What moving from `baseline` to `candidate` does on the three axes, for each preamble condition separately."""
+    first, second = judged(run, baseline, judges), judged(run, candidate, judges)
+    conditions = {}
+    for preamble in sorted({key[1] for key in first}):
+        a = {k: v for k, v in first.items() if k[1] == preamble}
+        b = {k: v for k, v in second.items() if k[1] == preamble}
+        conditions[preamble] = {
             "target_content_safe": contrast(a, b, target, "harmful", "safe", resamples, field="safety_label"),
-            "all_content_safe": contrast(a, b, None, "harmful", "safe", resamples, field="safety_label"),
+            "all_content_safe": clustered(a, b, "harmful", "safe", resamples, field="safety_label"),
             "target_harmful_refusal": contrast(a, b, target, "harmful", "full_refusal", resamples),
-            "all_harmful_refusal": contrast(a, b, None, "harmful", "full_refusal", resamples),
-            "over_refusal": contrast(a, b, None, "benign", "full_refusal", resamples),
-            "unclear": contrast(a, b, None, "harmful", "unclear", resamples),
-            "capability": capability_contrast(capability(run, baseline), capability(run, candidate), resamples)}
+            "all_harmful_refusal": clustered(a, b, "harmful", "full_refusal", resamples),
+            "over_refusal": clustered(a, b, "benign", "full_refusal", resamples),
+            "unclear": clustered(a, b, "harmful", "unclear", resamples),
+            "capability": capability_contrast(capability(run, baseline, preamble), capability(run, candidate, preamble),
+                                              resamples)}
+    return {"baseline": baseline, "candidate": candidate, "conditions": conditions}
 
 
 def analyse(run: Path, judges: str = "local", resamples: int = 10000) -> dict:
@@ -104,8 +128,8 @@ def analyse(run: Path, judges: str = "local", resamples: int = 10000) -> dict:
 def _pp(cell: dict | None) -> str:
     if not cell:
         return "n/a"
-    return (f"{100 * cell['delta']:+.1f} pp ({100 * cell['ci'][0]:+.1f} to {100 * cell['ci'][1]:+.1f}), "
-            f"p={cell['p_mcnemar']:.3f}, n={cell['n']}")
+    p = "" if cell["p_mcnemar"] is None else f"p={cell['p_mcnemar']:.3f}, "
+    return f"{100 * cell['delta']:+.1f} pp ({100 * cell['ci'][0]:+.1f} to {100 * cell['ci'][1]:+.1f}), {p}n={cell['n']}"
 
 
 def render(result: dict) -> str:
@@ -113,7 +137,7 @@ def render(result: dict) -> str:
              f"Target language: `{result['target_language']}` ({result['target_reason']}).", "",
              "Each row is the change from the baseline to the circuit arm, paired on the same prompts. Positive safety, "
              "refusal and capability changes favour the circuit arm; positive over-refusal and unclear changes count "
-             "against it.",
+             "against it. All-language figures treat an item's translations as one cluster, so they carry no McNemar test.",
              "", "## Edit sizes", "", "| Arm | Knob | Relative L2 | Tensors | Layers |", "|---|---|---|---|---|"]
     for name, cell in result["edits"].items():
         l2 = cell.get("relative_edit_l2")
@@ -123,16 +147,17 @@ def render(result: dict) -> str:
     for title, section in (("Circuit vs whole-model twin", result["whole_model_twin"]),
                            ("Circuit vs random layers", result["random_control"])):
         lines += ["", f"## {title}", "",
-                  "| Baseline → circuit arm | Target content-safe | All content-safe | Target refusal | All harmful refusal "
-                  "| Over-refusal | Unclear | Capability |",
-                  "|---|---|---|---|---|---|---|---|"]
-        for cell in section.values():
-            lines.append(f"| {cell['baseline']} → {cell['candidate']} | {_pp(cell['target_content_safe'])} | "
-                         f"{_pp(cell['all_content_safe'])} | {_pp(cell['target_harmful_refusal'])} | "
-                         f"{_pp(cell['all_harmful_refusal'])} | {_pp(cell['over_refusal'])} | {_pp(cell['unclear'])} | "
-                         f"{_pp(cell['capability'])} |")
+                  "| Baseline → circuit arm | Preamble | Target content-safe | All content-safe | Target refusal "
+                  "| All harmful refusal | Over-refusal | Unclear | Capability |",
+                  "|---|---|---|---|---|---|---|---|---|"]
+        for entry in section.values():
+            for preamble, cell in entry["conditions"].items():
+                lines.append(f"| {entry['baseline']} → {entry['candidate']} | {preamble} | "
+                             f"{_pp(cell['target_content_safe'])} | {_pp(cell['all_content_safe'])} | "
+                             f"{_pp(cell['target_harmful_refusal'])} | {_pp(cell['all_harmful_refusal'])} | "
+                             f"{_pp(cell['over_refusal'])} | {_pp(cell['unclear'])} | {_pp(cell['capability'])} |")
         if not section:
-            lines.append("| none available | | | | | | | |")
+            lines.append("| none available | | | | | | | | |")
     return "\n".join(lines) + "\n"
 
 
