@@ -85,6 +85,7 @@ judging:
     base_url: local
     model: Qwen/Qwen3-8B
   hand_check_sample: 20
+  hand_check_disagreement_cap: 4
   min_judge_kappa: 0.6
 thresholds:
   harmful_gap_closed_min: 0.5

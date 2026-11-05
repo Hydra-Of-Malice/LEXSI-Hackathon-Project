@@ -16,6 +16,14 @@ def primary_metric(spec: dict) -> str:
     return {'content': 'content_safe', 'refusal': 'harmful_refusal'}[axis]
 
 
+def _sampled(cell: dict | None) -> str:
+    return f"{cell['sampled']} of {cell['total']}" if cell else 'not recorded'
+
+
+def _accuracy(value: float | None, n: int | None) -> str:
+    return f'{100 * value:.1f}% (n={n})' if value is not None else 'not labelled'
+
+
 def _read(path: Path, default=None):
     return json.loads(path.read_text(encoding='utf-8')) if path.exists() else default
 
@@ -68,7 +76,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
         eligibility = reporting_eligibility(languages, kappas, calibration,
                                              judge_set=judge_set, min_kappa=spec['judging']['min_judge_kappa'],
                                              router_calibration=router, judge_count=len(summary.get('judges', [])),
-                                             evaluation_digest=summary.get('evaluation_digest'))
+                                             evaluation_digest=summary.get('evaluation_digest'),
+                                             primary_safety_axis=spec.get('experiment', {}).get('primary_safety_axis', 'refusal'))
         expected_n = spec.get('experiment', {}).get('capability_limit', 400)
         capabilities = {}
         for pre in spec['preamble_conditions']:
@@ -105,6 +114,7 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
         models[tag] = {'status': eligibility['status'], 'eligibility': eligibility, 'conditions': conditions,
                        'capability': capabilities.get('default', {}), 'capability_by_condition': capabilities,
                        'quality_by_lang': summary.get('quality_by_lang', {}),
+                       'hand_check_sampling_by_lang': summary.get('hand_check_sampling_by_lang', {}),
                        'generation_validity': validity, 'human_calibration': calibration,
                        'router_calibration': router}
         artifacts[str(judged_path)] = file_sha256(judged_path)
@@ -203,6 +213,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
                                   for p in report_dependencies(runs, tags, judge_set, spec['preamble_conditions'])},
               'limits': ['Human calibration and language-quality review require actual reviewed labels.',
                          'Local judges additionally require shared-sample router calibration.',
+                         *(['The router comparison covers refusal labels only, so it does not check content-safe numbers.']
+                           if primary_metric(spec) == 'content_safe' else []),
                          'Rules are development signals, not safety ground truth.',
                          'NF4 requires a CUDA run; Q4_K_M is the locally available Mac condition.']}
     output = output or runs / 'report.md'
@@ -246,6 +258,20 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
         lines.append(f"- `{tag}`: {model['status']}; eligible={model['eligibility'].get('eligible', False)}.")
         for lang, detail in model['eligibility'].get('by_lang', {}).items():
             lines.append(f"  - {lang}: {detail['status']}; kappa={detail.get('kappa')}; " + '; '.join(detail['reasons']))
+    lines.extend(['', '## Human hand check', '',
+                  'People label a seeded audit plus a capped sample of disagreements, so these rows are a sample of the '
+                  'queue. Every disagreement, sampled or not, stays `unclear` or `disputed` and never counts as safe. '
+                  'Accuracy comes from the random audit, because sampled disagreements over-represent hard rows.', '',
+                  '| Model | Language | Disagreements sampled | Content disputes sampled | Content accuracy vs people (audit) |',
+                  '|---|---|---|---|---|'])
+    for tag, model in models.items():
+        human = (model.get('human_calibration') or {}).get('by_lang', {})
+        sampling = model.get('hand_check_sampling_by_lang', {})
+        for lang in languages:
+            cell = sampling.get(lang, {})
+            accuracy = human.get(lang, {})
+            lines.append(f"| {tag} | {lang} | {_sampled(cell.get('flagged'))} | {_sampled(cell.get('content_disputed'))} | "
+                         f"{_accuracy(accuracy.get('audit_safety_consensus_accuracy'), accuracy.get('audit_safety_consensus_n'))} |")
     lines.extend(['', '## Repair acceptance', '',
                   'Empirical repair success: **' + str(result['empirical_repair_success']) + '**.', '',
                   'The target language and repair parameters are selected on the repair split. '

@@ -3,10 +3,13 @@ import csv
 import json
 import sqlite3
 import sys
+from collections import Counter
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from langsafe.config import load_spec
 from langsafe.data.records import Prompt
 from langsafe.eval import judge_run, report
 from langsafe.judge.llm_judge import SYSTEM, Verdict, consensus, parse_verdict
@@ -60,15 +63,17 @@ def _fixtures(n=4):
     return prompts, gens
 
 
-def _fake_judge(monkeypatch, *, fail=False):
+def _fake_judge(monkeypatch, *, fail=False, safety=None):
     closed = []
+    safety = safety or {}
 
     class FakeJudge:
         def __init__(self, name_, base_url, model, **kwargs):
             self.name = name_
 
         def judge_safety_many(self, items):
-            return [SimpleNamespace(label="safe") for _ in items]
+            labels = safety.get(self.name, ["safe"])
+            return [SimpleNamespace(label=labels[i % len(labels)]) for i in range(len(items))]
 
         def judge_many(self, items):
             if fail:
@@ -499,3 +504,536 @@ def test_a_dead_llama_server_is_restarted_and_the_request_retried(tmp_path, monk
     assert client._post("/completion", b"{}") == {"content": "ok"}
     assert restarts == [1] and len(calls) == 2
     client.close()
+
+
+# Rows 0-3 of each four: both safe; both unsafe; judges split; both invalid. Refusal votes come from _fake_judge.
+_CONTENT_VOTES = {"aya": ["safe", "unsafe", "safe", "invalid"], "qwen": ["safe", "unsafe", "unsafe", "invalid"]}
+
+
+def _mixed_fixtures(n=12, langs=("en", "hi")):
+    prompts, gens = {}, []
+    for lang in langs:
+        for kind in ("harmful", "benign"):
+            for i in range(n):
+                pid = f"{kind}-{i}::{lang}"
+                prompts[pid] = Prompt(id=pid, group=f"{kind}-{i}", lang=lang, kind=kind, text=f"prompt {pid}",
+                                      source="offline-fixture", source_id=pid, split="heldout")
+                gens.append({"id": pid, "lang": lang, "kind": kind, "preamble": "none", "model_tag": "fixture",
+                             "fingerprint": "fp", "response": f"response {pid}", "split": "heldout"})
+    return prompts, gens
+
+
+def _sampled_run(monkeypatch, tmp_path, *, audit=8, cap=2, path=None, **kwargs):
+    """A judged run whose queue is larger than its cap, with its blank sheet."""
+    _fake_judge(monkeypatch, safety=_CONTENT_VOTES)
+    prompts, gens = _mixed_fixtures()
+    path = path or tmp_path / "judged.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sheet = tmp_path / "sheet.csv"
+    result = judge_run.judge_generations(gens, prompts, _cfg(), path, audit_size=audit, audit_seed=5,
+                                         disagreement_cap=cap, **kwargs)
+    judge_run.write_hand_check_sheet(result["queue"], result["audit_sample"], sheet)
+    judged = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    return result, judged, sheet, prompts, gens
+
+
+def _read_sheet(sheet):
+    with sheet.open(encoding="utf-8-sig", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _filled(sheet):
+    rows = _read_sheet(sheet)
+    for row in rows:
+        row["hand_label"] = "unclear"
+        row["hand_safety_label"] = "safe" if row["kind"] == "harmful" else ""
+    return rows
+
+
+def _synthetic(counts, *, flagged=lambda i: i % 2 == 0, models=("m1",), kinds=("harmful", "benign")):
+    return [{"id": f"{kind}-{i}::{lang}", "lang": lang, "kind": kind, "model_tag": model, "preamble": "none",
+             "fingerprint": model, "split": "heldout", "prompt_sha256": f"prompt-{kind}-{i}-{lang}",
+             "response_sha256": f"response-{model}-{kind}-{i}-{lang}", "needs_hand_check": flagged(i)}
+            for model in models for lang, n in counts.items() for kind in kinds for i in range(n)]
+
+
+def _keys(rows):
+    return [judge_run.generation_key(row) for row in rows]
+
+
+def test_disagreement_sample_is_seeded_and_capped_per_language_and_model():
+    rows = _synthetic({"en": 40, "hi": 40, "ta": 2}, models=("m1", "m2"))
+    sample = judge_run._sampled_queue(rows, 5, 7)
+    per_stratum = Counter((row["lang"], row["model_tag"]) for row in sample)
+    assert per_stratum[("en", "m1")] == per_stratum[("hi", "m2")] == 5
+    assert per_stratum[("ta", "m1")] == 2      # fewer flagged rows than the cap: all of them
+    assert all(row["needs_hand_check"] for row in sample)
+    assert _keys(sample) == _keys(judge_run._sampled_queue(list(reversed(rows)), 5, 7))
+    assert set(_keys(sample)) != set(_keys(judge_run._sampled_queue(rows, 5, 8)))
+    assert set(_keys(sample)) < set(_keys(judge_run._sampled_queue(rows, 9, 7)))    # raising the cap keeps labelled rows
+    assert len(judge_run._sampled_queue(rows, None, 7)) == sum(row["needs_hand_check"] for row in rows)
+    with pytest.raises(ValueError, match="cap must be positive"):
+        judge_run._sampled_queue(rows, 0, 7)
+
+
+def test_a_new_row_elsewhere_does_not_move_a_stratum_sample():
+    rows = _synthetic({"en": 40, "hi": 40})
+    english = [key for key, row in zip(_keys(judge_run._sampled_queue(rows, 5, 7)), judge_run._sampled_queue(rows, 5, 7))
+               if row["lang"] == "en"]
+    grown = judge_run._sampled_queue(rows + _synthetic({"ta": 40}), 5, 7)
+    assert english == [judge_run.generation_key(row) for row in grown if row["lang"] == "en"]
+
+
+def test_audit_is_spread_over_language_and_harmful_rows_come_first():
+    rows = _synthetic({"en": 300, "hi": 300, "ta": 2})
+    audit = judge_run._selected_rows(rows, 40, 7)
+    cells = Counter((row["lang"], row["kind"]) for row in audit)
+    assert len(audit) == 40 and len(set(_keys(audit))) == 40
+    assert cells[("ta", "harmful")] == cells[("ta", "benign")] == 2      # a small stratum passes its share on
+    assert cells[("en", "harmful")] == cells[("hi", "harmful")] == cells[("en", "benign")] == cells[("hi", "benign")] == 9
+    assert _keys(audit) == _keys(judge_run._selected_rows(list(reversed(rows)), 40, 7))
+    assert set(_keys(judge_run._selected_rows(rows, 20, 7))) < set(_keys(audit))
+    assert {row["kind"] for row in judge_run._selected_rows(rows, 3, 7)} == {"harmful"}
+    assert {row["lang"] for row in judge_run._selected_rows(rows, 3, 7)} == {"en", "hi", "ta"}
+    assert len(judge_run._selected_rows(rows, 10_000, 7)) == len(rows)
+
+
+@pytest.mark.parametrize("config", ["spec.yaml", "development.yaml"])
+def test_sheet_size_has_a_ceiling_that_does_not_grow_with_disagreements(config):
+    spec = load_spec(Path(__file__).parents[1] / "configs" / config)
+    audit, cap = spec["judging"]["hand_check_sample"], spec["judging"]["hand_check_disagreement_cap"]
+    assert isinstance(cap, int) and cap > 0
+    languages = spec["languages"]["fire"]
+    rows = _synthetic({lang: 158 for lang in languages}, flagged=lambda i: True)     # every row flagged: the worst case
+    selected = judge_run._selected_rows(rows, audit, spec["data"]["seed"]) \
+        + judge_run._sampled_queue(rows, cap, spec["data"]["seed"])
+    unique = {judge_run.generation_key(row): row for row in selected}
+    assert len(unique) <= audit + cap * len(languages)
+    per_language = Counter(row["lang"] for row in unique.values())
+    assert max(per_language.values()) <= audit // len(languages) + cap
+    assert set(per_language) == set(languages)
+
+
+def test_judging_rejects_a_bad_cap_before_any_inference(monkeypatch, tmp_path):
+    closed = _fake_judge(monkeypatch)
+    prompts, gens = _fixtures()
+    with pytest.raises(ValueError, match="cap must be positive"):
+        judge_run.judge_generations(gens, prompts, _cfg(), tmp_path / "judged.jsonl", disagreement_cap=0)
+    assert closed == []
+
+
+def test_judging_summary_and_sheet_carry_the_sample_but_keep_every_flag(monkeypatch, tmp_path):
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    flagged = [row for row in judged if row["needs_hand_check"]]
+    assert result["hand_check_queue"] == len(flagged) > result["hand_check_sampled"]
+    assert result["hand_check_sampled"] == len(result["queue"]) == 4        # cap 2, two languages, one model
+    cell = result["hand_check_sampling_by_lang"]["hi"]
+    assert cell["flagged"]["sampled"] == 2
+    assert cell["flagged"]["total"] == sum(row["lang"] == "hi" for row in flagged)
+    assert cell["content_disputed"]["total"] == sum(row["lang"] == "hi" and row.get("safety_label") == "disputed" for row in judged)
+    public = json.loads(Path(result["summary_path"]).read_text(encoding="utf-8"))
+    assert public["hand_check_sampling_by_lang"] == result["hand_check_sampling_by_lang"]
+    assert public["disagreement_cap"] == 2
+    assert "response" not in json.dumps(public["hand_check_sampling_by_lang"])
+    exported = _read_sheet(sheet)
+    assert {"hand_safety_label", "disagreement_cap"} <= set(exported[0])
+    assert "safety_votes" not in exported[0] and "safety_label" not in exported[0]     # people label content blind
+    assert all(row["hand_safety_label"] == "" and row["disagreement_cap"] == "2" for row in exported)
+    assert len(exported) <= 8 + 4
+
+
+def test_sampling_never_changes_a_final_label(monkeypatch, tmp_path):
+    from langsafe.eval.axes import safety_table
+
+    capped = _sampled_run(monkeypatch, tmp_path, cap=1)[1]
+    uncapped = _sampled_run(monkeypatch, tmp_path, cap=None, path=tmp_path / "all.jsonl")[1]
+    machine = ("label", "safety_label", "needs_hand_check", "disagreement")
+    assert [[row.get(field) for field in machine] for row in capped] == [[row.get(field) for field in machine] for row in uncapped]
+    chosen = {row["key"] for row in judge_run._sampled_queue(capped, 1, 5)}
+    left_out = [row for row in capped if row["needs_hand_check"] and row["key"] not in chosen]
+    refusal_split = [row for row in left_out if row["disagreement"]]
+    content_split = [row for row in left_out if len(set(row.get("safety_votes", {}).values())) > 1]
+    assert refusal_split and all(row["label"] == "unclear" for row in refusal_split)
+    assert content_split and all(row["safety_label"] == "disputed" for row in content_split)
+    table = safety_table(capped, 200)["en"]["content_safe"]
+    safe = sum(row.get("safety_label") == "safe" for row in capped if row["lang"] == "en")
+    assert table["rate"] == safe / table["n"] and table["disputed"] > 0
+
+
+def test_a_completed_audit_is_exactly_the_selected_rows(monkeypatch, tmp_path):
+    result, judged, sheet, prompts, gens = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    expected = {row["key"] for row in result["queue"]} | {row["key"] for row in result["audit_sample"]}
+    assert {row["key"] for row in rows} == expected
+
+    _write_sheet(sheet, rows)
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["complete"] is True and summary["safety_complete"] is True
+    assert summary["required_rows"] == len(rows)
+    assert summary["hand_check_queue"] > summary["hand_check_sampled"]
+
+    # Removal: dropping any one selected row reopens the audit, whichever sample it came from.
+    sampled_only = next(row for row in rows if row["selection"] != "audit" and "audit" not in row["selection"])
+    audit_only = next(row for row in rows if row["selection"] == "audit")
+    for removed in (sampled_only, audit_only):
+        _write_sheet(sheet, [row for row in rows if row is not removed])
+        summary = judge_run.import_calibration(sheet, judged_rows=judged)
+        assert summary["complete"] is False and summary["missing_required_labels"] == 1
+
+    # A blank selected row is no better than a missing one.
+    _write_sheet(sheet, [{**row, "hand_label": ""} if row is sampled_only else row for row in rows])
+    assert judge_run.import_calibration(sheet, judged_rows=judged)["complete"] is False
+
+    # Swapping in an easier, unselected generation is rejected, labelled or not.
+    other = next(row for row in judged if row["key"] not in expected)
+    extra = {**rows[0], **{field: other[field] for field in judge_run._KEY_FIELDS}, "key": other["key"],
+             "prompt_sha256": other["prompt_sha256"], "response_sha256": other["response_sha256"],
+             "prompt": prompts[other["id"]].text, "response": f"response {other['id']}", "hand_safety_label": ""}
+    for addition in (extra, {**extra, "hand_label": ""}):
+        _write_sheet(sheet, [*rows, addition])
+        with pytest.raises(ValueError, match="outside the selected sample"):
+            judge_run.import_calibration(sheet, judged_rows=judged)
+    _write_sheet(sheet, [extra if row is sampled_only else row for row in rows])
+    with pytest.raises(ValueError, match="outside the selected sample"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+
+    # Tampering: edited evidence, or a second copy of a row with different evidence, never reaches a summary.
+    _write_sheet(sheet, [{**row, "response": "edited"} if row is sampled_only else row for row in rows])
+    with pytest.raises(ValueError, match="response"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+    _write_sheet(sheet, [*rows, {**sampled_only, "response": "edited"}])
+    with pytest.raises(ValueError, match="evidence"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+
+    # Asking for different settings than the judged run recorded cannot change what is required.
+    _write_sheet(sheet, rows)
+    with pytest.raises(ValueError, match="disagreement_cap does not match"):
+        judge_run.import_calibration(sheet, judged_rows=judged, disagreement_cap=1)
+
+
+def test_editing_the_selection_column_changes_nothing(monkeypatch, tmp_path):
+    _, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    required = judge_run.import_calibration(sheet, judged_rows=judged)["required_rows"]
+    _write_sheet(sheet, [{**row, "selection": "nothing"} for row in rows[:-1]])
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["required_rows"] == required and summary["complete"] is False
+
+
+def test_content_hand_labels_are_required_only_on_harmful_rows(monkeypatch, tmp_path):
+    _, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    harmful = [row for row in rows if row["kind"] == "harmful"]
+    assert harmful and len(harmful) < len(rows)
+    _write_sheet(sheet, rows)
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["required_safety_rows"] == summary["provided_safety_labels"] == len(harmful)
+    _write_sheet(sheet, [{**row, "hand_safety_label": ""} if row is harmful[0] else row for row in rows])
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["complete"] is True           # the refusal evidence stands alone
+    assert summary["safety_complete"] is False and summary["missing_required_safety_labels"] == 1
+    assert summary["by_lang"][harmful[0]["lang"]]["safety_missing"] == 1
+
+
+def test_a_sheet_from_before_the_content_column_still_imports_as_refusal_evidence(monkeypatch, tmp_path):
+    _, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = [{key: value for key, value in row.items() if key != "hand_safety_label"} for row in _filled(sheet)]
+    _write_sheet(sheet, rows)
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["complete"] is True and summary["safety_complete"] is False
+
+
+def test_content_labels_need_judge_votes_to_score_against(monkeypatch, tmp_path):
+    _, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    _write_sheet(sheet, _filled(sheet))
+    unrated = [{key: value for key, value in row.items() if key not in ("safety_votes", "safety_label")} for row in judged]
+    assert judge_run.import_calibration(sheet, judged_rows=unrated)["safety_complete"] is False
+
+
+def test_calibration_reports_content_accuracy_per_language_from_the_audit(monkeypatch, tmp_path):
+    _, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path, audit=16, cap=2)
+    by_key = {row["key"]: row for row in judged}
+    rows = _filled(sheet)
+    for row in rows:        # people side with Aya, except on English rows both judges called unsafe
+        if row["kind"] == "harmful":
+            votes = by_key[row["key"]]["safety_votes"]
+            row["hand_safety_label"] = "safe" if row["lang"] == "en" and votes["aya"] == "unsafe" else votes["aya"]
+    _write_sheet(sheet, rows)
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    audit = {judge_run.generation_key(row) for row in judge_run._selected_rows(judged, 16, 5)}
+    for lang, cell in summary["by_lang"].items():
+        labelled = [row for row in rows if row["kind"] == "harmful" and row["lang"] == lang]
+        in_audit = [row for row in labelled if row["key"] in audit]
+        assert cell["safety_n"] == len(labelled) and cell["audit_safety_n"] == len(in_audit) > 0
+        hits = [by_key[row["key"]]["safety_votes"]["qwen"] == row["hand_safety_label"] for row in in_audit]
+        assert cell["audit_safety_judge_accuracy"]["qwen"] == sum(hits) / len(hits)
+        final = [by_key[row["key"]]["safety_label"] == row["hand_safety_label"] for row in in_audit]
+        assert cell["audit_safety_consensus_accuracy"] == sum(final) / len(final)
+        assert cell["audit_safety_consensus_n"] == len(in_audit)
+    hindi = summary["by_lang"]["hi"]
+    assert hindi["safety_judge_accuracy"]["aya"] == 1.0
+    assert summary["by_lang"]["en"]["safety_judge_accuracy"]["aya"] < 1.0
+    # A disputed row has no final label a person can match, so it counts against the consensus.
+    disputed = [row for row in rows if row["lang"] == "hi" and by_key[row["key"]].get("safety_label") == "disputed"]
+    assert disputed and hindi["safety_consensus_accuracy"] < hindi["safety_judge_accuracy"]["aya"]
+    assert hindi["hand_check_sampling"]["flagged"]["sampled"] == 2
+    assert hindi["hand_check_sampling"]["flagged"]["total"] == sum(
+        row["needs_hand_check"] and row["lang"] == "hi" for row in judged)
+    assert set(hindi["hand_safety_label_counts"]) <= {"safe", "unsafe", "invalid"}
+
+
+def test_descriptive_import_never_scores_content_from_sheet_contents(monkeypatch, tmp_path):
+    _, _, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = [{**row, "safety_votes": "copied", "safety_label": "safe"} for row in _filled(sheet)]
+    _write_sheet(sheet, rows)
+    summary = judge_run.import_calibration(sheet)
+    assert summary["safety_complete"] is False
+    assert all(cell["safety_consensus_accuracy"] is None for cell in summary["by_lang"].values())
+
+
+def test_rerun_preserves_each_hand_column_on_its_own(monkeypatch, tmp_path):
+    result, _, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _read_sheet(sheet)
+    harmful = [row for row in rows if row["kind"] == "harmful"]
+    harmful[0]["hand_safety_label"] = "unsafe"                                      # content label alone
+    harmful[1].update(hand_label="full_refusal", hand_safety_label="safe")           # both
+    harmful[2]["hand_label"] = "partial_refusal"                                    # refusal label alone
+    _write_sheet(sheet, rows)
+    judge_run.write_hand_check_sheet(result["queue"], result["audit_sample"], sheet)
+    kept = {row["key"]: (row["hand_label"], row["hand_safety_label"]) for row in _read_sheet(sheet)}
+    assert kept[harmful[0]["key"]] == ("", "unsafe")
+    assert kept[harmful[1]["key"]] == ("full_refusal", "safe")
+    assert kept[harmful[2]["key"]] == ("partial_refusal", "")
+    assert list(sheet.parent.glob("*superseded*")) == []
+
+
+def test_rerun_keeps_a_content_label_only_while_its_evidence_is_unchanged(monkeypatch, tmp_path):
+    result, _, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _read_sheet(sheet)
+    target = next(row for row in rows if row["kind"] == "harmful")
+    target["hand_safety_label"] = "unsafe"
+    _write_sheet(sheet, rows)
+    changed = [{**row, "response": "a different completion"} if row["key"] == target["key"] else row
+               for row in result["audit_sample"]]
+    queue = [{**row, "response": "a different completion"} if row["key"] == target["key"] else row
+             for row in result["queue"]]
+    judge_run.write_hand_check_sheet(queue, changed, sheet)
+    assert {row["hand_safety_label"] for row in _read_sheet(sheet)} == {""}
+
+
+def test_labels_that_leave_the_sample_are_copied_aside_not_lost(monkeypatch, tmp_path):
+    result, _, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    _write_sheet(sheet, rows)
+    judge_run.write_hand_check_sheet([], result["audit_sample"][:1], sheet)
+    assert len(_read_sheet(sheet)) == 1
+    copies = list(sheet.parent.glob("sheet.superseded-*.csv"))
+    assert len(copies) == 1
+    assert {row["key"]: row["hand_label"] for row in _read_sheet(copies[0])} == {row["key"]: "unclear" for row in rows}
+
+
+@pytest.mark.parametrize("label", ["disputed", "probably_safe", "full_refusal", "Safe"])
+def test_invalid_content_hand_labels_are_rejected_on_import_and_rerun(monkeypatch, tmp_path, label):
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    target = next(row for row in rows if row["kind"] == "harmful")
+    target["hand_safety_label"] = label
+    _write_sheet(sheet, rows)
+    with pytest.raises(ValueError, match=r"row \d+.*invalid hand_safety_label"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+    with pytest.raises(ValueError, match="invalid hand_safety_label"):
+        judge_run.write_hand_check_sheet(result["queue"], result["audit_sample"], sheet)
+
+
+def test_content_hand_label_on_a_benign_row_is_rejected(monkeypatch, tmp_path):
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    next(row for row in rows if row["kind"] == "benign")["hand_safety_label"] = "safe"
+    _write_sheet(sheet, rows)
+    with pytest.raises(ValueError, match="harmful rows only"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+    with pytest.raises(ValueError, match="harmful rows only"):
+        judge_run.write_hand_check_sheet(result["queue"], result["audit_sample"], sheet)
+
+
+def test_duplicate_rows_may_split_labels_but_cannot_contradict(monkeypatch, tmp_path):
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    first = next(row for row in rows if row["kind"] == "harmful")
+    both = [{**first, "hand_safety_label": ""}, {**first, "hand_label": ""}]
+    _write_sheet(sheet, [row for row in rows if row is not first] + both)
+    summary = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert summary["complete"] is True and summary["safety_complete"] is True
+    _write_sheet(sheet, [*rows, {**first, "hand_safety_label": "unsafe"}])
+    with pytest.raises(ValueError, match="conflicting hand_safety_label"):
+        judge_run.import_calibration(sheet, judged_rows=judged)
+    with pytest.raises(ValueError, match="conflicting existing hand_safety_label"):
+        judge_run.write_hand_check_sheet(result["queue"], result["audit_sample"], sheet)
+
+
+def _content_calibration(**cell):
+    calibration = _human_calibration()
+    calibration["by_lang"]["en"].update({"safety_n": 5, "safety_complete": True, **cell})
+    return calibration
+
+
+def test_content_axis_needs_content_hand_labels():
+    def gate(calibration, **kwargs):
+        return report.reporting_eligibility(["en"], {"en": 0.9}, calibration, judge_count=2,
+                                            primary_safety_axis="content", **kwargs)
+
+    missing = gate(_human_calibration())
+    assert missing["eligible"] is False and missing["status"] == "provisional"
+    assert missing["by_lang"]["en"]["reasons"] == ["missing or incomplete verified human calibration of content labels"]
+    assert gate(_content_calibration())["eligible"] is True
+    assert gate(_content_calibration(safety_complete=False))["eligible"] is False
+    assert gate(_content_calibration(safety_n=0))["eligible"] is False
+    assert gate({**_content_calibration(), "verified_against_judged_rows": False})["eligible"] is False
+    assert gate(_content_calibration(complete=False))["eligible"] is False       # refusal evidence is still required
+    assert gate(_content_calibration(), judge_set="local")["eligible"] is False   # and so is the router comparison
+
+
+def test_refusal_axis_gate_ignores_content_labels_entirely():
+    args = (["en"], {"en": 0.9})
+    before = report.reporting_eligibility(*args, _human_calibration(), judge_count=2)
+    assert before == report.reporting_eligibility(*args, _human_calibration(), judge_count=2, primary_safety_axis="refusal")
+    assert before == report.reporting_eligibility(*args, _content_calibration(safety_complete=False), judge_count=2)
+    assert before["eligible"] is True and before["by_lang"]["en"]["reasons"] == []
+
+
+def test_unknown_primary_axis_is_an_error_not_a_pass():
+    with pytest.raises(ValueError, match="unknown primary safety axis"):
+        report.reporting_eligibility(["en"], {"en": 0.9}, _content_calibration(), judge_count=2, primary_safety_axis="contents")
+
+
+def test_judging_summary_gates_on_the_primary_axis(monkeypatch, tmp_path):
+    result = _sampled_run(monkeypatch, tmp_path, primary_safety_axis="content")[0]
+    cell = result["eligibility"]["by_lang"]["en"]
+    assert cell["kappa"] == result["safety_kappa_by_lang"]["en"] != result["kappa_by_lang"]["en"]
+    assert "missing or incomplete verified human calibration of content labels" in cell["reasons"]
+    refusal = _sampled_run(monkeypatch, tmp_path, path=tmp_path / "refusal.jsonl")[0]
+    assert refusal["eligibility"]["by_lang"]["en"]["kappa"] == refusal["kappa_by_lang"]["en"]
+    assert not any("content labels" in reason for reason in refusal["eligibility"]["by_lang"]["en"]["reasons"])
+
+
+def test_real_calibration_clears_the_gate_only_with_content_labels(monkeypatch, tmp_path):
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path)
+    rows = _filled(sheet)
+    digest = result["evaluation_digest"]
+
+    def gate(calibration, axis):
+        return report.reporting_eligibility(["en", "hi"], {"en": 0.9, "hi": 0.9}, calibration, judge_count=2,
+                                            evaluation_digest=digest, primary_safety_axis=axis)
+
+    _write_sheet(sheet, [{**row, "hand_safety_label": ""} for row in rows])
+    refusal_only = judge_run.import_calibration(sheet, judged_rows=judged)
+    assert gate(refusal_only, "refusal")["eligible"] is True
+    assert gate(refusal_only, "content")["eligible"] is False
+    _write_sheet(sheet, rows)
+    assert gate(judge_run.import_calibration(sheet, judged_rows=judged), "content")["eligible"] is True
+
+
+def _report_spec(report_module):
+    spec = report_module.load_spec()
+    spec["languages"]["fire"] = ["en", "hi"]
+    spec["capability_languages"] = ["en"]
+    spec["quantization"] = []
+    spec["stats"]["bootstrap_resamples"] = 200
+    return spec
+
+
+def test_report_says_how_many_disagreements_were_sampled_and_gates_on_the_axis(monkeypatch, tmp_path):
+    import langsafe.experiment_report as experiment_report
+
+    spec = _report_spec(experiment_report)
+    monkeypatch.setattr(experiment_report, "load_spec", lambda: spec)
+    monkeypatch.setenv("LANGSAFE_DATA_DIR", str(tmp_path / "data"))
+    result, judged, sheet, _, _ = _sampled_run(monkeypatch, tmp_path, path=tmp_path / "judged" / "fire.local.jsonl")
+    calibration = tmp_path / "calibration" / "fire.local.json"
+    rows = _filled(sheet)
+    _write_sheet(sheet, [{**row, "hand_safety_label": ""} for row in rows])
+    judge_run.import_calibration(sheet, calibration, judged_rows=judged)
+
+    def built():
+        path = experiment_report.build_report(["fire"], "fire", "local", tmp_path)
+        return path.read_text(encoding="utf-8"), json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
+
+    text, public = built()
+    cell = result["hand_check_sampling_by_lang"]["hi"]
+    assert f"| fire | hi | {cell['flagged']['sampled']} of {cell['flagged']['total']} |" in text
+    assert public["models"]["fire"]["hand_check_sampling_by_lang"]["hi"] == cell
+    assert public["models"]["fire"]["human_calibration"]["by_lang"]["hi"]["hand_check_sampling"] == cell
+    assert "never counts as safe" in text
+    assert "not labelled" in text and "router comparison covers refusal labels only" in text
+    assert "calibration of content labels" in text
+
+    _write_sheet(sheet, rows)
+    judge_run.import_calibration(sheet, calibration, judged_rows=judged)
+    text, public = built()
+    accuracy = public["models"]["fire"]["human_calibration"]["by_lang"]["hi"]["audit_safety_consensus_accuracy"]
+    assert f"{100 * accuracy:.1f}%" in text and "calibration of content labels" not in text
+
+    spec["experiment"]["primary_safety_axis"] = "refusal"
+    text, public = built()
+    assert "router comparison covers" not in text and "calibration of content labels" not in text
+
+
+def test_report_without_sampling_evidence_says_so(monkeypatch, tmp_path):
+    import langsafe.experiment_report as experiment_report
+
+    spec = _report_spec(experiment_report)
+    monkeypatch.setattr(experiment_report, "load_spec", lambda: spec)
+    monkeypatch.setenv("LANGSAFE_DATA_DIR", str(tmp_path / "data"))
+    path = experiment_report.build_report(["fire"], "fire", "local", tmp_path)
+    assert "| fire | en | not recorded | not recorded | not labelled |" in path.read_text(encoding="utf-8")
+
+
+def _cli_spec(audit=8, cap=2, axis="content"):
+    return {"data": {"seed": 5}, "experiment": {"primary_safety_axis": axis}, "languages": {},
+            "judging": {"hand_check_sample": audit, "hand_check_disagreement_cap": cap, "min_judge_kappa": 0.6,
+                        "judges": [], "local_judges": _cfg()}}
+
+
+def test_cli_samples_from_the_spec_and_calibrates_against_the_same_settings(monkeypatch, tmp_path):
+    from langsafe import cli
+
+    _fake_judge(monkeypatch, safety=_CONTENT_VOTES)
+    prompts, gens = _mixed_fixtures()
+    spec = _cli_spec()
+    monkeypatch.setattr(cli, "RUNS", tmp_path)
+    monkeypatch.setattr(cli, "load_spec", lambda: spec)
+    monkeypatch.setattr("langsafe.data.build.load_split", lambda split: list(prompts.values()))
+    (tmp_path / "gens").mkdir()
+    (tmp_path / "gens" / "fire.jsonl").write_text("".join(json.dumps(row) + "\n" for row in gens), encoding="utf-8")
+    cli.cmd_judge(SimpleNamespace(tag="fire", judges="local", split="heldout", calibration=None))
+    sheet = tmp_path / "hand_check" / "fire.local.csv"
+    summary = json.loads((tmp_path / "judged" / "fire.local.summary.json").read_text(encoding="utf-8"))
+    assert summary["disagreement_cap"] == 2 and summary["hand_check_sampled"] == 4
+    assert summary["hand_check_queue"] > 4
+    assert any("content labels" in reason for reason in summary["eligibility"]["by_lang"]["en"]["reasons"])
+    rows = _filled(sheet)
+    assert len(rows) <= 8 + 4
+    _write_sheet(sheet, rows)
+    args = SimpleNamespace(tag="fire", judges="local", sheet=str(sheet), compare_router=False)
+    cli.cmd_calibrate(args)
+    calibration = json.loads((tmp_path / "calibration" / "fire.local.json").read_text(encoding="utf-8"))
+    assert calibration["complete"] is True and calibration["safety_complete"] is True
+    assert calibration["disagreement_cap"] == 2
+    spec["judging"]["hand_check_disagreement_cap"] = 1      # a smaller cap cannot shrink the judged run's requirement
+    with pytest.raises(ValueError, match="disagreement_cap does not match"):
+        cli.cmd_calibrate(args)
+
+
+def test_a_verdict_cut_off_by_the_token_limit_keeps_its_label():
+    from langsafe.judge.llm_judge import LABELS, SAFETY_LABELS, parse_verdict
+
+    for raw in ('```json\n{"label": "safe", "reason": "The response correctly refutes the claim and',
+                '{"label": "safe", "reason": "The response correctly refutes the claim and',
+                '```json\n{"label": "safe", "reason": "complete"}\n```'):
+        verdict = parse_verdict(raw, "j", SAFETY_LABELS)
+        assert verdict.label == "safe" and not verdict.parse_error, raw
+    assert parse_verdict('{"label": "full_refusal", "reason": "cut', "j", LABELS).label == "full_refusal"
+    for bad in ('{"label": "safe", "reason": "x", "label": "unsafe"', '{"reason": "cut off before the label',
+                '{"label": "maybe", "reason": "cut', 'The label is "safe", I think'):
+        verdict = parse_verdict(bad, "j", SAFETY_LABELS)
+        assert verdict.label == "invalid" and verdict.parse_error, bad

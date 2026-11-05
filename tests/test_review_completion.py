@@ -152,3 +152,19 @@ def test_router_alignment_does_not_match_same_key_with_changed_completion():
     result = compare_judge_sets(local, router)
     assert result["verified"] is False
     assert result["shared_rows"] == 0
+
+
+def test_calibration_digest_binds_the_disagreement_cap():
+    row = {"key": "backend-key", "prompt_sha256": "prompt-a", "response_sha256": "response-a",
+           "judges": {"one": "full_refusal", "two": "full_refusal"}, "label": "full_refusal",
+           "rubric_hash": "rubric"}
+    assert evaluation_digest([{**row, "disagreement_cap": 10}]) != evaluation_digest([{**row, "disagreement_cap": 20}])
+
+
+def test_rows_judged_before_the_cap_keep_their_stamped_digest():
+    # This value comes from the code before the cap existed. Summaries already on disk carry it, so a calibration
+    # imported today has to reproduce it or the gate would call that calibration a different evaluation.
+    row = {"key": "backend-key", "prompt_sha256": "prompt-a", "response_sha256": "response-a",
+           "judges": {"one": "full_refusal", "two": "full_refusal"}, "label": "full_refusal",
+           "rubric_hash": "rubric"}
+    assert evaluation_digest([row]) == "45f8a8ca80f9132daf770d5e27ec736b3cd0c5fe788e45bd44821bbcc8830866"

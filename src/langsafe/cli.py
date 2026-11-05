@@ -25,6 +25,12 @@ def _judges_cfg(spec: dict, judges: str) -> list[dict]:
     return {'router': spec['judging']['judges'], 'local': spec['judging']['local_judges'], 'rules': []}[judges]
 
 
+def _hand_check_settings(spec: dict) -> dict:
+    """What a sheet selects. A spec without a cap keeps every disagreement, which asks for more human work, not less."""
+    return {'audit_size': spec['judging']['hand_check_sample'], 'audit_seed': spec['data']['seed'],
+            'disagreement_cap': spec['judging'].get('hand_check_disagreement_cap')}
+
+
 def _read_rows(path: Path) -> list[dict]:
     with open(path, encoding='utf-8') as stream:
         return [json.loads(line) for line in stream if line.strip()]
@@ -123,8 +129,9 @@ def cmd_judge(a):
         raise ValueError('Generation IDs do not belong to the requested split/data')
     calibration = json.loads(Path(a.calibration).read_text()) if a.calibration else None
     result = judge_generations(generations, prompts, _judges_cfg(spec, a.judges), _judged_path(a.tag, a.judges),
-                               audit_size=spec['judging']['hand_check_sample'], audit_seed=spec['data']['seed'],
-                               min_kappa=spec['judging']['min_judge_kappa'], calibration=calibration)
+                               **_hand_check_settings(spec), min_kappa=spec['judging']['min_judge_kappa'],
+                               calibration=calibration,
+                               primary_safety_axis=spec.get('experiment', {}).get('primary_safety_axis', 'refusal'))
     queue = result.pop('queue')
     sample = result.pop('audit_sample', [])
     sheet = RUNS / 'hand_check' / f'{a.tag}.{a.judges}.csv'
@@ -146,8 +153,7 @@ def cmd_calibrate(a):
         output = RUNS / 'calibration' / f'{a.tag}.{a.judges}.json'
         result = import_calibration(Path(a.sheet), output,
                                     judged_rows=_read_rows(_judged_path(a.tag, a.judges)),
-                                    audit_size=load_spec()['judging']['hand_check_sample'],
-                                    audit_seed=load_spec()['data']['seed'])
+                                    **_hand_check_settings(load_spec()))
     print(json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False))
     _ledger('calibrate', {'tag': a.tag, 'artifact': str(output), 'sha256': file_sha256(output)})
 

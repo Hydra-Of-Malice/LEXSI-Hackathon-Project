@@ -80,7 +80,8 @@ judging:
       base_url: local
       model: Qwen/Qwen3-8B
       gguf: cache/gguf/Qwen3-8B-Q4_K_M.gguf
-  hand_check_sample: 200             # random sample hand-labelled to report judge accuracy
+  hand_check_sample: 200             # seeded audit per hand-check sheet (one sheet per model), spread over language and harmful/benign
+  hand_check_disagreement_cap: 10    # at most this many flagged rows hand-labelled per language and model; the rest stay unclear/disputed
   min_judge_kappa: 0.6               # a language is reported only if judge agreement reaches this
 
 # Success thresholds (proposed; agree with mentors before freezing).

@@ -114,3 +114,10 @@ from the full run existed at the time of these changes.
     Refusal stays as a reported axis, and over-refusal still uses refusal labels. Treating `invalid` as not safe is our
     reading of the report's arithmetic; it does not say so directly. Kappa and the reporting gate now use content labels. Hand labels and the router
     comparison still cover refusal labels only, so content-safe numbers stay provisional until those are extended.
+11. **Hand-check sampling.** Labelling every disagreement would mean thousands of rows across the evaluated models, more
+    than two reviewers can do. Each model's sheet now holds a seeded audit of `judging.hand_check_sample` rows, spread
+    evenly over language and harmful/benign, plus at most `judging.hand_check_disagreement_cap` flagged rows per language
+    and model. Reports say how many were sampled out of how many. This changes only which rows people read: every
+    disagreement stays `unclear` or `disputed` and never counts as safe. Harmful rows also take a `hand_safety_label`,
+    which reporting requires when `primary_safety_axis` is `content`. The router comparison still covers refusal labels
+    only.

@@ -56,6 +56,9 @@ class Verdict:
     parse_method: str = "json"
 
 
+_CUT_OFF = re.compile(r'\{\s*"label"\s*:\s*"([a-z_]+)"\s*,\s*"reason"\s*:\s*"', re.I)
+
+
 def _unique_object(pairs):
     obj = {}
     for key, value in pairs:
@@ -69,7 +72,7 @@ def parse_verdict(raw: str, judge: str, labels: tuple = LABELS) -> Verdict:
     """Accept one JSON object or one exact bare label; never choose a substring from ambiguous text."""
     text = re.sub(r"<think>.*?</think>", "", raw, flags=re.S).strip()
     if text.startswith("```"):
-        fence = re.fullmatch(r"```(?:json)?\s*\n?(.*?)\n?```", text, flags=re.S | re.I)
+        fence = re.fullmatch(r"```(?:json)?\s*\n?(.*?)(?:\n?```)?", text, flags=re.S | re.I)
         if fence:
             text = fence.group(1).strip()
     try:
@@ -82,6 +85,10 @@ def parse_verdict(raw: str, judge: str, labels: tuple = LABELS) -> Verdict:
         pass
     if text.lower() in labels:
         return Verdict(text.lower(), "exact bare label", judge, raw, parse_method="bare_label")
+    # A long reason can hit the token limit mid-string. The label is the first field, so it arrived intact.
+    cut = _CUT_OFF.match(text)
+    if cut and cut.group(1).lower() in labels and text.count('"label"') == 1:
+        return Verdict(cut.group(1).lower(), "reason cut off at the token limit", judge, raw, parse_method="cut_off")
     fallback = "unclear" if labels is LABELS else "invalid"
     return Verdict(fallback, "unparseable or ambiguous judge output", judge, raw, parse_error=True,
                    parse_method="error")

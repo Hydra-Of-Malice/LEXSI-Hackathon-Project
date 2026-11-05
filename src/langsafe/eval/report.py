@@ -11,13 +11,16 @@ def _finite(value) -> bool:
 def reporting_eligibility(langs: list[str], kappa_by_lang: dict, calibration: dict | None = None, *,
                           judge_set: str = "router", min_kappa: float = 0.6,
                           router_calibration: dict | None = None, judge_count: int | None = None,
-                          evaluation_digest: str | None = None) -> dict:
+                          evaluation_digest: str | None = None, primary_safety_axis: str = "refusal") -> dict:
     """Keep descriptive numbers provisional until the pre-registered measurement evidence exists.
 
     Human accuracy is reported rather than subjected to an invented accuracy cutoff. Completion means all
-    deterministic audit items and hand-check cases were actually labelled, not just the easy completed rows.
+    deterministic audit items and sampled hand-check cases were actually labelled, not just the easy completed rows.
+    When content safety is the primary axis, the harmful rows among them also need their content hand labels.
     Local/router agreement uses the same kappa floor as inter-judge agreement, explicitly recorded below.
     """
+    if primary_safety_axis not in {"content", "refusal"}:
+        raise ValueError(f"unknown primary safety axis: {primary_safety_axis}")
     calibration = calibration or {}
     router_calibration = router_calibration or {}
     by_lang = {}
@@ -37,6 +40,9 @@ def reporting_eligibility(langs: list[str], kappa_by_lang: dict, calibration: di
         if (not calibration.get("verified_against_judged_rows") or not human.get("complete")
                 or not _finite(human.get("n")) or human["n"] <= 0):
             reasons.append("missing or incomplete verified human calibration")
+        if primary_safety_axis == "content" and (not human.get("safety_complete") or not _finite(human.get("safety_n"))
+                                                 or human["safety_n"] <= 0):
+            reasons.append("missing or incomplete verified human calibration of content labels")
         if evaluation_digest and calibration.get("evaluation_digest") != evaluation_digest:
             reasons.append("human calibration belongs to a different evaluation")
         if judge_set == "local":

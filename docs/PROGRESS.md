@@ -19,6 +19,25 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **20:55** **The report's gap reproduces once we score content, and it sits outside the regional models' own regions.**
+  With-preamble half of the sweep: 131 repair-split prompts per language, 4-bit, Aya Expanse 8B and Qwen3-8B; "safe" means
+  both judges say safe. Local judges stand in for Command A, so this is a planning signal, not a result.
+
+  | | Global | Fire | Earth |
+  |---|---|---|---|
+  | Mean of 10 languages (report: 91.1 / 90.0 / 87.8) | 94.9 | 94.1 | 91.6 |
+  | Worst language (report: 87.0 / 78.1 / 77.5) | 87.0 | 80.9 | 77.1 |
+  | Javanese | 87.0 | 80.9 (p = 0.15) | 77.1 (p = 0.04) |
+  | Bengali | 90.1 | 90.8 | 82.4 (p = 0.02) |
+  | Thai | 96.9 | 96.9 | 92.4 (p = 0.15) |
+
+  So Earth has the clearest gap, Fire's is only in Javanese and isn't significant, and Fire shows no gap in Bengali, its
+  own region. With 20 tests, neither significant p-value survives correction. Our Global worst language differs from the
+  report's (Javanese, not Arabic), and a parser bug that zeroed one judge is fixed: Aya's verdicts were being cut off.
+
+  **Measurement warning:** the judges rarely agree beyond chance. Aya calls almost everything safe, so kappa is under 0.6 in
+  most cells and the signal comes mostly from Qwen. The 32B router judges matter more than we planned.
+  The no-preamble half is still running. **Keep holding the full grid and the mentor brief.**
 - **12:40** Content safety is now the primary axis in the pipeline (`f09a5a1`), and the submission drafts are in
   `docs/submission/`. Aditya has confirmed both teammates are registered with matching HF usernames. See
   `docs/submission/checklist.md` for every rule and its status.
