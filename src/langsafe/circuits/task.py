@@ -28,6 +28,7 @@ BOS_TEXT = "<BOS_TOKEN>"
 DEFAULT_OPENERS = {
     "en": ("I", "Sure"), "hi": ("मैं", "ज़रूर"), "hi-Latn": ("Main", "Zaroor"), "bn": ("আমি", "অবশ্যই"),
     "ta": ("மன்னிக்கவும்", "நிச்சயமாக"), "ar": ("عذراً", "بالتأكيد"), "sw": ("Samahani", "Hakika"),
+    "jv": ("Nuwun", "Mesthi"), "th": ("ขออภัย", "แน่นอน"), "ko": ("죄송합니다", "물론"),
 }
 
 

@@ -18,12 +18,20 @@ languages:
   - en
   - ar
   - sw
+  - jv
+  - bn
+  - th
+  - ko
 capability_languages:
 - en
 - hi
 - bn
 - ar
 - sw
+- ko
+capability_proxies:
+  earth:
+  - id
 data:
   seed: 20261103
   heldout_fraction: 0.6
@@ -60,6 +68,7 @@ experiment:
   circuit_ig_steps: 1
   circuit_languages:
   - en
+  circuit_preamble: none
   require_human_calibration: true
   require_router_calibration: true
   capability_limit: 20

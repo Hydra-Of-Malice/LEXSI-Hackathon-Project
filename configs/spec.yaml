@@ -13,8 +13,10 @@ models:
 # Languages under test, grouped by the regional model that targets them. English is the control everywhere.
 languages:
   fire: [en, hi, bn, ta, hi-Latn]   # hi-Latn = Hinglish (code-mixed, Latin script)
-  earth: [en, ar, sw]
-capability_languages: [en, hi, bn, ar, sw]   # Global-MMLU-Lite has no Tamil
+  earth: [en, ar, sw, jv, bn, th, ko]   # its region (ar, sw) plus the languages where the pilot found it weakest
+capability_languages: [en, hi, bn, ar, sw, ko]   # Global-MMLU-Lite has no Tamil, Javanese or Thai
+capability_proxies:
+  earth: [id]                           # Indonesian stands in for Javanese; Thai has no stand-in
 
 data:
   seed: 20261103
@@ -45,7 +47,7 @@ translation:
   quant: null
 
 experiment:
-  family: fire
+  family: earth
   local_batch_size: 2
   capability_batch_size: 1
   repair_per_cell: 40
@@ -55,7 +57,8 @@ experiment:
   circuit_pairs: 64              # translated pairs often lose token alignment, so start with more than we need
   circuit_examples: 16
   circuit_ig_steps: 3
-  circuit_languages: [en, hi, bn]
+  circuit_languages: [en, jv, bn]
+  circuit_preamble: none         # with the 366-token preamble, discovery needs 54 GB of commit on this laptop's CPU
   require_human_calibration: true
   require_router_calibration: true
 

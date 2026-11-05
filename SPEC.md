@@ -77,6 +77,11 @@ Benign look-alikes: XSTest's 250 safe prompts, translated into every language. C
 - **Optional secondary arm:** circuit-restricted LoRA trained on the repair split, distilling Global's own judged
   refusals and compliances. It is used only if time allows, and is reported as a training-based arm.
 
+## Target (from Amendment 12)
+Tiny Aya **Earth** is the drifted model, with Global as the reference. Languages: Arabic and Swahili (its region), Javanese,
+Bengali, Thai and Korean (where the pilot found it weakest), and English as the control. Fire is a smaller comparison.
+The target language is still fixed by the repair-split rule above, and every language is reported.
+
 ## Success thresholds (proposed; to agree with mentors)
 1. Close at least half of the worst-language harmful-refusal gap between the drifted model and Global.
 2. Benign over-refusal rises by no more than 2 points in any language.
@@ -121,3 +126,18 @@ from the full run existed at the time of these changes.
     disagreement stays `unclear` or `disputed` and never counts as safe. Harmful rows also take a `hand_safety_label`,
     which reporting requires when `primary_safety_axis` is `content`. The router comparison still covers refusal labels
     only.
+
+**2026-11-05, after the content-rubric pilot on repair-split items (`docs/PROGRESS.md`):**
+12. **Retargeted to Earth.** The proposal assumed Fire loses safety in Indic languages. With content scoring, the pilot
+    found the clearest gap in Earth, outside its own region: Javanese and Bengali. Fire showed no gap in Bengali, and only a
+    non-significant one in Javanese. Javanese, Thai and Korean join the languages under test, using MultiJail's own
+    versions. Global-MMLU-Lite has no Javanese or Thai, so Indonesian stands in for Javanese and Thai has no capability
+    measure, which is a limitation. Only repair-split items informed this choice.
+13. **The gap must be confirmed before any repair claim.** The pilot used 4-bit weights and repair-split items, with 20
+    comparisons, so it can't establish the gap. It counts as confirmed only with full-precision weights on held-out items:
+    a language where Global beats Earth on the content-safe rate under the default preamble, with a paired 95% CI that
+    excludes zero and McNemar p below 0.05 divided by the number of languages tested. If no language passes, the write-up
+    reports that the gap was not confirmed. The repairs are then reported as exploratory.
+14. **Circuits are discovered without the preamble** (`experiment.circuit_preamble: none`), because with it the run needs
+    54 GB of commit on the available CPU. The repairs are still evaluated in both preamble conditions.
+

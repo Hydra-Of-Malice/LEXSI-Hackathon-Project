@@ -22,6 +22,12 @@ def load_spec(path: str | Path | None = None) -> dict[str, Any]:
     return spec
 
 
+def capability_languages(spec: dict, family: str | None = None) -> list[str]:
+    """The family's benchmark languages, plus stand-ins for languages the benchmark doesn't have."""
+    languages = [lang for lang in spec["capability_languages"] if family is None or lang in spec["languages"][family]]
+    return list(dict.fromkeys(languages + spec.get("capability_proxies", {}).get(family, [])))
+
+
 def spec_digest(spec: dict[str, Any]) -> str:
     """Stable hash of the spec, stamped on every run so results can be traced to the exact settings used."""
     return hashlib.sha256(json.dumps(spec, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]

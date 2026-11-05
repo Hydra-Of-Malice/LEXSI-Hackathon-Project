@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .config import load_spec, spec_digest
+from .config import capability_languages, load_spec, spec_digest
 from .eval.axes import compare, safety_table
 from .eval.report import check_thresholds, markdown_table, reporting_eligibility
 from .eval.stats import mcnemar_exact, paired_diff_ci, rate_ci
@@ -42,7 +42,7 @@ def report_dependencies(runs: Path, tags: list[str], judge_set: str, conditions:
 def build_report(tags: list[str], family: str, judge_set: str, runs: Path, output: Path | None = None) -> Path:
     spec = load_spec()
     languages = spec['languages'][family]
-    cap_languages = [lang for lang in spec['capability_languages'] if lang in languages]
+    cap_languages = capability_languages(spec, family)
     models = {}
     artifacts = {}
     tables = {}

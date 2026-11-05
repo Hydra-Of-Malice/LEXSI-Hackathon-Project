@@ -206,7 +206,8 @@ def check_source(source: Path, spec: dict, family: str, judge_set: str) -> tuple
             if not cap.get('complete'):
                 raise ValueError(f'{source_tag}/{pre}: source capability is incomplete')
             cells = cap.get('languages', {})
-            langs = set(spec['capability_languages']) & languages
+            from langsafe.config import capability_languages
+            langs = set(capability_languages(spec, family))
             identity = {lang: {'n': cells.get(lang, {}).get('n'), 'data_sha256': cells.get(lang, {}).get('data_sha256')}
                         for lang in sorted(langs)}
             if any(not cell['n'] or not cell['data_sha256'] or len(cells[lang].get('per_item', [])) != cell['n']

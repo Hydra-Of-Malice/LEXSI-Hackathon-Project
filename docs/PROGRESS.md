@@ -9,7 +9,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 |---|---|---|
 | Aditya's laptop (RTX 4060, 1.2 TB free) | 10-language MultiJail sweep with both judges; downloading the full Global, Fire and Base weights | Full Fire run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything (see 4 Nov) |
-| Aditya | Accept the `tiny-aya-earth` licence (needed only for the Earth run) | Send the brief to mentors |
+| Aditya | Accept the `tiny-aya-earth` licence (**now blocking**: Earth is the main model) | Send the brief to mentors |
 
 ## Still needs a person
 - Native readers for Hindi/Hinglish, Bengali and Tamil, to review translations and hand-label a sample.
@@ -19,6 +19,9 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **21:15** **The team decided to retarget to Earth.** Earth is now the main model, with Javanese, Bengali, Thai and Korean
+  added next to Arabic and Swahili, and Fire as a comparison. See SPEC.md amendments 12 to 14. The gap must be confirmed at
+  full precision on held-out items before any repair claim. Waiting on the `tiny-aya-earth` licence for the full weights.
 - **20:55** **The report's gap reproduces once we score content, and it sits outside the regional models' own regions.**
   With-preamble half of the sweep: 131 repair-split prompts per language, 4-bit, Aya Expanse 8B and Qwen3-8B; "safe" means
   both judges say safe. Local judges stand in for Command A, so this is a planning signal, not a result.

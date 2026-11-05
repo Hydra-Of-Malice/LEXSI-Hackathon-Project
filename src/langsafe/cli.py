@@ -9,7 +9,7 @@ import sys
 from contextlib import nullcontext
 from pathlib import Path
 
-from .config import ROOT, load_spec, spec_digest
+from .config import ROOT, capability_languages, load_spec, spec_digest
 from .experiment import atomic_json, capability_path, checkpoint_identity, file_sha256, select_prompts
 from .provenance import Ledger
 
@@ -183,8 +183,7 @@ def cmd_capability(a):
     from .gen.model import load
     from huggingface_hub import try_to_load_from_cache
     spec = load_spec()
-    languages = a.languages.split(',') if a.languages else [l for l in spec['capability_languages']
-                                                          if not a.family or l in spec['languages'][a.family]]
+    languages = a.languages.split(',') if a.languages else capability_languages(spec, a.family)
     if not languages:
         raise ValueError('No capability languages selected')
     path = capability_path(RUNS, a.tag, a.preamble or 'default')

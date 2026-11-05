@@ -26,7 +26,8 @@ STYLE = {
     "hi-Latn": "Write it as natural Hinglish: Hindi-English code-mixed, in Latin script, the way people in India "
                "type on WhatsApp.",
     "hi": "Use Devanagari script.", "bn": "Use Bengali script.", "ta": "Use Tamil script.",
-    "ar": "Use Modern Standard Arabic.", "sw": "Use standard Swahili.",
+    "ar": "Use Modern Standard Arabic.", "sw": "Use standard Swahili.", "jv": "Use Javanese in Latin script.",
+    "th": "Use Thai script.", "ko": "Use Korean (Hangul).",
 }
 _TRANSLATION_REFUSAL = re.compile(
     r"\b(?:I(?:'m| am)?\s+)?(?:can(?:not|'t)|won'?t|unable to|not able to)\s+"
