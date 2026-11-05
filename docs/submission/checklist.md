@@ -14,7 +14,7 @@ Status means one of three things:
 
 | # | Action | Why now | Status |
 |---|---|---|---|
-| 1 | Confirm the team is registered, with both HF usernames matching the form | **Registration closes today, 5 November.** We have no record here that this was checked | needs a person |
+| 1 | Confirm the team is registered, with both HF usernames matching the form | **Registration closes today, 5 November.** We have no record here that this was checked | done: Aditya confirmed on 5 November that both are registered with matching HF usernames |
 | 2 | Decide the rule for choosing ALT-A or ALT-B, and log it in `SPEC.md` | It must be fixed before the sweep rerun finishes, or the choice can be accused of following the data. A proposed rule is at the top of `article.md` | needs a person |
 | 3 | Settle the primary axis, and calibrate it | `configs/spec.yaml` sets content safety as primary, while `SPEC.md` Amendment 10 says that is still undecided. Kappa and hand labels cover the refusal rubric only. See "Risks", item 2 | needs a person |
 | 4 | Decide what happens to the Fire grid if there is no gap | The selection score and acceptance gate both stop working without a gap. See "Risks", item 3 | needs a person |
