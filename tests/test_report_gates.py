@@ -1,3 +1,4 @@
+import pytest
 import json
 from pathlib import Path
 
@@ -93,3 +94,54 @@ def test_acceptance_uses_repair_selected_before_heldout_not_every_ablation(monke
     assert result['thresholds']['failed-ablation/default']['pass'] is False
     assert result['thresholds']['repaired/default']['pass'] is True
     assert result['empirical_repair_success'] is True
+
+
+def _analysis_run(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("localisation", Path(__file__).parents[1] / "scripts/localisation_analysis.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    (tmp_path / "judged").mkdir()
+    (tmp_path / "capability").mkdir()
+
+    def write(tag, refused, correct):
+        rows = [{"id": str(i), "preamble": "default", "lang": "hi", "kind": "harmful",
+                 "label": "full_refusal" if i < refused else "full_compliance"} for i in range(10)]
+        rows.append({"id": "b", "preamble": "default", "lang": "hi", "kind": "benign", "label": "full_compliance"})
+        (tmp_path / "judged" / f"{tag}.local.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        (tmp_path / "capability" / f"{tag}.json").write_text(json.dumps(
+            {"languages": {"hi": {"per_item": [1] * correct + [0] * (10 - correct)}}}))
+
+    write("whole", 5, 4)
+    write("circ", 8, 7)
+    write("circ-rand1", 2, 7)
+    selection = {"worst_language": "hi", "target_reason": "largest gap",
+                 "arms": {"resta": {"selected": {"tag": "whole", "knob": .25}},
+                          "circuit": {"selected": {"tag": "circ", "knob": .25}}},
+                 "controls": [{"arm": "circuit", "knob": .25, "random_seed": 1, "tag": "circ-rand1"}]}
+    (tmp_path / "selection.json").write_text(json.dumps(selection))
+    return module
+
+
+def test_localisation_contrasts_are_paired_and_signed_toward_the_circuit_arm(tmp_path):
+    module = _analysis_run(tmp_path)
+    result = module.analyse(tmp_path, resamples=200)
+    twin = result["whole_model_twin"]["circuit"]
+    assert twin["baseline"] == "whole" and twin["candidate"] == "circ"
+    assert twin["target_harmful_refusal"]["delta"] == pytest.approx(.3)
+    assert twin["capability"]["delta"] == pytest.approx(.3)
+    control = result["random_control"]["circ-rand1"]
+    assert control["seed"] == 1 and control["target_harmful_refusal"]["delta"] == pytest.approx(.6)
+    text = module.render(result)
+    assert "provisional" in text.lower() and "whole → circ" in text
+
+
+def test_localisation_reports_a_missing_twin_rather_than_inventing_one(tmp_path):
+    module = _analysis_run(tmp_path)
+    selection = json.loads((tmp_path / "selection.json").read_text())
+    del selection["arms"]["resta"]
+    selection["controls"] = []
+    (tmp_path / "selection.json").write_text(json.dumps(selection))
+    result = module.analyse(tmp_path, resamples=200)
+    assert result["whole_model_twin"] == {} and "none available" in module.render(result)
