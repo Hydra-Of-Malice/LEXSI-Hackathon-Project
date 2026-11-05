@@ -92,10 +92,18 @@ class _Cache:
             row = self._db.execute("SELECT v FROM cache WHERE k=?", (k,)).fetchone()
         return row[0] if row else None
 
-    def put(self, k: str, v: str) -> None:
+    def put(self, k: str, v: str, attempts: int = 5) -> None:
+        """A transient failure to open the journal must not throw away a verdict that took a model call to get."""
         with self._lock:
-            self._db.execute("INSERT OR REPLACE INTO cache VALUES (?, ?)", (k, v))
-            self._db.commit()
+            for attempt in range(attempts):
+                try:
+                    self._db.execute("INSERT OR REPLACE INTO cache VALUES (?, ?)", (k, v))
+                    self._db.commit()
+                    return
+                except sqlite3.OperationalError:
+                    if attempt == attempts - 1:
+                        raise
+                    time.sleep(2 ** attempt)
 
     def close(self) -> None:
         with self._lock:

@@ -402,3 +402,29 @@ def test_make_client_uses_a_gguf_only_when_the_file_is_here(tmp_path, monkeypatc
     assert present.chat(messages, max_tokens=200) == "cached" and present._server is None
     present.close()
     missing.close()
+
+
+def test_cache_write_survives_a_transient_database_error(tmp_path, monkeypatch):
+    import sqlite3
+
+    import langsafe.llm_client as clients
+
+    monkeypatch.setattr(clients.time, "sleep", lambda _: None)
+    cache = clients._Cache(tmp_path / "c.sqlite", "model")
+    real, failures = cache._db, []
+
+    class Flaky:
+        def execute(self, *args):
+            if not failures:
+                failures.append(1)
+                raise sqlite3.OperationalError("unable to open database file")
+            return real.execute(*args)
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    cache._db = Flaky()
+    cache.put("k", "v")
+    assert failures and cache.get("k") == "v"
+    cache._db = real
+    cache.close()
