@@ -1,10 +1,11 @@
 """Fill the Hugging Face cache over a connection that drops, keeping every byte already received.
 
     python scripts/fetch_models.py CohereLabs/tiny-aya-global CohereLabs/tiny-aya-fire CohereLabs/tiny-aya-base
+    python scripts/fetch_models.py Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf       # one file, into cache/gguf
 
 `hf download` names each partial file per process, so every retry after a dropped connection starts that file from zero.
-This writes straight into the cache's snapshot folder and continues a partial file with an HTTP range request. It is
-one process with no child processes, so stopping it stops the download.
+This writes straight into the cache's snapshot folder and continues a partial file with an HTTP range request. There is
+no retry shell around it, so stopping it stops the download.
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ from huggingface_hub.constants import HF_HUB_CACHE
 
 PATTERNS = ("*.json", "*.safetensors", "*.model", "*.jinja")
 CHUNK = 1 << 20
+GGUF_DIR = Path(__file__).resolve().parents[1] / "cache" / "gguf"
 
 
 def wanted(path: str) -> bool:
@@ -35,6 +37,8 @@ def fetch(url: str, target: Path, size: int, headers: dict) -> None:
             break
         try:
             with requests.get(url, headers={**headers, "Range": f"bytes={have}-"}, stream=True, timeout=(30, 120)) as reply:
+                if reply.status_code == 416:        # asked past the end: the file is already whole
+                    continue
                 if reply.status_code not in (200, 206):
                     raise OSError(f"HTTP {reply.status_code}")
                 mode = "ab" if reply.status_code == 206 else "wb"     # 200 means the server ignored the range
@@ -46,18 +50,30 @@ def fetch(url: str, target: Path, size: int, headers: dict) -> None:
             time.sleep(20)
 
 
+def repo_info(api: HfApi, repo: str, token: str | None):
+    while True:
+        try:
+            return api.model_info(repo, files_metadata=True, token=token)
+        except (OSError, requests.RequestException) as error:
+            print(f"waiting for the network: {type(error).__name__}", flush=True)
+            time.sleep(30)
+
+
 def main() -> None:
     token = get_token()
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     api = HfApi()
-    for repo in sys.argv[1:]:
-        while True:
-            try:
-                info = api.model_info(repo, files_metadata=True, token=token)
-                break
-            except (OSError, requests.RequestException) as error:
-                print(f"waiting for the network: {type(error).__name__}", flush=True)
-                time.sleep(30)
+    for item in sys.argv[1:]:
+        if item.endswith(".gguf"):
+            repo, name = item.rsplit("/", 1)
+            info = repo_info(api, repo, token)
+            size = next(f.size for f in info.siblings if f.rfilename == name)
+            GGUF_DIR.mkdir(parents=True, exist_ok=True)
+            fetch(hf_hub_url(repo, name, revision=info.sha), GGUF_DIR / name, size, headers)
+            print(f"complete {name}", flush=True)
+            continue
+        repo = item
+        info = repo_info(api, repo, token)
         folder = Path(HF_HUB_CACHE) / f"models--{repo.replace('/', '--')}"
         snapshot = folder / "snapshots" / info.sha
         snapshot.mkdir(parents=True, exist_ok=True)

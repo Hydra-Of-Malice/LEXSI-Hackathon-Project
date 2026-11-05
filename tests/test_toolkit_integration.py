@@ -706,3 +706,68 @@ def test_circuit_vectors_and_random_control_stay_outside_the_circuit(monkeypatch
         assert seen["layers"] == layers
     else:
         assert len(seen["layers"]) == 1 and 1 not in seen["layers"]
+
+
+def _fetch_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("fetch_models", Path(__file__).parents[1] / "scripts/fetch_models.py")
+    loaded = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(loaded)
+    return loaded
+
+
+def test_fetch_continues_a_partial_file_and_survives_a_dropped_connection(tmp_path, monkeypatch):
+    fetcher = _fetch_module()
+    payload = b"0123456789"
+    (tmp_path / "w.bin.part").write_bytes(payload[:4])
+    calls = []
+
+    class Reply:
+        def __init__(self, start, drop):
+            self.status_code, self.start, self.drop = 206, start, drop
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def iter_content(self, size):
+            yield payload[self.start:self.start + 3]
+            if self.drop:
+                raise fetcher.requests.ConnectionError("reset")
+            yield payload[self.start + 3:]
+
+    def get(url, headers, **kwargs):
+        start = int(headers["Range"].split("=")[1].rstrip("-"))
+        calls.append(start)
+        return Reply(start, drop=len(calls) == 1)
+
+    monkeypatch.setattr(fetcher.requests, "get", get)
+    monkeypatch.setattr(fetcher.time, "sleep", lambda _: None)
+    fetcher.fetch("url", tmp_path / "w.bin", len(payload), {})
+    assert calls == [4, 7]                       # resumed from the partial file, then from where it dropped
+    assert (tmp_path / "w.bin").read_bytes() == payload and not (tmp_path / "w.bin.part").exists()
+
+
+def test_fetch_restarts_when_the_server_ignores_the_range(tmp_path, monkeypatch):
+    fetcher = _fetch_module()
+    payload = b"abcdef"
+    (tmp_path / "w.bin.part").write_bytes(b"xx")
+
+    class Reply:
+        status_code = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def iter_content(self, size):
+            yield payload
+
+    monkeypatch.setattr(fetcher.requests, "get", lambda *a, **k: Reply())
+    fetcher.fetch("url", tmp_path / "w.bin", len(payload), {})
+    assert (tmp_path / "w.bin").read_bytes() == payload

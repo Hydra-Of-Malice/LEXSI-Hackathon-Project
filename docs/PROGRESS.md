@@ -47,7 +47,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 ## 4 November 2026
 - **23:10** Still waiting on the HF login on the laptop. llama.cpp (CUDA build) is installed. The first 4-bit download
-  died on the flaky connection after two hours, so GGUF downloads now go through `scripts/fetch_resumable.sh`, which resumes.
+  died on the flaky connection after two hours, so downloads now go through `scripts/fetch_models.py`, which resumes.
 - **20:50** Waiting on the HF login. Everything up to here is on `main`.
 - **20:48** Pushed the design fixes (`7f598be`). The development run showed the old setup could not answer our main
   question, so **please don't resume the old full grid**; its spec has changed anyway. See "Amendments" in
