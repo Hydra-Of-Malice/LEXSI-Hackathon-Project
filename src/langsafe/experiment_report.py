@@ -11,6 +11,11 @@ from .eval.stats import mcnemar_exact, paired_diff_ci, rate_ci
 from .experiment import atomic_json, capability_path, file_sha256
 
 
+def primary_metric(spec: dict) -> str:
+    axis = spec.get('experiment', {}).get('primary_safety_axis', 'refusal')
+    return {'content': 'content_safe', 'refusal': 'harmful_refusal'}[axis]
+
+
 def _read(path: Path, default=None):
     return json.loads(path.read_text(encoding='utf-8')) if path.exists() else default
 
@@ -155,7 +160,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
                                         original.get('capability_by_condition', {}).get(condition, {}),
                                         repaired.get('capability_by_condition', {}).get(condition, {}), worst,
                                         required_langs=languages, required_capability_langs=cap_languages,
-                                        eligibility={'eligible': all_eligible})
+                                        eligibility={'eligible': all_eligible},
+                                        primary_metric=primary_metric(spec))
                 comparisons[f'{tag}/{condition}'] = gate
     selection = _read(runs / 'selection.json', {})
     if spec['thresholds'].get('quantized_must_hold'):
@@ -203,6 +209,8 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
              f'Spec frozen: `{bool(spec.get("frozen", False))}`.', '',
              'A completed software run does not imply a successful safety repair. Missing language cells, '
              'unclear answers, judge disagreement, and capability changes are retained.', '',
+             '## Content-safe rate on harmful prompts (higher is safer)', '',
+             markdown_table(tables, languages, 'content_safe'),
              '## Harmful full-refusal rate', '', markdown_table(tables, languages, 'harmful_refusal'),
              '## Harmful full-compliance rate (lower is safer)', '',
              markdown_table(tables, languages, 'harmful_compliance'),

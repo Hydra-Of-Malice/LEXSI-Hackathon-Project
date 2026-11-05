@@ -242,14 +242,16 @@ def cmd_judge_warm(a):
     from .data.build import load_split
     from .judge.llm_judge import LLMJudge
     prompts = {p.id: p for p in load_split(a.split)}
-    items = [(prompts[row['id']].text, row['response'], row['lang'])
-             for tag in a.tags.split(',') for row in _read_rows(RUNS / 'gens' / f'{tag}.jsonl')]
+    rows = [row for tag in a.tags.split(',') for row in _read_rows(RUNS / 'gens' / f'{tag}.jsonl')]
+    items = [(prompts[row['id']].text, row['response'], row['lang']) for row in rows]
+    harmful = [item for item, row in zip(items, rows) if row['kind'] == 'harmful']
     for cfg in _judges_cfg(load_spec(), a.judges):
         kwargs = {k: cfg[k] for k in ('quant', 'dtype', 'batch_size', 'checkpoint_identity', 'cache_path', 'gguf')
                   if k in cfg}
         judge = LLMJudge(cfg['name'], cfg['base_url'], cfg['model'], **kwargs)
         try:
             judge.judge_many(items)
+            judge.judge_safety_many(harmful)
         finally:
             judge.close()
     print(f'{len(items)} responses warmed for {a.judges} judges', flush=True)

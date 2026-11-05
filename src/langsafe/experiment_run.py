@@ -312,7 +312,8 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
         runner.run(tag + '-repair-judge', ['judge', '--tag', tag + '-repair', '--split', 'repair', '--judges', judges],
                    [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}-repair.jsonl'])
         capability = json.loads(capability_path(runner.directory, tag + '-repair', 'default').read_text(encoding='utf-8'))
-        return judged_rates(_rows(path)), {lang: cell['accuracy'] for lang, cell in capability['languages'].items()}
+        return (judged_rates(_rows(path), experiments.get('primary_safety_axis', 'refusal')),
+                {lang: cell['accuracy'] for lang, cell in capability['languages'].items()})
 
     reference_rates, _ = judged_repair('global')
     original_rates, original_capability = judged_repair(family)

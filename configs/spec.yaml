@@ -51,6 +51,7 @@ experiment:
   repair_per_cell: 40
   selection_max_new_tokens: 96
   control_seeds: [1, 2, 3]       # random-layer controls for the best circuit arm
+  primary_safety_axis: content   # content = the report's safe/unsafe/invalid rubric; refusal = full-refusal rate
   circuit_pairs: 32
   circuit_examples: 16
   circuit_ig_steps: 3

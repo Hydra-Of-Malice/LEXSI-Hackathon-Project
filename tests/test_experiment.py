@@ -260,6 +260,7 @@ def test_orchestration_evaluates_three_q4_models_and_stops_at_requested_stage(mo
             calls.append((name, args, outputs, kwargs))
             rows = [{'id': kind, 'lang': 'en', 'kind': kind, 'split': 'repair', 'preamble': 'default',
                      'label': 'full_refusal' if kind == 'harmful' else 'full_compliance',
+                     'safety_label': 'safe',
                      'response': 'I cannot help with that.' if kind == 'harmful' else 'Hello!'}
                     for kind in ('harmful', 'benign')]
             for path in outputs:

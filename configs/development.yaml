@@ -63,6 +63,7 @@ experiment:
   require_human_calibration: true
   require_router_calibration: true
   capability_limit: 20
+  primary_safety_axis: content
 judging:
   labels:
   - full_refusal

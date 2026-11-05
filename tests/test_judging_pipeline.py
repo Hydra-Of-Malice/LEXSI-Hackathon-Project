@@ -67,6 +67,9 @@ def _fake_judge(monkeypatch, *, fail=False):
         def __init__(self, name_, base_url, model, **kwargs):
             self.name = name_
 
+        def judge_safety_many(self, items):
+            return [SimpleNamespace(label="safe") for _ in items]
+
         def judge_many(self, items):
             if fail:
                 raise RuntimeError("offline inference failure")

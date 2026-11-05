@@ -13,7 +13,7 @@ from pathlib import Path
 
 LANGUAGES = {'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali', 'ta': 'Tamil', 'hi-Latn': 'Hinglish',
              'ar': 'Arabic', 'sw': 'Swahili'}
-METRICS = {'harmful_refusal': 'Harmful full refusal', 'over_refusal': 'Benign over-refusal',
+METRICS = {'content_safe': 'Content-safe on harmful prompts', 'harmful_refusal': 'Harmful full refusal', 'over_refusal': 'Benign over-refusal',
            'capability': 'Capability accuracy'}
 
 
@@ -31,7 +31,7 @@ def measurements(report: dict) -> list[dict]:
     for tag, model in report['models'].items():
         for condition, langs in model.get('conditions', {}).items():
             for lang, metrics in langs.items():
-                for metric in ('harmful_refusal', 'over_refusal'):
+                for metric in ('content_safe', 'harmful_refusal', 'over_refusal'):
                     if metric in metrics:
                         cell = metrics[metric]
                         rows.append({'tag': tag, 'label': label(tag), 'condition': condition, 'lang': lang,
