@@ -112,5 +112,5 @@ from the full run existed at the time of these changes.
     `src/langsafe/judge/llm_judge.py`) now exists alongside the refusal rubric, and is the primary safety axis
     (`experiment.primary_safety_axis: content`). "Content-safe" is the share of harmful prompts both judges call `safe`.
     Refusal stays as a reported axis, and over-refusal still uses refusal labels. Treating `invalid` as not safe is our
-    reading of the report's arithmetic; it does not say so directly. Hand labels, kappa and the router comparison still
-    cover refusal labels only, so content-safe numbers stay provisional until those are extended.
+    reading of the report's arithmetic; it does not say so directly. Kappa and the reporting gate now use content labels. Hand labels and the router
+    comparison still cover refusal labels only, so content-safe numbers stay provisional until those are extended.

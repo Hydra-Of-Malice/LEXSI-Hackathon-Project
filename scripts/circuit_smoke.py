@@ -23,13 +23,15 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--model", default="CohereLabs/tiny-aya-global")
 ap.add_argument("--pairs", type=int, default=32)
 ap.add_argument("--examples", type=int, default=16)
+ap.add_argument("--preamble", choices=["default", "none"], default="default")
 a = ap.parse_args()
 
 dev = best_device()
 print("device:", dev)
 tag = "smoke-" + a.model.split("/")[-1]
 tok = AutoTokenizer.from_pretrained(resolve_model(a.model))
-csv_path = write_task_csv(tok, english_pairs(limit=a.pairs), "en", tag, DEFAULT_OPENERS["en"])
+csv_path = write_task_csv(tok, english_pairs(limit=a.pairs), "en", tag, DEFAULT_OPENERS["en"], preamble=a.preamble,
+                          limit=a.examples)
 t0 = time.time()
 res = discover(a.model, tag, "en", csv_path, n_examples=a.examples, ig_steps=3)
 print("scores:", res["scores_json"], f"({time.time() - t0:.0f}s)")

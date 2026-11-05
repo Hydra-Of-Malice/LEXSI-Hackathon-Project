@@ -229,6 +229,7 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
         if not circuit_python and kits_python.exists():
             circuit_python = str(kits_python)
         summaries, overlap_inputs = [], {}
+        circuit_preamble = experiments.get('circuit_preamble', 'default')
         for model_name, model in baseline_models.items():
             for lang in experiments.get('circuit_languages', ['en']):
                 tag = f'{model_name}-circuit'
@@ -236,8 +237,9 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
                 runner.run(f'{tag}-{lang}', ['circuit', '--model', model, '--tag', tag,
                                              '--lang', lang, '--pairs', str(experiments.get('circuit_pairs', 32)),
                                              '--examples', str(experiments.get('circuit_examples', 16)),
-                                             '--ig-steps', str(experiments.get('circuit_ig_steps', 3))],
-                           [output.parent, runner.directory / 'circuit_tasks' / f'refusal_{lang}__{tag}__default.csv'],
+                                             '--ig-steps', str(experiments.get('circuit_ig_steps', 3)),
+                                             '--preamble', circuit_preamble],
+                           [output.parent, runner.directory / 'circuit_tasks' / f'refusal_{lang}__{tag}__{circuit_preamble}.csv'],
                            python=circuit_python)
                 row = json.loads(output.read_text(encoding='utf-8'))
                 overlap_inputs[f'{model_name}/{lang}'] = row['scores_json']

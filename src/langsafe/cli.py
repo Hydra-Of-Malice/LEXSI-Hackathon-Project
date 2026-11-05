@@ -277,7 +277,7 @@ def cmd_circuit(a):
             finally:
                 client.close()
         tokenizer = AutoTokenizer.from_pretrained(resolve_model(a.model))
-        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, DEFAULT_OPENERS[a.lang], limit=a.examples)
+        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, DEFAULT_OPENERS[a.lang], preamble=a.preamble, limit=a.examples)
     result = discover(a.model, a.tag, a.lang, task, n_examples=a.examples, ig_steps=a.ig_steps,
                       verify_parity=not a.no_parity_check)
     atomic_json(RUNS / 'circuits' / f'{a.tag}__{a.lang}' / 'summary.json', result)
@@ -443,6 +443,7 @@ def main(argv=None):
     command.add_argument('--tag', required=True); command.add_argument('--judges', choices=JUDGE_SETS, default='local')
     command.add_argument('--split', choices=['repair','heldout'], default='heldout')
     command = sub.add_parser('circuit'); command.set_defaults(fn=cmd_circuit)
+    command.add_argument('--preamble', choices=['default','none'], default='default')
     command.add_argument('--model', required=True); command.add_argument('--tag', required=True)
     command.add_argument('--lang', default='en'); command.add_argument('--pairs', type=int, default=32)
     command.add_argument('--examples', type=int, default=16); command.add_argument('--ig-steps', type=int, default=3)
