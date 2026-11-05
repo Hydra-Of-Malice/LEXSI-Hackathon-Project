@@ -19,6 +19,19 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **21:30** **Full sweep done: Javanese is the robust gap.** Content-safe rate, both judges agree, 131 repair-split prompts per
+  language, 4-bit, local judges in place of Command A. A planning signal, not a result.
+
+  | Javanese | Global | Fire | Earth |
+  |---|---|---|---|
+  | With preamble | 87.0 | 80.9 (p = 0.15) | 77.1 (p = 0.04) |
+  | Without preamble | 91.6 | 80.9 (p = 0.003) | 74.8 (p < 0.001) |
+
+  Without the preamble both gaps survive correction for 10 languages (0.005). No other language does: Earth's Bengali gap
+  shrinks from 7.6 to 3.1 points. Means stay close (95.0, 94.6, 93.5), which is why averages hide it. **Fire's gap is real
+  too**, which corrects the 20:55 note. Javanese belongs to neither model's region, so next we test Tiny Aya Water, which
+  covers it: if the region explains the loss, Water shouldn't show this gap. The end-to-end test on real models has started,
+  using Fire until Earth's licence is accepted.
 - **21:15** **The team decided to retarget to Earth.** Earth is now the main model, with Javanese, Bengali, Thai and Korean
   added next to Arabic and Swahili, and Fire as a comparison. See SPEC.md amendments 12 to 14. The gap must be confirmed at
   full precision on held-out items before any repair claim. Waiting on the `tiny-aya-earth` licence for the full weights.

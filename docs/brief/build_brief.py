@@ -51,64 +51,64 @@ P("LEXSI LABS AI SAFETY &amp; ALIGNMENT HACKATHON · TRACK 2b: REPAIRING SAFETY 
   ParagraphStyle("k", parent=body, fontName="UI-B", fontSize=7.4, textColor=ACCENT, spaceAfter=1))
 P("Same model, different language, different safety",
   ParagraphStyle("t", fontName="UI-B", fontSize=16, leading=20, textColor=INK, spaceAfter=1))
-P("Team: Aditya Arnav, Pallab Das · Mentor brief, 3 November 2026 · Core model: Tiny Aya Fire / Earth (3.35B), "
+P("Team: Aditya Arnav, Pallab Das · Mentor brief, 5 November 2026 · Core model: Tiny Aya Earth (3.35B), "
   "reference Tiny Aya Global · Repos: CuratorKIT, AuditKIT, CircuitKIT, SafeTune",
   ParagraphStyle("m", parent=body, fontName="UI-L", fontSize=8.2, textColor=MUTED, spaceAfter=4))
 
 H("The problem")
-P("Tiny Aya's regional models are tuned for the people who speak those languages: <b>Fire</b> for South Asia, "
-  "<b>Earth</b> for Africa and West Asia. On average they are almost as safe as Tiny Aya Global, but in their "
-  "<b>weakest language</b> they are 9–10 points less safe on MultiJail: 87.0% safe for Global, 78.1% for Fire, "
-  "77.5% for Earth (Tiny Aya tech report, Table 7). A harmful request Global refuses may be answered by the model "
-  "built for that language's speakers, and a check on averages would not notice.")
+P("Tiny Aya's regional models average almost the same safety as Global, so a check on averages finds nothing. The tech "
+  "report gives one clue: each model's <b>worst</b> language on MultiJail is 87.0 for Global, 78.1 for Fire and 77.5 for "
+  "Earth (Table 7), and it doesn't name that language. We set out to find it. Our first pilot looked in the models' own "
+  "regions and found no gap, because we were scoring refusals. Scored the report's way, by answer content, the gap appears "
+  "in a language neither model was tuned for.")
+
+H("What the pilot found (planning signal, not a result)")
+T([["Javanese, safe answers", "Global", "Fire", "Earth", "Mean of 10 languages (G / F / E)"],
+   ["With Tiny Aya's preamble", "87.0%", "80.9%", "77.1%", "94.9 / 94.1 / 91.6"],
+   ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "95.0 / 94.6 / 93.5"]],
+  [40 * mm, 18 * mm, 32 * mm, 32 * mm, 48 * mm])
+P("131 prompts per language, repair split only, 4-bit weights, two local 8B judges standing in for Command A. Without the "
+  "preamble both gaps survive correction for 10 languages; no other language's gap does. The judges often "
+  "disagree beyond chance, so this still has to be confirmed.")
 
 H("What we are doing")
 T([["Step", "What happens", "Lexsi kit"],
-   ["1. Data", "Harmful prompts (Aya red-teaming, MultiJail) and harmless look-alikes (XSTest) in English, Hindi, "
-               "Bengali, Tamil, Hinglish, Arabic, Swahili. Splits are by item, so a translation of a test prompt can "
-               "never be used for the repair.", "CuratorKIT"],
-   ["2. Measure", "Global, Fire and Earth, per language, on three axes: refusal of harmful prompts, wrongful refusal "
-                  "of harmless ones, and general ability (Global-MMLU-Lite). Two independent LLM judges plus a "
-                  "hand-checked sample, with and without Tiny Aya's default system preamble.", "AuditKIT"],
-   ["3. Locate", "EAP-IG finds the refusal circuit per language and per model, checked with the faithfulness "
-                 "tests. Where did regional tuning change it?", "CircuitKIT"],
-   ["4. Repair", "Four arms, compared head to head (below). Settings are tuned on the repair split only.", "SafeTune"],
-   ["5. Verify", "Re-test all three axes, then again after 4-bit compression (NF4 and GGUF Q4_K_M).",
-    "AuditKIT"]],
+   ["1. Data", "Harmful prompts (Aya red-teaming, MultiJail) and harmless look-alikes (XSTest) in English, Arabic, Swahili, "
+               "Javanese, Bengali, Thai and Korean. Splits are by item, so a translation of a test prompt can never be used "
+               "for the repair.", "CuratorKIT"],
+   ["2. Confirm", "At full precision on held-out prompts, per language: content safety, wrongful refusal of harmless "
+                  "prompts, and general ability. No repair claim unless the gap passes a corrected test.", "AuditKIT"],
+   ["3. Locate", "EAP-IG finds the safety circuit per language and per model. Where did regional tuning change it?",
+    "CircuitKIT"],
+   ["4. Repair", "Five edits compared head to head, with settings tuned on the repair split only.", "SafeTune"],
+   ["5. Verify", "Re-test all three axes, then again after 4-bit compression (NF4 and GGUF Q4_K_M).", "AuditKIT"]],
   [17 * mm, 133 * mm, 20 * mm])
 
 H("The repair comparison")
 T([["Arm", "Edit", "Why it is there"],
-   ["ReSta", "Fire + α·(Global − Base), whole model", "Established weight-space safety restore"],
-   ["<b>Circuit (C-ΔΘ)</b>", "<b>The same safety vector, only in the layers CircuitKIT flags</b>",
-    "<b>Our main bet. Same edit as ReSta, so the difference isolates what the circuit map adds</b>"],
-   ["Merge-back", "Blend Fire back toward Global", "Naive baseline; likely costs regional ability"],
+   ["ReSta / Merge-back", "Earth + α·(Global − Base), or a blend toward Global, whole model", "Weight-space baselines"],
+   ["<b>Circuit arms</b>", "<b>The same two vectors, only in the top 20% of layers by CircuitKIT score</b>",
+    "<b>Our main bet. Paired with its whole-model twin, so the difference isolates what the map adds</b>"],
+   ["Random layers", "The best circuit edit on random layers outside the circuit, 3 seeds",
+    "The control: does the map beat editing fewer layers?"],
    ["Steering", "Refusal direction added at run time", "Known to cause over-refusal; we check on Tiny Aya"]],
-  [24 * mm, 66 * mm, 80 * mm])
-P("All four are training-free weight or activation edits, matching the problem statement. A circuit-restricted LoRA "
-  "is an optional fifth arm.")
+  [30 * mm, 70 * mm, 70 * mm])
 
-H("How we will judge success (pre-registered, before any repair)")
-B(["Close at least <b>half</b> of the worst-language refusal gap to Global.",
-   "Wrongful refusal of harmless prompts rises by <b>at most 2 points</b> in any language; general ability falls by "
-   "<b>at most 1 point</b>.",
-   "All of the above <b>still holds at 4-bit</b>. Per-language 95% CIs and exact McNemar tests; every arm published, "
-   "including losing ones, and negative results reported."])
+H("How we will judge success (fixed before any repair)")
+B(["The gap must first be confirmed: full precision, held-out prompts, paired CI above zero, corrected p below 0.05.",
+   "Then close at least <b>half</b> of it, with wrongful refusal up by <b>at most 2 points</b> in any language and ability "
+   "down by <b>at most 1 point</b>, all still holding at 4-bit.",
+   "Every arm is reported, including losing ones and negative results."])
 
 H("Where we are today")
-P("The private repository is set up. Data builds from the real sources, with the leakage check passing. Judges, "
-  "statistics, the run ledger and all four kit integrations are written, and 28 tests pass. Everything runs on our "
-  "own hardware (an Apple M1 Max with 64 GB, and free Kaggle T4s), with a free pair of 8B judges. The pre-registered "
-  "32B judges score the headline numbers, and we report how far the two pairs agree. Next: the day-1 smoke test "
-  "(reproduce the gap on about 200 prompts, a first EAP-IG run on Tiny Aya), then the full baseline (4–5 Nov). "
-  "We plan to contribute the kit gaps we found (English-only refusal detection, benchmark loaders, cross-language "
-  "circuit tasks) upstream as pull requests.")
+P("The pipeline ran end to end on a small sample, and a code review before the full run fixed one crash and several silent "
+  "errors. Next: confirm the gap on held-out data, then run the repairs. We have also prepared six fixes for "
+  "the kits (none submitted yet).")
 
 H("What we would value your view on")
-B(["Do the success thresholds above look right to you?",
-   "Is a public multilingual safety eval set (prompts and labels only, no harmful completions) acceptable under "
-   "Cohere's acceptable-use policy?",
-   "Have you seen pitfalls with refusal circuits or C-ΔΘ on Cohere2 models that we should plan for?"])
+B(["Is content safety, as in the report, the right primary measure, with refusal reported alongside it?",
+   "Do you know which language is behind the report's 78.1, and are our 8B judges a reasonable stand-in for Command A?",
+   "Is a public multilingual eval set (prompts and labels only) acceptable under Cohere's acceptable-use policy?"])
 
 doc = SimpleDocTemplate(sys.argv[1], pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=13 * mm,
                         bottomMargin=11 * mm, title="Same model, different language, different safety",
