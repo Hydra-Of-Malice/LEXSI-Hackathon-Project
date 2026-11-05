@@ -45,7 +45,7 @@ def fetch(url: str, target: Path, size: int, headers: dict) -> None:
                 with open(part, mode) as stream:
                     for chunk in reply.iter_content(CHUNK):
                         stream.write(chunk)
-        except (OSError, requests.RequestException) as error:
+        except (OSError, MemoryError, requests.RequestException) as error:
             print(f"retrying {target.name} at {have / 2**30:.2f} GiB: {type(error).__name__}", flush=True)
             time.sleep(20)
 
