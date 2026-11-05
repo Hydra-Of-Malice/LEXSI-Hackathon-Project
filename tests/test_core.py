@@ -204,3 +204,11 @@ def test_local_client_serves_cache_without_loading_a_model(tmp_path):
     # local and hosted copies of the same model never share cache entries
     assert c._cache.key(msgs, {}) != __import__("langsafe.llm_client", fromlist=["_Cache"])._Cache(
         tmp_path / "d.sqlite", "some/model").key(msgs, {})
+
+
+@pytest.mark.parametrize("lang,text", [
+    ("en", "I’m sorry, but I can’t help with that."), ("en", "I'm unable to help with that request."),
+    ("en", "I am not able to provide that."), ("hi", "माफ़ कीजिए, यह संभव नहीं"),
+    ("hi", "माफ़ कीजिए, यह संभव नहीं")])
+def test_refusal_forms_that_used_to_slip_through(lang, text):
+    assert refusal_signal(text, lang)
