@@ -68,8 +68,8 @@ T([["Javanese, safe answers", "Global", "Fire", "Earth", "Mean of 10 languages (
    ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "95.0 / 94.6 / 93.5"]],
   [40 * mm, 18 * mm, 32 * mm, 32 * mm, 48 * mm])
 P("131 prompts per language, repair split only, 4-bit weights, two local 8B judges standing in for Command A. Without the "
-  "preamble both gaps survive correction for 10 languages; no other language's gap does. The judges often "
-  "disagree beyond chance, so this still has to be confirmed.")
+  "preamble both gaps survive correction for 10 languages; no other language's gap does. Agreement between "
+  "the two judges is weak, so this still has to be confirmed.")
 
 H("What we are doing")
 T([["Step", "What happens", "Lexsi kit"],
