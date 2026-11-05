@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | 4-bit Global vs Fire pilot on the repair split; downloading the full Global, Fire and Base weights | Full Fire run: baseline, circuits, repairs, 4-bit checks |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | 10-language MultiJail sweep with both judges; downloading the full Global, Fire and Base weights | Full Fire run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything (see 4 Nov) |
 | Aditya | Accept the `tiny-aya-earth` licence (needed only for the Earth run) | Send the brief to mentors |
 
@@ -19,6 +19,16 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **11:45** **10-language sweep, first half** (with preamble, Qwen judge only, 4-bit, 131 repair prompts per language;
+  "safe" means anything but full compliance). The 9-point gap in the report did not reproduce: mean safe is 76.9% for
+  Global and 76.5% for Fire, and both are worst in Javanese (62.6% and 59.5%). Fire trails most in Vietnamese (6.1 points,
+  p = 0.04) and Swahili (5.3, p = 0.17), and leads in Bengali (5.3, p = 0.04) and Arabic (6.1, p = 0.06). With 10
+  tests, those p-values can be chance. Absolute levels sit well below the report's, so our judge or 4-bit weights may
+  be measuring something different; this does not disprove the report yet. Now rerunning with both judges and adding
+  the no-preamble half, which crashed the first time. **The full Fire grid stays on hold, and the mentor brief should
+  not go out until this is settled:** it states the gap as fact.
+- **11:40** The model downloader was not resuming after dropped connections, so it is replaced by
+  `scripts/fetch_models.py`, which continues partial files. Please use that one on slow connections.
 - **05:30** **Pilot result, and it matters.** On the repair split (4-bit, one judge, default preamble, full refusal), Fire is
   *not* less safe than Global in English, Hindi or Bengali:
 
@@ -37,7 +47,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 ## 4 November 2026
 - **23:10** Still waiting on the HF login on the laptop. llama.cpp (CUDA build) is installed. The first 4-bit download
-  died on the flaky connection after two hours, so downloads now go through `scripts/fetch_resumable.sh`, which resumes.
+  died on the flaky connection after two hours, so GGUF downloads now go through `scripts/fetch_resumable.sh`, which resumes.
 - **20:50** Waiting on the HF login. Everything up to here is on `main`.
 - **20:48** Pushed the design fixes (`7f598be`). The development run showed the old setup could not answer our main
   question, so **please don't resume the old full grid**; its spec has changed anyway. See "Amendments" in

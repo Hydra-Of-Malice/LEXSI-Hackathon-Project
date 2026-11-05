@@ -56,6 +56,8 @@ experiment. `Qwen/Qwen3-8B` is not gated. Tiny Aya Global performs translations;
   experiment itself needs the safetensors weights:
   `hf download CohereLabs/tiny-aya-global` (repeat for fire, earth, base; about 7 GB each).
 
+On a connection that drops, use `python scripts/fetch_models.py <repo> ...` instead; it continues partial files.
+
 Pre-download the original weights before evaluation:
 
 ```bash

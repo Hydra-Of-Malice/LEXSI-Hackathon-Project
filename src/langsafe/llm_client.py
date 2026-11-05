@@ -292,21 +292,30 @@ class ServerChatClient:
                 time.sleep(1)
         raise RuntimeError("llama-server did not become ready")
 
+    def _post(self, path: str, body: bytes, attempts: int = 5) -> dict:
+        """llama-server can fail a request transiently under load; a persistent failure raises with its message."""
+        for attempt in range(attempts):
+            request = urllib.request.Request(self._url + path, data=body, headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(request, timeout=900) as response:
+                    return json.loads(response.read())
+            except urllib.error.HTTPError as error:
+                detail = error.read()[:300].decode("utf-8", "replace")
+                if error.code < 500 or attempt == attempts - 1:
+                    raise RuntimeError(f"llama-server {error.code}: {detail}") from error
+                print(f"llama-server {error.code}, retrying: {detail}", flush=True)
+                time.sleep(2 ** attempt)
+        raise RuntimeError("unreachable")
+
     def _complete(self, messages: list[dict], params: dict) -> str:
         body = json.dumps({"messages": messages, "temperature": 0, "seed": 0, "max_tokens": params["max_tokens"],
                            "chat_template_kwargs": {"enable_thinking": False}}).encode()
-        request = urllib.request.Request(self._url + "/v1/chat/completions", data=body,
-                                         headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=900) as response:
-            return json.loads(response.read())["choices"][0]["message"].get("content") or ""
+        return self._post("/v1/chat/completions", body)["choices"][0]["message"].get("content") or ""
 
     def _raw(self, ids: list[int], params: dict) -> str:
         body = json.dumps({"prompt": ids, "n_predict": params["max_tokens"], "temperature": 0, "top_k": 1, "seed": 0,
                            "cache_prompt": True}).encode()
-        request = urllib.request.Request(self._url + "/completion", data=body,
-                                         headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=900) as response:
-            return json.loads(response.read())["content"].strip()
+        return self._post("/completion", body)["content"].strip()
 
     def _many(self, batch: list, call, params: dict) -> list[str]:
         from tqdm import tqdm
