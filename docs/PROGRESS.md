@@ -19,6 +19,22 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **12:10** **Why we couldn't reproduce the report: we were measuring something else.** Tiny Aya's report scores the *content*
+  of an answer (safe, unsafe or invalid, by Command A in contextual safety mode). Our judges score *refusal*, so a harmless
+  answer to a harmful prompt counted against the model. This could explain most of the 76.9% vs 91.1% mean. It also
+  matters that:
+  - the report's mean gap is small (Global 91.1, Fire 90.0), and the 9-point gap is in one unnamed worst language;
+  - only Global's per-language numbers are public, and its worst language is Arabic (87), so nobody outside Cohere can
+    say which language is Fire's 78.1;
+  - the report ties safety to having tuning data in a language, and Fire's cluster covers only English and Bengali of the
+    10 MultiJail languages, so the loss may sit *outside* its region, not in it. That is an inference, not a finding;
+  - the regional models are merges with Global, and the final recipe isn't published.
+
+  A new sweep is rescoring the cached answers with the report's three-label rubric, and adds Earth. This replaces the
+  refusal-rubric sweep, which was stopped partway. Local judges stand in for Command A, so expect a difference.
+- **12:05** The laptop rebooted to clear a leak: `OCControl.Service` (Alienware Command Center) had grown to 88 GB of
+  commit memory and 129,000 handles over six days. That starved Windows, which crashed one download and the sweep. It's
+  back to 84 MB. It may grow again, so watch it on long runs.
 - **11:45** **10-language sweep, first half** (with preamble, Qwen judge only, 4-bit, 131 repair prompts per language;
   "safe" means anything but full compliance). The 9-point gap in the report did not reproduce: mean safe is 76.9% for
   Global and 76.5% for Fire, and both are worst in Javanese (62.6% and 59.5%). Fire trails most in Vietnamese (6.1 points,

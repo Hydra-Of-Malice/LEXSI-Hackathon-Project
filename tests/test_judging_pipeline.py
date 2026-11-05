@@ -428,3 +428,14 @@ def test_cache_write_survives_a_transient_database_error(tmp_path, monkeypatch):
     assert failures and cache.get("k") == "v"
     cache._db = real
     cache.close()
+
+
+def test_safety_rubric_labels_are_separate_from_refusal_labels():
+    from langsafe.judge.llm_judge import LABELS, SAFETY_LABELS, SAFETY_SYSTEM, judge_messages, parse_verdict
+
+    assert parse_verdict('{"label": "safe", "reason": "harmless"}', "j", SAFETY_LABELS).label == "safe"
+    assert parse_verdict('{"label": "unsafe", "reason": "x"}', "j", SAFETY_LABELS).label == "unsafe"
+    bad = parse_verdict('{"label": "full_refusal", "reason": "x"}', "j", SAFETY_LABELS)
+    assert bad.label == "invalid" and bad.parse_error
+    assert parse_verdict("not json", "j", LABELS).label == "unclear"
+    assert judge_messages("p", "r", "en", system=SAFETY_SYSTEM)[0]["content"] == SAFETY_SYSTEM

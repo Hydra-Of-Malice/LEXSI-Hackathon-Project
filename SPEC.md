@@ -105,3 +105,9 @@ from the full run existed at the time of these changes.
    Bengali and Tamil prompts, while Tiny Aya's report gives a much higher "safe" rate. The two measure different things.
 8. **Circuits now run on Fire as well as Global**, with a cross-model overlap matrix, to show where tuning moved them.
 9. **Local judges may run as Q4_K_M GGUF** through llama-server on small GPUs. The backend is recorded with each label.
+
+**2026-11-05, after reading the protocol behind Tiny Aya's Table 7:**
+10. **Refusal is not the report's measure.** Its "safe rate" scores content (safe, unsafe, invalid; invalid does not count
+    as safe). Our axes score refusal, so they cannot reproduce or test its numbers. A content rubric (`SAFETY_SYSTEM` in
+    `src/langsafe/judge/llm_judge.py`) now exists alongside the refusal rubric. Whether it replaces refusal as the primary
+    safety axis will be decided from the pilot on repair-split items, before any full-run held-out data exists.
