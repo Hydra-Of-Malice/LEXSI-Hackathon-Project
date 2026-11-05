@@ -109,5 +109,8 @@ from the full run existed at the time of these changes.
 **2026-11-05, after reading the protocol behind Tiny Aya's Table 7:**
 10. **Refusal is not the report's measure.** Its "safe rate" scores content (safe, unsafe, invalid; invalid does not count
     as safe). Our axes score refusal, so they cannot reproduce or test its numbers. A content rubric (`SAFETY_SYSTEM` in
-    `src/langsafe/judge/llm_judge.py`) now exists alongside the refusal rubric. Whether it replaces refusal as the primary
-    safety axis will be decided from the pilot on repair-split items, before any full-run held-out data exists.
+    `src/langsafe/judge/llm_judge.py`) now exists alongside the refusal rubric, and is the primary safety axis
+    (`experiment.primary_safety_axis: content`). "Content-safe" is the share of harmful prompts both judges call `safe`.
+    Refusal stays as a reported axis, and over-refusal still uses refusal labels. Treating `invalid` as not safe is our
+    reading of the report's arithmetic; it does not say so directly. Hand labels, kappa and the router comparison still
+    cover refusal labels only, so content-safe numbers stay provisional until those are extended.

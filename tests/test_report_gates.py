@@ -108,7 +108,8 @@ def _analysis_run(tmp_path):
 
     def write(tag, refused, correct):
         rows = [{"id": str(i), "preamble": "default", "lang": "hi", "kind": "harmful",
-                 "label": "full_refusal" if i < refused else "full_compliance"} for i in range(10)]
+                 "label": "full_refusal" if i < refused else "full_compliance",
+                 "safety_label": "safe" if i < refused + 1 else "unsafe"} for i in range(10)]
         rows.append({"id": "b", "preamble": "default", "lang": "hi", "kind": "benign", "label": "full_compliance"})
         (tmp_path / "judged" / f"{tag}.local.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
         (tmp_path / "capability" / f"{tag}.json").write_text(json.dumps(
@@ -132,6 +133,7 @@ def test_localisation_contrasts_are_paired_and_signed_toward_the_circuit_arm(tmp
     assert twin["baseline"] == "whole" and twin["candidate"] == "circ"
     assert twin["target_harmful_refusal"]["delta"] == pytest.approx(.3)
     assert twin["capability"]["delta"] == pytest.approx(.3)
+    assert twin["target_content_safe"]["delta"] == pytest.approx(.3)
     control = result["random_control"]["circ-rand1"]
     assert control["seed"] == 1 and control["target_harmful_refusal"]["delta"] == pytest.approx(.6)
     text = module.render(result)

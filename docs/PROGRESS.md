@@ -19,6 +19,9 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 5 November 2026
+- **12:40** Content safety is now the primary axis in the pipeline (`f09a5a1`), and the submission drafts are in
+  `docs/submission/`. **Check today:** the brief says team changes must be re-registered by 5 Nov, so confirm both of you
+  are registered and that the HF usernames match. See `docs/submission/checklist.md` for every rule and its status.
 - **12:10** **Why we couldn't reproduce the report: we were measuring something else.** Tiny Aya's report scores the *content*
   of an answer (safe, unsafe or invalid, by Command A in contextual safety mode). Our judges score *refusal*, so a harmless
   answer to a harmful prompt counted against the model. This could explain most of the 76.9% vs 91.1% mean. It also

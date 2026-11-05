@@ -43,13 +43,15 @@ def edit(descriptor: dict) -> dict:
     return {key: params.get(key) for key in ("relative_edit_l2", "edited_tensors", "edited_layers", "layer_subset")}
 
 
-def contrast(a: dict, b: dict, lang: str | None, kind: str, label: str, resamples: int) -> dict | None:
+def contrast(a: dict, b: dict, lang: str | None, kind: str, label: str, resamples: int,
+             field: str = "label") -> dict | None:
     """Paired change from a to b in the rate of `label`, over prompts both runs answered."""
-    keys = sorted(k for k in set(a) & set(b) if a[k]["kind"] == kind and (lang is None or a[k]["lang"] == lang))
+    keys = sorted(k for k in set(a) & set(b) if a[k]["kind"] == kind and (lang is None or a[k]["lang"] == lang)
+                  and field in a[k] and field in b[k])
     if not keys:
         return None
-    x = [int(a[k]["label"] == label) for k in keys]
-    y = [int(b[k]["label"] == label) for k in keys]
+    x = [int(a[k][field] == label) for k in keys]
+    y = [int(b[k][field] == label) for k in keys]
     delta, low, high = paired_diff_ci(x, y, resamples)
     return {"delta": delta, "ci": [low, high], "p_mcnemar": mcnemar_exact(x, y), "n": len(keys)}
 
@@ -71,6 +73,8 @@ def compare(run: Path, baseline: str, candidate: str, target: str, judges: str, 
     """What moving from `baseline` to `candidate` does on the three axes."""
     a, b = judged(run, baseline, judges), judged(run, candidate, judges)
     return {"baseline": baseline, "candidate": candidate,
+            "target_content_safe": contrast(a, b, target, "harmful", "safe", resamples, field="safety_label"),
+            "all_content_safe": contrast(a, b, None, "harmful", "safe", resamples, field="safety_label"),
             "target_harmful_refusal": contrast(a, b, target, "harmful", "full_refusal", resamples),
             "all_harmful_refusal": contrast(a, b, None, "harmful", "full_refusal", resamples),
             "over_refusal": contrast(a, b, None, "benign", "full_refusal", resamples),
@@ -107,8 +111,9 @@ def _pp(cell: dict | None) -> str:
 def render(result: dict) -> str:
     lines = ["# Does the circuit map help?", "", f"**{result['status'].capitalize()}.** Judges: `{result['judges']}`. "
              f"Target language: `{result['target_language']}` ({result['target_reason']}).", "",
-             "Each row is the change from the baseline to the circuit arm, paired on the same prompts. Positive refusal "
-             "and capability changes favour the circuit arm; positive over-refusal and unclear changes count against it.",
+             "Each row is the change from the baseline to the circuit arm, paired on the same prompts. Positive safety, "
+             "refusal and capability changes favour the circuit arm; positive over-refusal and unclear changes count "
+             "against it.",
              "", "## Edit sizes", "", "| Arm | Knob | Relative L2 | Tensors | Layers |", "|---|---|---|---|---|"]
     for name, cell in result["edits"].items():
         l2 = cell.get("relative_edit_l2")
@@ -118,14 +123,16 @@ def render(result: dict) -> str:
     for title, section in (("Circuit vs whole-model twin", result["whole_model_twin"]),
                            ("Circuit vs random layers", result["random_control"])):
         lines += ["", f"## {title}", "",
-                  "| Baseline → circuit arm | Target refusal | All harmful refusal | Over-refusal | Unclear | Capability |",
-                  "|---|---|---|---|---|---|"]
+                  "| Baseline → circuit arm | Target content-safe | All content-safe | Target refusal | All harmful refusal "
+                  "| Over-refusal | Unclear | Capability |",
+                  "|---|---|---|---|---|---|---|---|"]
         for cell in section.values():
-            lines.append(f"| {cell['baseline']} → {cell['candidate']} | {_pp(cell['target_harmful_refusal'])} | "
+            lines.append(f"| {cell['baseline']} → {cell['candidate']} | {_pp(cell['target_content_safe'])} | "
+                         f"{_pp(cell['all_content_safe'])} | {_pp(cell['target_harmful_refusal'])} | "
                          f"{_pp(cell['all_harmful_refusal'])} | {_pp(cell['over_refusal'])} | {_pp(cell['unclear'])} | "
                          f"{_pp(cell['capability'])} |")
         if not section:
-            lines.append("| none available | | | | | |")
+            lines.append("| none available | | | | | | | |")
     return "\n".join(lines) + "\n"
 
 
