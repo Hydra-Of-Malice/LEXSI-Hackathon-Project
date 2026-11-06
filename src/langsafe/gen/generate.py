@@ -34,14 +34,13 @@ def render_prompt(tokenizer, user_text: str, preamble: str = "default") -> str:
 
 def model_fingerprint(model) -> str:
     """Cheap fingerprint of the weights actually loaded (catches 'evaluated the wrong checkpoint')."""
-    import torch
-
     h = hashlib.sha256()
     for i, (n, p) in enumerate(model.named_parameters()):
         if i % 16 == 0:                                   # sample every 16th tensor to keep it fast
-            flat = p.detach().float().flatten()
+            flat = p.detach().flatten()
             h.update(n.encode())
-            h.update(flat[:: max(1, flat.numel() // 4096)].cpu().numpy().tobytes())
+            # Sample, then widen. A float copy of the embedding alone is 2 GiB, too much beside the weights on an 8 GB card.
+            h.update(flat[:: max(1, flat.numel() // 4096)].float().cpu().numpy().tobytes())
     return h.hexdigest()[:16]
 
 

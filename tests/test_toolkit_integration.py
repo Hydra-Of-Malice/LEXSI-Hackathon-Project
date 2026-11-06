@@ -811,3 +811,35 @@ def test_fetch_restarts_when_the_server_ignores_the_range(tmp_path, monkeypatch)
     monkeypatch.setattr(fetcher.requests, "get", lambda *a, **k: Reply())
     fetcher.fetch("url", tmp_path / "w.bin", len(payload), {})
     assert (tmp_path / "w.bin").read_bytes() == payload
+
+
+class WordTokenizer:
+    """First "token" is the first word, as `I'm` and `Aku` are in Tiny Aya's own tokenizer."""
+    def encode(self, text, add_special_tokens=False):
+        return text.split()
+
+    def decode(self, ids):
+        return " ".join(ids)
+
+
+def _opener_rows(answers):
+    judged = [{"id": str(i), "preamble": "default", "lang": lang, "label": label} for i, (lang, label, _) in enumerate(answers)]
+    return judged, {(str(i), "default"): {"response": text} for i, (_, _, text) in enumerate(answers)}
+
+
+def test_openers_are_what_the_reference_model_actually_says():
+    judged, gens = _opener_rows([("jv", "full_refusal", "Aku ora bisa"), ("jv", "full_refusal", "Aku njaluk ngapura"),
+                                 ("jv", "full_refusal", "Nuwun sewu"), ("jv", "full_compliance", "Iki jawabane"),
+                                 ("jv", "full_compliance", "Iki carane"), ("en", "full_refusal", "Sorry no")])
+    assert task.openers_from_judged(judged, gens, "jv", WordTokenizer()) == ("Aku", "Iki")
+
+
+def test_openers_skip_markdown_and_never_use_one_token_for_both_sides():
+    judged, gens = _opener_rows([("jv", "full_refusal", "** Aku"), ("jv", "full_refusal", "** Aku"), ("jv", "full_refusal", "Aku"),
+                                 ("jv", "full_compliance", "Aku iki"), ("jv", "full_compliance", "Aku iku"),
+                                 ("jv", "full_compliance", "Iki"), ("jv", "full_compliance", "** Iki")])
+    assert task.openers_from_judged(judged, gens, "jv", WordTokenizer()) == ("Aku", "Iki")
+
+
+def test_openers_fall_back_to_the_stock_phrases_without_labelled_answers():
+    assert task.openers_from_judged([], {}, "jv", WordTokenizer()) == task.DEFAULT_OPENERS["jv"]

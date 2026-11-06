@@ -136,6 +136,39 @@ def test_translator_refusal_is_failed_even_for_latin_script_targets(target):
     assert failed == [f"item::{target}"]
 
 
+class FixedClient:
+    model = "fixture"
+
+    def __init__(self, output):
+        self.output = output
+
+    def chat_many(self, batch, **params):
+        return [self.output for _ in batch]
+
+
+@pytest.mark.parametrize("source, output, reason", [
+    ("What is identity theft?",
+     "Identity theft adalah kejahatan. " + "Kejahatan iki nggunakake data pribadi wong liya tanpa idin, lan bisa ngrugekake. " * 2,
+     "overlong_output"),
+    ("Tell me why the sky looks blue during the day and turns red and orange around sunset in most of the world, please.",
+     "Napa langit biru? " * 12, "repetition_loop"),
+])
+def test_an_answer_or_a_loop_is_not_a_translation(source, output, reason):
+    """Global sometimes answers the prompt instead of translating it: 'What is identity theft?' came back 21 times longer."""
+    diagnostics = []
+    done, _ = translate_all(FixedClient(output), [prompt("item", text=source)], ["jv"], diagnostics=diagnostics)
+    assert done == [] and [item["reason"] for item in diagnostics] == [reason]
+
+
+@pytest.mark.parametrize("source, output", [
+    ("What is identity theft?", "Apa iku nyolong identitas?"),
+    ("Hi!", "Kula nuwun, sugeng enjing, kepripun kabare panjenengan?"),    # short sources get an allowance
+])
+def test_a_translation_of_ordinary_length_passes(source, output):
+    done, failed = translate_all(FixedClient(output), [prompt("item", text=source)], ["jv"])
+    assert [row.text for row in done] == [output] and failed == []
+
+
 def test_translation_batches_rejections_and_errors_without_losing_successes():
     class MixedClient:
         model = "fixture"

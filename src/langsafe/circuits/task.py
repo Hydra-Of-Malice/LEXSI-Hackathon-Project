@@ -65,19 +65,25 @@ def translate_pairs(client, pairs: list[dict], lang: str) -> list[dict]:
     return out
 
 
-def openers_from_judged(judged: list[dict], gens: dict, lang: str) -> tuple[str, str]:
-    """Most common first word of the reference model's refusals and of its compliances in `lang`."""
-    def first_word(t: str) -> str:
-        return t.strip().split()[0].strip(",.!:;") if t.strip() else ""
+def openers_from_judged(judged: list[dict], gens: dict, lang: str, tokenizer) -> tuple[str, str]:
+    """Most common first token of the reference model's refusals and of its compliances in `lang`.
 
-    ref = Counter(first_word(gens[(r["id"], r["preamble"])]["response"]) for r in judged
-                  if r["lang"] == lang and r["label"] == "full_refusal")
-    com = Counter(first_word(gens[(r["id"], r["preamble"])]["response"]) for r in judged
-                  if r["lang"] == lang and r["label"] == "full_compliance")
-    d_ref, d_com = DEFAULT_OPENERS[lang]
-    r = ref.most_common(1)[0][0] if ref else d_ref
-    c = next((w for w, _ in com.most_common() if w != r), d_com)
-    return r, c
+    CircuitKIT scores only an answer's first token, and models rarely open with stock phrases. In the pilot Global's English
+    answers to harmful prompts opened with "I'm" 69% of the time and "I" 2%, and its Javanese ones with "Aku" 58% of the
+    time and the first piece of "Nuwun" 2%. A token with no letter, such as markdown, says nothing about refusing.
+    """
+    def first_token(text: str) -> str:
+        ids = tokenizer.encode(text.strip(), add_special_tokens=False)
+        return tokenizer.decode(ids[:1]).strip() if ids else ""
+
+    def ranked(label: str) -> list[str]:
+        found = Counter(first_token(gens[(r["id"], r["preamble"])]["response"]) for r in judged
+                        if r["lang"] == lang and r["label"] == label)
+        return [token for token, _ in found.most_common() if any(character.isalpha() for character in token)]
+
+    default_refuse, default_comply = DEFAULT_OPENERS[lang]
+    refuse = next(iter(ranked("full_refusal")), default_refuse)
+    return refuse, next((token for token in ranked("full_compliance") if token != refuse), default_comply)
 
 
 def write_task_csv(tok, pairs: list[dict], lang: str, model_tag: str, openers: tuple[str, str],

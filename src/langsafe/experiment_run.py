@@ -202,6 +202,9 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
     data_manifest = runner.directory / 'data' / 'manifest.json'
     data_outputs = [data_manifest, runner.directory / 'data' / 'heldout.jsonl', runner.directory / 'data' / 'repair.jsonl']
     runner.run('data', ['build-data', '--family', family, '--translate', '--translator', 'local'], data_outputs)
+    coverage = json.loads(data_manifest.read_text(encoding='utf-8')).get('coverage', {})
+    if not coverage.get('complete'):      # stop here, not days later at the NF4 source check
+        raise ValueError(f"Data coverage is incomplete: {coverage.get('missing')} {coverage.get('missing_split_cells')}")
     if stop_after == 'data':
         return
     repair_limit = int(experiments.get('repair_per_cell', 20))
@@ -247,8 +250,22 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
     atomic_json(runner.directory / 'baseline-gap.json', baseline_gap)
     if stop_after == 'baseline':
         return
+    def repair_judged_path(tag: str) -> Path:
+        return runner.directory / 'judged' / (f'{tag}-repair.jsonl' if judges == 'router' else f'{tag}-repair.{judges}.jsonl')
+
+    def judge_repair(tag: str) -> Path:
+        path = repair_judged_path(tag)
+        runner.run(tag + '-repair-judge', ['judge', '--tag', tag + '-repair', '--split', 'repair', '--judges', judges],
+                   [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}-repair.jsonl'])
+        return path
+
     circuit_summary = None
     if not skip_circuit:
+        # Circuits score the tokens Global really opens with, read from repair-split answers, so held-out data stays unused.
+        opener_answers = runner.directory / 'gens' / 'global-repair.jsonl'
+        runner.run('opener-judge-warm', ['judge-warm', '--tags', 'global-repair', '--split', 'repair', '--judges', judges],
+                   [], [opener_answers])
+        opener_labels = judge_repair('global')
         circuit_python = os.environ.get('LANGSAFE_CIRCUIT_PYTHON')
         kits_python = ROOT / '.venv-kits' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         if not circuit_python and kits_python.exists():
@@ -263,9 +280,10 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
                                              '--lang', lang, '--pairs', str(experiments.get('circuit_pairs', 32)),
                                              '--examples', str(experiments.get('circuit_examples', 16)),
                                              '--ig-steps', str(experiments.get('circuit_ig_steps', 3)),
-                                             '--preamble', circuit_preamble],
+                                             '--preamble', circuit_preamble, '--openers-tag', 'global-repair',
+                                             '--judges', judges],
                            [output.parent, runner.directory / 'circuit_tasks' / f'refusal_{lang}__{tag}__{circuit_preamble}.csv'],
-                           python=circuit_python)
+                           [opener_answers, opener_labels], python=circuit_python)
                 row = json.loads(output.read_text(encoding='utf-8'))
                 overlap_inputs[f'{model_name}/{lang}'] = row['scores_json']
                 if model_name == 'global':     # the repair edits toward Global, so Global's circuit defines the mask
@@ -337,9 +355,7 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
 
     def judged_repair(tag: str) -> tuple[dict, dict]:
         """A tag's repair-split rates from the two-judge consensus, and its dev-split accuracy by language."""
-        path = runner.directory / 'judged' / (f'{tag}-repair.jsonl' if judges == 'router' else f'{tag}-repair.{judges}.jsonl')
-        runner.run(tag + '-repair-judge', ['judge', '--tag', tag + '-repair', '--split', 'repair', '--judges', judges],
-                   [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}-repair.jsonl'])
+        path = judge_repair(tag)
         capability = json.loads(capability_path(runner.directory, tag + '-repair', 'default').read_text(encoding='utf-8'))
         return (judged_rates(_rows(path), experiments.get('primary_safety_axis', 'refusal')),
                 {lang: cell['accuracy'] for lang, cell in capability['languages'].items()})

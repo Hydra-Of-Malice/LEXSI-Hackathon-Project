@@ -291,6 +291,8 @@ def test_orchestration_evaluates_three_q4_models_and_stops_at_requested_stage(mo
                     path.write_text(''.join(json.dumps(r) + '\n' for r in rows))
                 elif path.parent.name == 'capability':
                     path.write_text(json.dumps({'languages': {'en': {'accuracy': .5}}}))
+                elif path.name == 'manifest.json':
+                    path.write_text(json.dumps({'coverage': {'complete': True}}))
                 elif path.suffix:
                     path.write_text('{}')
                 else:
@@ -322,6 +324,11 @@ def test_orchestration_evaluates_three_q4_models_and_stops_at_requested_stage(mo
     monkeypatch.setattr(experiment.subprocess, 'Popen', lambda *a, **k: Server())
     monkeypatch.setattr(experiment, 'urlopen', lambda *a, **k: Response())
     experiment.run_experiment('fire', 'development', stop_after='quantization')
+    names = [name for name, *_ in calls]
+    circuits = [args for _, args, _, _ in calls if args[0] == 'circuit']
+    assert circuits and all(args[args.index('--openers-tag') + 1] == 'global-repair' for args in circuits)
+    assert names.index('global-repair-judge') < names.index('global-circuit-en')     # the openers are read before circuits
+    assert names.count('global-repair-judge') == 2      # the later call is the same stage, so it comes from the cache
     converted = {args[args.index('--model') + 1] for _, args, _, _ in calls if args[0] == 'convert'}
     assert 'CohereLabs/tiny-aya-global' in converted and 'CohereLabs/tiny-aya-fire' in converted
     assert len(converted) == 3
@@ -380,3 +387,46 @@ def test_a_limited_sample_mixes_sources_and_stays_parallel_across_languages():
     assert {p.source for p in picked} == {'aya', 'multijail', 'xstest'}
     by_lang = {lang: {p.group for p in picked if p.lang == lang} for lang in ('en', 'hi')}
     assert by_lang['en'] == by_lang['hi'] and len(by_lang['en']) == 20
+
+
+def test_a_data_build_with_an_empty_cell_stops_before_any_generation(monkeypatch, tmp_path):
+    import json
+    import pytest
+    import langsafe.experiment_run as experiment
+    calls = []
+
+    class Runner:
+        def __init__(self, directory, identity):
+            self.directory = Path(directory)
+            self.env = {'LANGSAFE_RUNS_DIR': str(directory), 'LANGSAFE_DATA_DIR': str(directory / 'data')}
+
+        def run(self, name, args, outputs, inputs=(), **kwargs):
+            calls.append(name)
+            outputs[0].parent.mkdir(parents=True, exist_ok=True)
+            outputs[0].write_text(json.dumps({'coverage': {'complete': False, 'missing': ['jv/benign'],
+                                                           'missing_split_cells': []}}))
+
+    monkeypatch.setenv('LANGSAFE_RUNS_DIR', str(tmp_path / 'run'))
+    monkeypatch.setenv('LANGSAFE_DATA_DIR', str(tmp_path / 'run' / 'data'))
+    monkeypatch.setenv('LANGSAFE_SPEC', str(Path(__file__).parents[1] / 'configs/development.yaml'))
+    monkeypatch.setattr(experiment, 'StageRunner', Runner)
+    with pytest.raises(ValueError, match='jv/benign'):
+        experiment.run_experiment('earth', 'development')
+    assert calls == ['data']
+
+
+def test_fingerprint_is_unchanged_by_sampling_before_widening():
+    """Finished runs carry these fingerprints, so the memory fix must not move them."""
+    import hashlib
+    import torch
+    from langsafe.gen.generate import model_fingerprint
+
+    torch.manual_seed(0)
+    model = torch.nn.Sequential(*[torch.nn.Linear(70, 90).half() for _ in range(20)])
+    expected = hashlib.sha256()
+    for i, (name, parameter) in enumerate(model.named_parameters()):
+        if i % 16 == 0:
+            flat = parameter.detach().float().flatten()       # the original order: widen everything, then sample
+            expected.update(name.encode())
+            expected.update(flat[:: max(1, flat.numel() // 4096)].cpu().numpy().tobytes())
+    assert model_fingerprint(model) == expected.hexdigest()[:16]

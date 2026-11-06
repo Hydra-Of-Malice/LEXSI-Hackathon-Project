@@ -20,6 +20,22 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **04:10** **An independent audit of the full-run path found real problems before the freeze.** Each was checked against code and
+  data here. Nothing about the full run has started yet.
+  - **Bad translations were kept.** Global sometimes answers the prompt, or adds a word-by-word explanation, instead of translating:
+    3 of 48 development rows, 2 of them among 8 in Javanese, at 8 to 22 times the source length against a median of 1.05. They now
+    fail, by length or repetition. The cutoff is provisional until a full-size build shows the real distribution.
+  - **Circuits were scoring tokens the models rarely say.** CircuitKIT reads only an answer's first token. English refusals open
+    with `I'm` 69% of the time, and we scored `I` (2%). Javanese opens with `Aku` 58% of the time, and we scored the `N` of `Nuwun`
+    (2%). `Sure` almost never appears. Circuits now use the tokens Global really opens with, read from its repair-split answers
+    only, the same pair for both models.
+  - **A 2 GiB memory spike.** The weight fingerprint widened the whole embedding before sampling it. That's fixed, and the
+    fingerprint value is unchanged. One development run ran at 661 ms per step against 65 to 87 elsewhere. The cause isn't proven,
+    so speed gets measured at full settings before the freeze.
+  - **A data build with an empty cell now stops at once,** not days later at the NF4 check.
+  - **One claim didn't hold.** The audit said a 510-token prompt would overflow the judges' 3,072-token slots. Measured with the
+    judges' own tokenizers, that worst case is about 1,840. Only a 600-token runaway translation could overflow, and those now fail.
+  - **Still to measure before freezing:** whether Javanese and Bengali circuit pairs can be built at all, since neither has ever run.
 - **03:55** **NF4 passed on the Earth development run in 18 minutes,** the first real pass through that path on this laptop. All three
   NF4 models reached the report, next to fp16 and Q4_K_M, and none of their answers match fp16. The check also exposed a hole:
   answers never recorded their precision and NF4 shares fp16's weight fingerprint, so the "source must be full precision" test

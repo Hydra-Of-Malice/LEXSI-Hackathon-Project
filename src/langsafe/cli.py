@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -269,9 +270,10 @@ def cmd_judge_warm(a):
 def cmd_circuit(a):
     from transformers import AutoTokenizer
     from .circuits.discover import discover
-    from .circuits.task import DEFAULT_OPENERS, english_pairs, translate_pairs, write_task_csv
+    from .circuits.task import DEFAULT_OPENERS, english_pairs, openers_from_judged, translate_pairs, write_task_csv
     from .gen.model import resolve_model
     spec = load_spec()
+    openers = None
     if a.task_csv:
         task = Path(a.task_csv)
     else:
@@ -286,9 +288,17 @@ def cmd_circuit(a):
             finally:
                 client.close()
         tokenizer = AutoTokenizer.from_pretrained(resolve_model(a.model))
-        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, DEFAULT_OPENERS[a.lang], preamble=a.preamble, limit=a.examples)
+        openers = DEFAULT_OPENERS[a.lang]
+        if a.openers_tag:
+            answers = {(row['id'], row['preamble']): row for row in _read_rows(RUNS / 'gens' / f'{a.openers_tag}.jsonl')}
+            openers = openers_from_judged(_read_rows(_judged_path(a.openers_tag, a.judges)), answers, a.lang, tokenizer)
+        print(f'{a.lang}: refusal opener {openers[0]!r}, compliance opener {openers[1]!r}', flush=True)
+        task = write_task_csv(tokenizer, pairs, a.lang, a.tag, openers, preamble=a.preamble, limit=a.examples)
+    with open(task, encoding='utf-8', newline='') as stream:
+        examples = sum(1 for _ in csv.DictReader(stream))
     result = discover(a.model, a.tag, a.lang, task, n_examples=a.examples, ig_steps=a.ig_steps,
                       verify_parity=not a.no_parity_check)
+    result = {**result, 'task_examples': examples, 'openers': openers}
     atomic_json(RUNS / 'circuits' / f'{a.tag}__{a.lang}' / 'summary.json', result)
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
 
@@ -457,6 +467,8 @@ def main(argv=None):
     command.add_argument('--lang', default='en'); command.add_argument('--pairs', type=int, default=32)
     command.add_argument('--examples', type=int, default=16); command.add_argument('--ig-steps', type=int, default=3)
     command.add_argument('--task-csv'); command.add_argument('--no-parity-check', action='store_true')
+    command.add_argument('--openers-tag', help='read the answer tokens from these judged answers, not the stock phrases')
+    command.add_argument('--judges', choices=['router','local','rules'], default='local')
     command = sub.add_parser('repair'); command.set_defaults(fn=cmd_repair)
     command.add_argument('--family', choices=['fire','earth'], required=True); command.add_argument('--model')
     command.add_argument('--arm', choices=['resta','circuit','circuit_merge','merge_back','steer'], required=True)
