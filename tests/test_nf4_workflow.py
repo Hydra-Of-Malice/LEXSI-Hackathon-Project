@@ -206,6 +206,10 @@ def test_nf4_validation_rejects_unquantized_or_unplaced_models():
         validate_nf4_model(SimpleNamespace(is_loaded_in_4bit=True, hf_device_map={'lm_head': 'cpu'}))
     with pytest.raises(RuntimeError, match='device map'):
         validate_nf4_model(SimpleNamespace(is_loaded_in_4bit=True, hf_device_map=None))
+    on = lambda device: lambda: [('layer.weight', SimpleNamespace(device=device))]
+    validate_nf4_model(SimpleNamespace(is_loaded_in_4bit=True, named_parameters=on('cuda:0')))
+    with pytest.raises(RuntimeError, match='CUDA'):
+        validate_nf4_model(SimpleNamespace(is_loaded_in_4bit=True, named_parameters=on('cpu')))
     quantizer = SimpleNamespace(quantization_config=SimpleNamespace(_load_in_4bit=True, bnb_4bit_quant_type='nf4'))
     validate_nf4_model(SimpleNamespace(hf_quantizer=quantizer, hf_device_map={'': 0}))
     with pytest.raises(RuntimeError, match='quantizer type'):

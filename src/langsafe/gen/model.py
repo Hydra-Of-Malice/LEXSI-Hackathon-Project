@@ -51,6 +51,10 @@ def validate_nf4_model(model) -> None:
         raise RuntimeError("NF4 requested but Transformers did not load a 4-bit model")
     device_map = getattr(model, "hf_device_map", None)
     if not isinstance(device_map, dict) or not device_map:
+        # Transformers 5 keeps no map for a single-device load, so check where each tensor actually is.
+        named = getattr(model, "named_parameters", None)
+        device_map = {name: tensor.device for name, tensor in named()} if named else {}
+    if not device_map:
         raise RuntimeError("NF4 model has no verifiable CUDA device map")
     offloaded = []
     for name, device in device_map.items():
