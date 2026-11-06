@@ -192,5 +192,7 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     answered before the repairs run. Repairs still run if nothing is confirmed, as exploratory work.
 21. **Fire and Water are generated on the same held-out items** as context (`experiment.comparison_models`). They are never
     repaired or selected, and their gaps sit outside the 14 confirmatory tests. Water's licence was accepted on 6 November,
-    before the full held-out run. Its region covers Javanese, so it tests whether the Javanese gap follows the region.
+    before the full held-out run. Its card calls it best for European and Asia Pacific languages. The card doesn't
+    assign languages to regions, so placing Javanese there is our reading. On that reading, Water tests whether the Javanese
+    gap follows the region.
 
