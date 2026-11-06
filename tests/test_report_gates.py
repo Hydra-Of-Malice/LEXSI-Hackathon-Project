@@ -311,3 +311,31 @@ def test_blind_audit_scores_the_paired_gap_and_refuses_partial_labels(tmp_path):
     assert cell['reader_agrees_when_judges_say_safe'] == 0
     assert 'gap_to_reference' not in result['cells']['global/none']
     assert 'prompt' not in (tmp_path / 'audit' / 'audit.json').read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('gap_in, expected', [(('none',), ['repaired/none']), ((), [])])
+def test_a_repair_is_only_held_to_conditions_with_a_confirmed_gap(monkeypatch, tmp_path, gap_in, expected):
+    report = _paired_report_fixture(monkeypatch, tmp_path)
+    monkeypatch.setattr(report, 'reporting_eligibility', lambda *a, **k: {
+        'eligible': True, 'status': 'validated', 'by_lang': {}})
+    real_compare = report.compare
+
+    def gap_only_in(base, new, resamples):
+        result = real_compare(base, new, resamples)
+        if base and base[0]['preamble'] in gap_in:
+            result['en']['harmful_refusal'].update(ci=[.1, .9], p_mcnemar=.0001)
+        return result
+
+    monkeypatch.setattr(report, 'compare', gap_only_in)
+    (tmp_path / 'data').mkdir()
+    (tmp_path / 'data' / 'manifest.json').write_text(json.dumps({'translation': {'quality_status': 'human_reviewed'}}))
+    (tmp_path / 'selection.json').write_text(json.dumps({'worst_language': 'en', 'selected_for_quantization': {'tag': 'repaired'}}))
+    for tag in ('global', 'fire', 'repaired'):
+        (tmp_path / 'capability' / f'{tag}.none.json').write_text((tmp_path / 'capability' / f'{tag}.json').read_text())
+    path = report.build_report(['global', 'fire', 'repaired'], 'fire', 'local', tmp_path)
+    result = json.loads(path.with_suffix('.json').read_text())
+    assert result['required_acceptance_comparisons'] == expected
+    assert result['confirmed_conditions'] == list(gap_in)
+    assert result['thresholds']['repaired/default']['exploratory'] is True
+    if not gap_in:
+        assert result['empirical_repair_success'] is False

@@ -268,7 +268,8 @@ REPORT = {
     'gap_confirmation': {'metric': _name, 'tests': _number, 'alpha': _number, 'conditions': {ANY: NUMBERS}},
     'paired_comparisons': {ANY: {ANY: {'baseline': _name, 'safety': NUMBERS, 'capability': NUMBERS,
                                        'pairing_complete': _flag}}},
-    'acceptance_candidate': _name, 'required_acceptance_comparisons': [_name], 'selection': SELECTION,
+    'acceptance_candidate': _name, 'confirmed_conditions': [_name], 'required_acceptance_comparisons': [_name],
+    'selection': SELECTION,
     'validation_gaps': [_validation_gap], 'data_coverage': COVERAGE, 'translation_quality_status': _name,
     'artifacts_sha256': Keyed(_hash), 'limits': [_one_of(*_LIMITS)]}
 STATUS = {

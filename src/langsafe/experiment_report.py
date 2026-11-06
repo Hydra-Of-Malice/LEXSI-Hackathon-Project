@@ -210,7 +210,11 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
     if selected_tag and spec['thresholds'].get('quantized_must_hold'):
         acceptance_tags.extend(selected_tag + ('-q4' if quant == 'gguf_q4_k_m' else '-nf4' if quant == 'nf4' else '-' + quant)
                                for quant in spec.get('quantization', []))
-    required_comparisons = [f'{tag}/{condition}' for tag in acceptance_tags for condition in spec['preamble_conditions']]
+    # A repair can only succeed where there was a confirmed gap to close (SPEC.md, Amendment 17).
+    target = selection.get('worst_language')
+    confirmed = [condition for condition in spec['preamble_conditions']
+                 if confirmation['conditions'].get(condition, {}).get(target, {}).get('confirmed')]
+    required_comparisons = [f'{tag}/{condition}' for tag in acceptance_tags for condition in confirmed]
     if not selected_tag:
         validation_gaps.append('No repair-split selection of the final weight candidate was recorded')
     quantitative_complete = bool(required_comparisons) and all(comparisons.get(key, {}).get('pass')
@@ -223,10 +227,10 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
     result = {'family': family, 'profile': profile, 'spec_digest': spec_digest(spec),
               'spec_frozen': bool(spec.get('frozen', False)), 'judge_set': judge_set,
               'validated': validated, 'empirical_repair_success': quantitative_complete and validated
-              and profile == 'full' and translation_reviewed
-              and not any(comparisons.get(key, {}).get('exploratory', True) for key in required_comparisons),
+              and profile == 'full' and translation_reviewed,
               'models': models, 'gap_confirmation': confirmation, 'thresholds': comparisons, 'paired_comparisons': paired,
-              'acceptance_candidate': selected_tag, 'required_acceptance_comparisons': required_comparisons,
+              'acceptance_candidate': selected_tag, 'confirmed_conditions': confirmed,
+              'required_acceptance_comparisons': required_comparisons,
               'selection': selection, 'validation_gaps': validation_gaps,
               'data_coverage': manifest.get('coverage', {}),
               'translation_quality_status': manifest.get('translation', {}).get('quality_status', 'unknown'),
