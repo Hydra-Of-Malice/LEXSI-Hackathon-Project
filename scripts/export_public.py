@@ -56,7 +56,7 @@ MAX_SMALL_LIST = 4      # a confidence interval fits; a per-item vector does not
 CARD_LICENCES = {'CohereLabs/aya_redteaming': 'Apache-2.0', 'DAMO-NLP-SG/MultiJail': 'MIT',
                  'natolambert/xstest-v2-copy': 'CC-BY-4.0'}
 CARD_COMPILATION_LICENCE = 'CC-BY-NC-4.0'
-CARD_LANGUAGES = frozenset({'en', 'hi', 'bn', 'ta', 'hi-Latn', 'ar', 'sw'})    # ar and sw only if Earth is built
+CARD_LANGUAGES = frozenset({'en', 'bn', 'ar', 'sw', 'jv', 'th', 'ko', 'hi', 'ta', 'hi-Latn'})    # Earth's, then Fire's
 CARD_ORIGINS = frozenset({'native', 'translated', 'code-mixed'})
 KINDS = frozenset({'harmful', 'benign'})
 SPLITS = frozenset({'heldout', 'repair'})

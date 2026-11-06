@@ -68,9 +68,9 @@ T([["Javanese, safe answers", "Global", "Fire", "Earth", "Mean of 10 languages (
    ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "95.0 / 94.6 / 93.5"]],
   [40 * mm, 18 * mm, 32 * mm, 32 * mm, 48 * mm])
 P("131 prompts per language, repair split only, 4-bit weights, two local 8B judges standing in for Command A. Without the "
-  "preamble both gaps survive correction for 10 languages; no other language's gap does. <b>Caution:</b> a blind read of 153 "
-  "answers found that many rejected Javanese answers are repetition loops, not harmful content: 19.8% of Earth's "
-  "against 7.6% of Global's. Part of this gap may be the model breaking down, so we now report the two separately.")
+  "preamble Earth's gap survives correction for all 40 comparisons, and Fire's only for 10 languages. <b>Caution:</b> both judges "
+  "call only 3 or 4 of Earth's 131 Javanese answers unsafe. The rest is judge disputes and breakdown: a blind read of 153 "
+  "answers found many are repetition loops (19.8% of Earth's, 7.6% of Global's). The true gap is unknown until held-out data.")
 
 H("What we are doing")
 T([["Step", "What happens", "Lexsi kit"],

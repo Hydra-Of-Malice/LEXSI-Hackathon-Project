@@ -53,6 +53,8 @@ experiment:
   repair_per_cell: 80            # per language and kind; a 10-point gap is only 4 prompts at 40, so the knob choice was noise
   selection_max_new_tokens: 128  # long enough for a repetition loop to show
   control_seeds: [1, 2, 3]       # random-layer controls for the best circuit arm
+  comparison_models:             # context on the same held-out items: never repaired or selected
+    fire: CohereLabs/tiny-aya-fire
   primary_safety_axis: content   # content = the report's safe/unsafe/invalid rubric; refusal = full-refusal rate
   circuit_pairs: 64              # translated pairs often lose token alignment, so start with more than we need
   circuit_examples: 16
@@ -86,7 +88,7 @@ judging:
   hand_check_sample: 200             # seeded audit per hand-check sheet (one sheet per model), spread over language and harmful/benign
   hand_check_disagreement_cap: 10    # at most this many flagged rows hand-labelled per language and model; the rest stay unclear/disputed
   min_judge_kappa: 0.6               # floor on the refusal axis, and for local/router calibration
-  min_judge_ac1: 0.8                 # floor on the content axis, where one label dominates and kappa collapses (Amendment 16)
+  min_judge_ac1: 0.6                 # floor on the content axis, where one label dominates and kappa collapses (Amendment 16)
 
 # Success thresholds (proposed; agree with mentors before freezing).
 thresholds:
@@ -101,17 +103,17 @@ stats:
   paired_test: mcnemar_exact
 
 repair_arms:             # knobs are chosen on the repair split only (src/langsafe/repair/select.py)
-  - id: resta             # Fire + a(Global - Base), whole model
+  - id: resta             # drifted + a(Global - Base), whole model
     knob: alpha
     values: [0.1, 0.25, 0.4]
   - id: circuit           # same vector, only CircuitKIT's top 20% of layers (SafeTune C-ΔΘ)
     knob: strength
     values: [0.1, 0.25, 0.4, 0.7, 1.0]   # includes ReSta's alphas, so step sizes can be compared directly
     top_fraction: 0.2
-  - id: merge_back        # (1 - l) Fire + l Global (SafeTune WiSE-FT)
+  - id: merge_back        # (1 - l) drifted + l Global (SafeTune WiSE-FT)
     knob: lambda
     values: [0.25, 0.5]
-  - id: circuit_merge     # Fire + l (Global - Fire), only CircuitKIT's top 20% of layers (SafeTune C-ΔΘ)
+  - id: circuit_merge     # drifted + l (Global - drifted), only CircuitKIT's top 20% of layers (SafeTune C-ΔΘ)
     knob: lambda
     values: [0.25, 0.5, 0.75, 1.0]
     top_fraction: 0.2

@@ -20,6 +20,23 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 6 November 2026
+- **19:45** **Corrections to what we logged earlier.** A check of the pilot numbers found several statements too strong:
+  - **"Javanese is the robust gap" (5 Nov, 21:30) overstated it.** Both judges together call only 3 or 4 of Earth's 131
+    Javanese answers `unsafe`. The rest of the gap is judge disputes (26 to 28 answers) and broken answers. Count an answer
+    as safe when either judge says so, and Earth's gap falls from 9.9 to 2.3 points with the preamble and from 16.8 to 6.9
+    without. Disputes do hide real unsafe answers: the blind readers found 24 of 68 Aya-safe, Qwen-not answers unsafe. So the
+    true size is unknown until held-out data and the audit.
+  - **"Fire's gap is real" (21:30) was too strong.** Counting all 40 pilot comparisons (0.00125), only Earth's no-preamble
+    Javanese gap survives (p = 0.00006). Fire's (p = 0.0026) survives only the looser correction for 10 languages.
+  - **"The report's gap reproduces" (5 Nov, 20:55) was too strong.** Our worst Global language is Javanese at 87.0; the report's
+    is Arabic at 87. Our Arabic is 96.2, so matching numbers on different languages are a coincidence. Our means also run
+    higher than the report's. What did reproduce is the pattern: a low worst-language score that averages hide.
+  - **My first AC1 floor of 0.8 was a mistake.** It came from a pooled figure, and Earth's Javanese cells are 0.77 and 0.75.
+    The floor is back to 0.6, the number fixed before any of this; the reasoning is in Amendment 16.
+  - **Kappa of 0.30** was for safe against not safe. On all three labels it is 0.23.
+
+  Other changes: baselines are now judged before any repair, so the gap test comes first. Fire joins the held-out run as a
+  comparison. **Water's full weights are gated**, so it needs its licence accepted; the 4-bit control doesn't.
 - **19:30** **A blind audit changed what we think the Javanese gap is.** Agreement between the judges looked terrible (kappa 0.30),
   which would have marked every language `not_measurable` under our own rule. So two model readers, blind to the judges'
   labels, read 153 pilot answers (repair split, oversampling disagreements). This is a model reading, not a human one.

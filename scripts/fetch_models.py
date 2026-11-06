@@ -39,6 +39,8 @@ def fetch(url: str, target: Path, size: int, headers: dict) -> None:
             with requests.get(url, headers={**headers, "Range": f"bytes={have}-"}, stream=True, timeout=(30, 120)) as reply:
                 if reply.status_code == 416:        # asked past the end: the file is already whole
                     continue
+                if reply.status_code in (401, 403, 404):
+                    sys.exit(f"{target.name}: HTTP {reply.status_code}. Check the licence on the model page and your login.")
                 if reply.status_code not in (200, 206):
                     raise OSError(f"HTTP {reply.status_code}")
                 mode = "ab" if reply.status_code == 206 else "wb"     # 200 means the server ignored the range
@@ -46,7 +48,7 @@ def fetch(url: str, target: Path, size: int, headers: dict) -> None:
                     for chunk in reply.iter_content(CHUNK):
                         stream.write(chunk)
         except (OSError, MemoryError, requests.RequestException) as error:
-            print(f"retrying {target.name} at {have / 2**30:.2f} GiB: {type(error).__name__}", flush=True)
+            print(f"retrying {target.name} at {have / 2**30:.2f} GiB: {error}", flush=True)
             time.sleep(20)
 
 

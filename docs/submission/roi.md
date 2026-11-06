@@ -1,16 +1,16 @@
 # ROI: self-hosting Tiny Aya against closed-model token billing
 
-This is the optional ROI comparison from the hackathon rules. It compares cost only. It is the same under both stories in the article, because it does not depend on whether the safety gap is real.
+This is the optional ROI comparison from the hackathon rules. It compares cost only. It is the same under both stories in the article, because it does not depend on whether the safety gap is confirmed.
 
 > **This comparison is hypothetical.** Tiny Aya is CC-BY-NC 4.0, so commercial use needs a licence from Cohere, and we do not know the price. The Lexsi kits also bar selling a service built on them without a commercial licence. Any real deployment must add those costs.
 
-**Status.** Prices were checked on 5 November 2026. Every computed figure below comes from those prices and the assumptions in section 2. Batched throughput is still unmeasured, so we cannot yet say whether one GPU can carry the load. Those gaps are marked `{{NAME}}`.
+**Status.** Prices were checked on 5 November 2026. Every computed figure below comes from those prices and the assumptions in section 2. Batched throughput is measured on a laptop GPU only, so we cannot yet say whether one rented GPU can carry the load. Those gaps are marked `{{NAME}}`.
 
 ## 1. What the numbers say so far
 
 - At our assumed 600,000 requests a month, the cheapest closed models cost less than one always-on GPU: $63.48 for `gpt-5-nano` and $90.96 for Claude Haiku 5.5, against $197.10 to $365.00 for a GPU.
 - Self-hosting costs less than the mid-priced models at this volume. Claude Haiku 4.5 costs $909.60.
-- Against the cheapest closed models, one GPU breaks even at about 1.3 to 3.4 million requests a month, if it can sustain the throughput. We have not measured that yet.
+- Against the cheapest closed models, one GPU breaks even at about 1.3 to 3.4 million requests a month, if it can sustain the throughput. We have not measured that on a rented GPU yet.
 - These GPU costs leave out engineering time and licences. Both would make self-hosting look worse.
 
 So cost alone does not justify self-hosting at this volume against the cheapest closed models. The case rests on higher volume, or on what a closed API cannot offer: data that stays on your own hardware, offline use, and testing the exact file you deploy.
@@ -28,7 +28,7 @@ Type: **Measured** means we measured it. **Public** means a published price. **A
 | T_out | Output tokens per request | 200 | Assumption |
 | H | Hours in a month | 730 | Assumption, as in Hugging Face's own examples |
 | k | Peak-to-average traffic ratio | 3 | Assumption |
-| f | Closed-model tokens per Tiny Aya token | 1.0 | Assumption. To measure: {{FERTILITY_HI}} (Hindi), {{FERTILITY_BN}} (Bengali), {{FERTILITY_TA}} (Tamil) |
+| f | Closed-model tokens per Tiny Aya token | 1.0 | Assumption. To measure: {{FERTILITY_AR}} (Arabic), {{FERTILITY_SW}} (Swahili), {{FERTILITY_JV}} (Javanese), {{FERTILITY_BN}} (Bengali), {{FERTILITY_TH}} (Thai), {{FERTILITY_KO}} (Korean) |
 | TPS | Sustained batched output tokens per second | {{TPS_BATCHED_GPU}} on {{TPS_GPU_NAME}} | To measure |
 | TPS_in | Prompt tokens per second under the same load | {{TPS_PREFILL_GPU}} | To measure |
 | P95 | 95th-percentile latency at that load | {{P95_LATENCY}} | To measure |
@@ -147,11 +147,13 @@ At 600,000 requests:
 - Peak output, with k = 3: 137.0 tokens per second.
 - Average input: 309,600,000 / 2,628,000 = 117.8 tokens per second.
 
-**What we have measured.** On an Apple M1 Max, with Q4_K_M weights and one request at a time, Fire decoded at a median of 77.81 tokens per second, and 64.92 tokens per second including prompt processing. This came from a development run of 78 requests.
+**What we have measured.** On an Apple M1 Max, with Q4_K_M weights and one request at a time, Fire decoded at a median of 77.81 tokens per second, and 64.92 tokens per second including prompt processing. This came from a development run of 78 requests, before the project moved to Earth.
 
 That single stream would cover the 45.7 average and fall short of the 137.0 peak. It is a laptop figure, and it does not predict batched GPU throughput. It also says nothing about cost, because that machine has no hourly price.
 
-**What we still need.** Batched throughput on a rented-class GPU:
+On a laptop RTX 4060 (8 GB) with full-precision Earth weights, batched generation reached 144.9 output tokens per second at batch 16 in Transformers, and 169.2 through llama-server with 16 slots. That run used 48 prompts of about 383 tokens and at most 96 new tokens. Those figures sit above the 137.0 peak, but this was a short run on a laptop GPU, with answers shorter than the 200 tokens we assume. They do not replace a measurement on a rented GPU, and they are not Q4_K_M figures.
+
+**What we still need.** Batched throughput on a rented-class GPU, with Earth:
 
 | Measure | Value |
 |---|---:|
@@ -216,7 +218,7 @@ If measured throughput falls below the peak figure, one GPU cannot carry that vo
 
 **In favour of self-hosting**
 
-- **Tokenizer efficiency.** Tiny Aya has a 262,144-token vocabulary built for many languages. Closed tokenizers may split Indic text into more tokens, which raises billed cost by the factor f. We left f at 1.0 until we measure it.
+- **Tokenizer efficiency.** Tiny Aya has a 262,144-token vocabulary built for many languages. Closed tokenizers may split Bengali, Thai, Arabic or Korean text into more tokens, which raises billed cost by the factor f. We left f at 1.0 until we measure it.
 - **Scale to zero.** Traffic with long idle periods can use fewer GPU-hours. HF Endpoints bill per minute.
 - **Owned hardware.** A machine you already own costs only power and depreciation. We did not model this.
 
@@ -228,22 +230,25 @@ If measured throughput falls below the peak figure, one GPU cannot carry that vo
 
 ## 9. To finish this document
 
-1. Measure batched throughput and latency on a T4, with the same prompt lengths as section 2. Kaggle's free T4 is enough. Fill section 6.
-2. Count tokens for a shared sample of Hindi, Bengali and Tamil prompts with each closed tokenizer we can access. Fill f. If a tokenizer is not available, say so and leave f at 1.0.
+1. Measure batched throughput and latency on a T4, using Earth, with the same prompt lengths as section 2. Kaggle's free T4 is enough. Fill section 6.
+2. Count tokens for a shared sample of Arabic, Swahili, Javanese, Bengali, Thai and Korean prompts with each closed tokenizer we can access. Fill f. If a tokenizer is not available, say so and leave f at 1.0.
 3. Set U from the throughput run. Compute N and C_self.
 4. Record GPU hours for the repair and its evaluation, and fill C_rep.
 5. Re-check all prices on the day of submission and update section 4.
 
 ## Placeholder list
 
-**Delete this section before publishing.** 21 placeholders, in order of first use.
+**Delete this section before publishing.** 24 placeholders, in order of first use.
 
 | Placeholder | What goes here | Where it comes from |
 |---|---|---|
-| `{{FERTILITY_HI}}` | Closed-tokenizer tokens per Tiny Aya token, Hindi sample | Tokenizer count |
+| `{{FERTILITY_AR}}` | Closed-tokenizer tokens per Tiny Aya token, Arabic sample | Tokenizer count |
+| `{{FERTILITY_SW}}` | Closed-tokenizer tokens per Tiny Aya token, Swahili sample | Tokenizer count |
+| `{{FERTILITY_JV}}` | Closed-tokenizer tokens per Tiny Aya token, Javanese sample | Tokenizer count |
 | `{{FERTILITY_BN}}` | Closed-tokenizer tokens per Tiny Aya token, Bengali sample | Tokenizer count |
-| `{{FERTILITY_TA}}` | Closed-tokenizer tokens per Tiny Aya token, Tamil sample | Tokenizer count |
-| `{{TPS_BATCHED_GPU}}` | Measured batched output tokens per second. Still to measure | Speed run |
+| `{{FERTILITY_TH}}` | Closed-tokenizer tokens per Tiny Aya token, Thai sample | Tokenizer count |
+| `{{FERTILITY_KO}}` | Closed-tokenizer tokens per Tiny Aya token, Korean sample | Tokenizer count |
+| `{{TPS_BATCHED_GPU}}` | Measured batched output tokens per second on a rented-class GPU. Still to measure | Speed run |
 | `{{TPS_GPU_NAME}}` | GPU used for that measurement | Speed run |
 | `{{TPS_PREFILL_GPU}}` | Prompt tokens per second under load | Speed run |
 | `{{P95_LATENCY}}` | 95th-percentile request latency under load | Speed run |

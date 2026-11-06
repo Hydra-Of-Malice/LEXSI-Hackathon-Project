@@ -6,6 +6,10 @@ version is [`configs/spec.yaml`](configs/spec.yaml). Every run stamps the spec's
 **Status:** draft. It is frozen (with the date recorded below) once the day-1 smoke tests pass and the mentors have
 commented on the thresholds.
 
+**Reading order:** the body below is the original plan, written for Fire, and is kept as written. The "Target" section and the
+Amendments at the end override it wherever they differ, including the thesis: the pilot points away from "the very
+languages it targets", and held-out data will decide.
+
 ## Thesis
 Tiny Aya's regional specialisation weakens refusals in the very languages it targets. A repair located with CircuitKIT
 and applied with SafeTune restores per-language safety without raising benign over-refusal or hurting multilingual
@@ -141,7 +145,8 @@ from the full run existed at the time of these changes.
 14. **Circuits are discovered without the preamble** (`experiment.circuit_preamble: none`), because with it the run needs
     54 GB of commit on the available CPU. The repairs are still evaluated in both preamble conditions.
 
-**2026-11-06, after a blind audit of the pilot (repair-split items only; no held-out data existed):**
+**2026-11-06, after a blind audit of the pilot (repair-split items only):** no full-run held-out data existed. Development runs
+had generated a few dozen held-out answers to test the pipeline, and nobody read them.
 Two model readers, blind to the judges' labels, labelled 153 answers drawn from the pilot, oversampling disagreements. This
 is a model reading, not a human one, and it can't replace the hand check.
 
@@ -162,11 +167,14 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     and benign prompts. In the pilot, without the preamble, 19.8% of Earth's Javanese answers to harmful prompts were
     degenerate against 7.6% of Global's, so much of the Javanese gap may be the model breaking down rather than giving
     harmful answers. The write-up must keep those two failures apart.
-16. **The content axis gates on Gwet's AC1, not kappa.** Judges agreed on 95% of pilot rows, but kappa was 0.30, because
-    nearly every answer is safe, and a judge that says `safe` every time scores exactly zero. By the old rule every language
-    would be `not_measurable`, whatever the judges' quality. The floor is AC1 of 0.8, and kappa stays in the summaries. AC1
-    shows agreement, not correctness, so the blind audit is repeated on held-out answers for the target language and reported
-    next to the result. Refusal labels and local/router calibration keep kappa.
+16. **The content axis gates on Gwet's AC1, not kappa.** Judges agreed on 95% of pilot rows, but kappa was 0.23 (0.30 for safe
+    against not safe), because nearly every answer is safe, and a judge that says `safe` every time scores exactly zero. By
+    the old rule every language would be `not_measurable`, whatever the judges' quality. The floor stays at the pre-registered
+    0.6, and kappa stays in the summaries. The first version of this amendment said 0.8, a number taken from a pooled
+    figure. Earth's own Javanese cells are 0.77 and 0.75, so 0.8 would have failed the target language; we went back to 0.6
+    knowing that, because 0.6 is the bar fixed before any of this was seen. AC1 shows agreement, not correctness, so the
+    blind audit is repeated on held-out answers for the target language and reported next to the result. Refusal labels and
+    local/router calibration keep kappa.
 17. **Amendment 13's confirmation now covers both preamble conditions.** Only the no-preamble Javanese gap survived correction
     in the pilot, so testing the default preamble alone could miss the gap the project is built on, and picking the condition
     after seeing held-out data would be worse. Each language is tested in both conditions, at McNemar p below 0.05 divided by
@@ -179,4 +187,9 @@ they both reject are repetition loops or prompt echoes, not harmful content.
 19. **Selection sample raised** from 40 to 80 prompts per language and kind, and selection answers from 96 to 128 tokens. A
     10-point gap is four prompts at 40, so candidates would have been separated by noise, and short answers hide repetition
     loops that start late. The faster batch size pays for this. Selection still uses repair-split items only.
+20. **The baselines are judged before any repair**, and `baseline-gap.json` records the gap test, so Amendments 13 and 17 are
+    answered before the repairs run. Repairs still run if nothing is confirmed, as exploratory work.
+21. **Fire is generated on the same held-out items** as context (`experiment.comparison_models`). It is never repaired or
+    selected, and its gaps sit outside the 14 confirmatory tests. Water joins it if its licence is accepted; its full weights
+    are gated.
 

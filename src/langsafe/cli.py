@@ -479,7 +479,7 @@ def main(argv=None):
     command.add_argument('--tags', required=True); command.add_argument('--family', choices=['fire','earth'], required=True)
     command.add_argument('--judges', choices=JUDGE_SETS, default='local'); command.add_argument('--output')
     command = sub.add_parser('experiment'); command.set_defaults(fn=cmd_experiment)
-    command.add_argument('--family', choices=['fire','earth'], default='fire')
+    command.add_argument('--family', choices=['fire','earth'], default='earth')
     command.add_argument('--profile', choices=['development','full'], default='development')
     command.add_argument('--judges', choices=JUDGE_SETS, default='local')
     command.add_argument('--stop-after', choices=['data','baseline','circuit','repairs','quantization'])

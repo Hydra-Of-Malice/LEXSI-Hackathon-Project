@@ -220,6 +220,31 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
         runner.run(tag + '-heldout', ['generate', '--family', family, '--model', model, '--tag', tag,
                                       '--batch-size', str(batch)], [runner.directory / 'gens' / f'{tag}.jsonl'], [data_manifest])
         _capability_stages(runner, tag, model, family, spec)
+    comparisons = {tag: model for tag, model in experiments.get('comparison_models', {}).items() if tag != family}
+    for tag, model in comparisons.items():      # context only: these models are never repaired or selected
+        runner.run(tag + '-heldout', ['generate', '--family', family, '--model', model, '--tag', tag,
+                                      '--batch-size', str(batch)], [runner.directory / 'gens' / f'{tag}.jsonl'], [data_manifest])
+
+    def judged_path(tag: str) -> Path:
+        return runner.directory / 'judged' / (f'{tag}.jsonl' if judges == 'router' else f'{tag}.{judges}.jsonl')
+
+    def judge_heldout(tags: list[str]) -> None:
+        runner.run('heldout-judge-warm', ['judge-warm', '--tags', ','.join(tags), '--judges', judges], [],
+                   [runner.directory / 'gens' / f'{tag}.jsonl' for tag in tags])
+        for tag in tags:
+            path = judged_path(tag)
+            runner.run(tag + '-judge-' + judges, ['judge', '--tag', tag, '--judges', judges],
+                       [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}.jsonl'])
+            runner.run(tag + '-audit-' + judges, ['audit', '--tag', tag, '--judges', judges],
+                       [runner.directory / 'auditkit' / f'{tag}.{judges}'],
+                       [path, runner.directory / 'gens' / f'{tag}.jsonl'])
+
+    judge_heldout([*baseline_models, *comparisons])
+    from .experiment_report import gap_confirmation, primary_metric
+    baseline_gap = {tag: gap_confirmation(_rows(judged_path('global')), _rows(judged_path(tag)), primary_metric(spec),
+                                          spec['preamble_conditions'], spec['stats']['bootstrap_resamples'])
+                    for tag in (family, *comparisons)}
+    atomic_json(runner.directory / 'baseline-gap.json', baseline_gap)
     if stop_after == 'baseline':
         return
     circuit_summary = None
@@ -372,15 +397,7 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
                    [runner.directory / 'gens' / f'{tag}.jsonl'], [data_manifest])
         _capability_stages(runner, tag, descriptor['model'], family, spec, descriptor)
     evaluation_tags = ['global', family] + [d['tag'] for d in evaluated]
-    runner.run('heldout-judge-warm', ['judge-warm', '--tags', ','.join(evaluation_tags), '--judges', judges], [],
-               [runner.directory / 'gens' / f'{tag}.jsonl' for tag in evaluation_tags])
-    for tag in evaluation_tags:
-        path = runner.directory / 'judged' / (f'{tag}.jsonl' if judges == 'router' else f'{tag}.{judges}.jsonl')
-        runner.run(tag + '-judge-' + judges, ['judge', '--tag', tag, '--judges', judges],
-                   [path, path.with_suffix('.summary.json')], [runner.directory / 'gens' / f'{tag}.jsonl'])
-        runner.run(tag + '-audit-' + judges, ['audit', '--tag', tag, '--judges', judges],
-                   [runner.directory / 'auditkit' / f'{tag}.{judges}'],
-                   [path, runner.directory / 'gens' / f'{tag}.jsonl'])
+    judge_heldout(evaluation_tags)
     if stop_after == 'repairs':
         return
     if not skip_quantization:

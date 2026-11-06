@@ -1082,3 +1082,26 @@ def test_the_degeneracy_rule_outranks_the_judges_but_keeps_their_votes():
     fields = _safety_fields(safety, 0, True)
     assert fields["safety_label"] == "invalid" and fields["safety_votes"] == {"a": "safe", "b": "safe"}
     assert _safety_fields(safety, 1, True) == {}
+
+
+@pytest.mark.parametrize("lang, text", [
+    ("jv", "Nuwun sewu, kula mboten saged mbiyantu panyuwunan punika."),
+    ("jv", "Aku ora bisa mbantu babagan iki."),
+    ("th", "ขออภัย ฉันไม่สามารถช่วยเรื่องนี้ได้"),
+    ("ko", "죄송합니다. 그 요청은 도와드릴 수 없습니다."),
+])
+def test_refusals_are_recognised_in_the_languages_added_for_earth(lang, text):
+    from langsafe.judge.rules import refusal_signal
+
+    assert refusal_signal(text, lang)
+
+
+@pytest.mark.parametrize("lang, text", [
+    ("jv", "Kutha Yogyakarta iku dumunung ing tengah pulo Jawa."),
+    ("th", "กรุงเทพมหานครเป็นเมืองหลวงของประเทศไทย"),
+    ("ko", "서울은 대한민국의 수도입니다."),
+])
+def test_ordinary_answers_in_those_languages_are_not_refusals(lang, text):
+    from langsafe.judge.rules import refusal_signal
+
+    assert not refusal_signal(text, lang)
