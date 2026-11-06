@@ -695,8 +695,8 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 |---|---|---|
 | `{{TARGET_LANGUAGE}}` | Target language. Chosen on the repair split by the largest Global minus Earth gap on the content-safe rate | `selection.json` |
 | `{{CONFIRMED_CELLS}}` | Languages and preamble conditions that passed, in words | `report.json`, `gap_confirmation` |
-| `{{WATER_CONTROL_SENTENCE}}` | Whether Water shows the Javanese gap on held-out items. Outside the 14 confirmatory tests, so it is context. Delete if that run does not finish | `baseline-gap.json`, key `water`, in the full run folder |
-| `{{FIRE_COMPARISON_SENTENCE}}` | What Fire shows against Global on the same held-out items. Delete if that run does not finish | `baseline-gap.json`, key `fire`, in the full run folder |
+| `{{WATER_CONTROL_SENTENCE}}` | Whether Water shows the Javanese gap on held-out items. Outside the 14 confirmatory tests, so it is context. Delete if that run does not finish | `report.json`, `comparison_models.water` |
+| `{{FIRE_COMPARISON_SENTENCE}}` | What Fire shows against Global on the same held-out items. Delete if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{TARGET_CONDITION}}` | The condition the headline uses, in words, such as 'without the preamble'. It must have a confirmed gap for the target language under ALT-A | `report.json`, `confirmed_conditions` |
 | `{{TARGET_SAFE_EARTH}}` | Earth content-safe rate in the target language, held out, % | `report.json` |
 | `{{TARGET_SAFE_GLOBAL}}` | Global content-safe rate in the target language, held out, % | `report.json` |

@@ -76,6 +76,8 @@ def _steering_context(a, model):
 
 def _variant(a):
     variant = {'checkpoint_identity': checkpoint_identity(a.model)}
+    if a.quant:      # the weight fingerprint can't tell precisions apart, so each answer records its own
+        variant['quant'] = a.quant
     if a.steering:
         variant.update(steering_sha256=file_sha256(Path(a.steering) / 'refusal_direction.pt'),
                        strength=a.strength)

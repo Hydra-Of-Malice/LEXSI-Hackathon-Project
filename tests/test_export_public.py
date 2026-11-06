@@ -203,6 +203,7 @@ def _write_report(run: Path) -> None:
     spec['capability_languages'] = ['en']
     spec['experiment']['capability_limit'] = 4
     spec['experiment']['primary_safety_axis'] = 'content'
+    spec['experiment']['comparison_models'] = {'water': 'context-model'}
     spec['quantization'] = []
     spec['stats']['bootstrap_resamples'] = 50
     with mock.patch.object(report, 'load_spec', lambda: spec), mock.patch.dict(os.environ):
@@ -229,6 +230,9 @@ def make_run(root: Path) -> Path:
             write_hand_check_sheet(result['queue'], result['audit_sample'], run / 'hand_check' / f'{tag}.local.csv')
             _capability(run, tag, 'default')
             _capability(run, tag, 'none')
+        gens = [_generation('water', prompt, preamble) for preamble in ('default', 'none') for prompt in HELDOUT]
+        write_jsonl(run / 'gens' / 'water.jsonl', gens)
+        judge_generations(gens, by_id, JUDGES, run / 'judged' / 'water.local.jsonl', audit_size=2)
     atomic_json(run / 'calibration' / 'fire.local.json', {
         'source': 'fire.local.csv', 'source_sha256': 'c' * 64, 'verified_against_judged_rows': True,
         'evaluation_digest': 'd' * 64, 'provided_labels': 1, 'complete': False,
@@ -431,6 +435,7 @@ def test_exports_exactly_the_allowlist(base_export):
     for tag in TAGS:
         expected |= {f'reports/capability/{tag}.json', f'reports/capability/{tag}.none.json',
                      f'reports/judged/{tag}.local.summary.json', f'verdicts/{tag}.local.jsonl'}
+    expected |= {'reports/judged/water.local.summary.json', 'verdicts/water.local.jsonl'}   # a comparison model, no capability run
     assert {path.relative_to(base_export).as_posix() for path in base_export.rglob('*') if path.is_file()} == expected
 
 

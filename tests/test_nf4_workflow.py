@@ -166,6 +166,20 @@ def test_source_generation_quantization_metadata_cannot_be_mixed(handoff):
     assert result.returncode != 0 and 'full precision' in result.stderr.lower()
 
 
+def test_nf4_outputs_must_say_nf4_on_every_answer(handoff, tmp_path):
+    """An answer without the mark could be full precision, because fp16 and NF4 share a weight fingerprint."""
+    loader = importlib.util.spec_from_file_location('nf4_check', SCRIPT)
+    module = importlib.util.module_from_spec(loader)
+    loader.loader.exec_module(module)
+    output = tmp_path / 'nf4-output'
+    (output / 'gens').mkdir(parents=True)
+    for tag in ('global', 'fire', 'fire-resta-0p1'):
+        rows = [json.loads(line) for line in (handoff['source'] / 'gens' / f'{tag}.jsonl').read_text().splitlines()]
+        _write_rows(output / 'gens' / f'{tag}-nf4.jsonl', [dict(row, model_tag=f'{tag}-nf4') for row in rows])
+    with pytest.raises(ValueError, match='generation identity'):
+        module.validate_nf4_outputs({'output': str(output), 'source_run': str(handoff['source']), 'family': 'fire'})
+
+
 def test_development_inputs_require_explicit_label(handoff):
     spec = yaml.safe_load(handoff['spec'].read_text()); spec['profile'] = 'development'
     handoff['spec'].write_text(yaml.safe_dump(spec))

@@ -266,6 +266,7 @@ REPORT = {
     'family': _name, 'profile': _name, 'spec_digest': _hash, 'spec_frozen': _flag, 'judge_set': _name,
     'validated': _flag, 'empirical_repair_success': _flag, 'models': {ANY: MODEL}, 'thresholds': {ANY: GATE},
     'gap_confirmation': {'metric': _name, 'tests': _number, 'alpha': _number, 'conditions': {ANY: NUMBERS}},
+    'comparison_models': {ANY: {'agreement_by_lang': NUMBERS, 'conditions': NUMBERS}},
     'paired_comparisons': {ANY: {ANY: {'baseline': _name, 'safety': NUMBERS, 'capability': NUMBERS,
                                        'pairing_complete': _flag}}},
     'acceptance_candidate': _name, 'confirmed_conditions': [_name], 'required_acceptance_comparisons': [_name],
@@ -355,6 +356,10 @@ _MD_LINES = frozenset({
     'A completed software run does not imply a successful safety repair. Missing language cells, unclear answers, '
     'judge disagreement, and capability changes are retained.',
     '## Is the gap confirmed?', '## Why answers to harmful prompts were not safe',
+    '## Comparison models (context only)',
+    'Other regional models on the same held-out items. They were never repaired or selected. These gaps sit outside the '
+    'tests above, so none of them counts as confirmed.',
+    '| Model | Condition | Language | Safety rate | Degenerate | Reference − model (95% CI) | McNemar p | n | Judge agreement |',
     '| Condition | Language | Reference − drifted (95% CI) | McNemar p | n | Confirmed |', '|---|---|---|---|---|---|',
     'Unsafe content and a model breaking down are different failures. Invalid answers are garbled, off-topic, or '
     'caught by the degeneracy rule; disputed means the judges disagreed.',

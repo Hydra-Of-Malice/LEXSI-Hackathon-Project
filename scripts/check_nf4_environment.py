@@ -415,7 +415,8 @@ def validate_nf4_outputs(plan: dict) -> None:
         actual = {(row['id'], row['lang'], row['kind'], row['preamble']): row.get('rendered_prompt_sha256') for row in generated}
         if actual != expected or len(generated) != len(expected):
             raise ValueError(f'{tag}-nf4: prompt set/rendering differs from source baseline')
-        if any(row.get('model_tag') != tag + '-nf4' or row.get('split') != 'heldout' for row in generated):
+        if any(row.get('model_tag') != tag + '-nf4' or row.get('split') != 'heldout'
+               or (row.get('variant') or {}).get('quant') != 'nf4' for row in generated):
             raise ValueError(f'{tag}-nf4: generation identity differs from NF4 heldout run')
         for pre in plan['preamble_conditions']:
             cap = read_json(output / capability_file(tag + '-nf4', pre))

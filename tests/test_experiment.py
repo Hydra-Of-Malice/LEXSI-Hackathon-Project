@@ -120,7 +120,7 @@ def test_generation_cache_uses_complete_checkpoint_identity(tmp_path):
     (tmp_path / 'config.json').write_text('{}')
     weights = tmp_path / 'model.safetensors'
     weights.write_bytes(b'original-weights')
-    args = Namespace(model=str(tmp_path), steering=None, strength=None)
+    args = Namespace(model=str(tmp_path), quant=None, steering=None, strength=None)
     generator = object.__new__(Generator)
     # A sampled weight fingerprint can miss an edited tensor. Complete source
     # identity must still prevent a stale completion from entering evaluation.
@@ -131,6 +131,28 @@ def test_generation_cache_uses_complete_checkpoint_identity(tmp_path):
     before = generator._key(prompt, 'default')
     weights.write_bytes(b'updated-weights')
     generator.variant = _variant(args)
+    assert generator._key(prompt, 'default') != before
+
+
+def test_each_answer_records_its_precision_and_cannot_share_a_cache_entry(tmp_path):
+    from argparse import Namespace
+    from langsafe.cli import _variant
+    from langsafe.data.records import Prompt
+    from langsafe.gen.generate import Generator
+
+    (tmp_path / 'config.json').write_text('{}')
+    (tmp_path / 'model.safetensors').write_bytes(b'weights')
+    full = _variant(Namespace(model=str(tmp_path), quant=None, steering=None, strength=None))
+    nf4 = _variant(Namespace(model=str(tmp_path), quant='nf4', steering=None, strength=None))
+    assert 'quant' not in full        # keeps every full-precision cache entry valid
+    assert nf4['quant'] == 'nf4'
+    generator = object.__new__(Generator)
+    generator.fp = 'same-sampled-weights'     # NF4 and fp16 really do share a fingerprint
+    generator.decoding = {'do_sample': False}
+    prompt = Prompt(id='p::en', group='p', lang='en', kind='benign', text='Hello', source='test', source_id='p')
+    generator.variant = full
+    before = generator._key(prompt, 'default')
+    generator.variant = nf4
     assert generator._key(prompt, 'default') != before
 
 

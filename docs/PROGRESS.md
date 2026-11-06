@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | NF4 test | Comparison check, freeze the spec, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Comparison check | Freeze the spec, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -20,6 +20,14 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **03:55** **NF4 passed on the Earth development run in 18 minutes,** the first real pass through that path on this laptop. All three
+  NF4 models reached the report, next to fp16 and Q4_K_M, and none of their answers match fp16. The check also exposed a hole:
+  answers never recorded their precision and NF4 shares fp16's weight fingerprint, so the "source must be full precision" test
+  could never fail. Each answer now records it, and the NF4 output check requires it. The development NF4 answers predate this;
+  the ledger and `validate_nf4_model` show they were 4-bit.
+- **The report now has a Fire and Water section.** Rates, broken answers, gaps and judge agreement, marked as context, never as
+  confirmed. `report.json` carries it as `comparison_models`, and the public export allows it, so the article's Water and Fire
+  sentences now read from there. The comparison check is running in `runs/experiments/development/earth-compare`.
 - **03:30** **The Fire end-to-end test finished at 03:07,** with no failures or retries. Like Earth's, its cells are too small to mean
   anything as results. The NF4 test on the Earth development run started at 03:26. `scripts/run_chain.py` has a new `e2e-baseline`
   step for the comparison check, which writes to its own folder.

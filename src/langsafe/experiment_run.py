@@ -458,10 +458,11 @@ def run_experiment(family: str, profile: str, *, stop_after: str | None = None,
             evaluation_tags.append(tag)
     if stop_after == 'quantization':
         return
-    from .experiment_report import report_dependencies
+    from .experiment_report import comparison_tags, report_dependencies
     runner.run('report', ['report', '--tags', ','.join(evaluation_tags), '--family', family, '--judges', judges],
                [runner.directory / 'report.md', runner.directory / 'report.json'],
-               optional_inputs=report_dependencies(runner.directory, evaluation_tags, judges, spec['preamble_conditions']))
+               optional_inputs=report_dependencies(runner.directory, [*evaluation_tags, *comparison_tags(spec, family)],
+                                                   judges, spec['preamble_conditions']))
     runner.run('ledger-verify', ['ledger-verify'], [runner.directory / 'ledger.jsonl'])
     report = json.loads((runner.directory / 'report.json').read_text())
     status = {'software_run_complete': True, 'profile': profile, 'family': family,

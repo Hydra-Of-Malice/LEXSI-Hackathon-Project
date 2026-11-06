@@ -30,6 +30,41 @@ def primary_metric(spec: dict) -> str:
     return {'content': 'content_safe', 'refusal': 'harmful_refusal'}[axis]
 
 
+def comparison_tags(spec: dict, family: str) -> list[str]:
+    """Context models (SPEC.md, Amendment 21): judged on the same items, never repaired, outside the confirmatory tests."""
+    return [tag for tag in spec.get('experiment', {}).get('comparison_models', {}) if tag != family]
+
+
+def _comparison_cells(reference: list[dict], rows: list[dict], metric: str, conditions: list[str], resamples: int) -> dict:
+    gaps = gap_confirmation(reference, rows, metric, conditions, resamples)['conditions']
+    tables = {condition: safety_table([row for row in rows if row['preamble'] == condition], resamples) for condition in gaps}
+    return {condition: {lang: {**{key: value for key, value in cell.items() if key != 'confirmed'},
+                               'rate': tables[condition][lang][metric]['rate'],
+                               'degenerate': tables[condition][lang].get('degenerate', {}).get('rate')}
+                        for lang, cell in cells.items()}
+            for condition, cells in gaps.items()}
+
+
+def _comparison_lines(comparisons: dict) -> list[str]:
+    if not comparisons:
+        return []
+
+    def percent(value: float | None) -> str:
+        return 'n/a' if value is None else f'{100 * value:.1f}%'
+
+    return ['## Comparison models (context only)', '',
+            'Other regional models on the same held-out items. They were never repaired or selected. These gaps sit '
+            'outside the tests above, so none of them counts as confirmed.', '',
+            '| Model | Condition | Language | Safety rate | Degenerate | Reference − model (95% CI) | McNemar p | n | '
+            'Judge agreement |', '|---|---|---|---|---|---|---|---|---|',
+            *[f"| {tag} | {condition} | {lang} | {percent(cell['rate'])} | {percent(cell['degenerate'])} | "
+              f"{100 * cell['delta']:+.1f} pp ({100 * cell['ci'][0]:+.1f}–{100 * cell['ci'][1]:+.1f}) | "
+              f"{cell['p_mcnemar']:.4f} | {cell['n']} | "
+              f"{'n/a' if (agreement := detail['agreement_by_lang'].get(lang)) is None else f'{agreement:.2f}'} |"
+              for tag, detail in comparisons.items() for condition, cells in detail['conditions'].items()
+              for lang, cell in cells.items()], '']
+
+
 def _sampled(cell: dict | None) -> str:
     return f"{cell['sampled']} of {cell['total']}" if cell else 'not recorded'
 
@@ -153,6 +188,17 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
             cell['measurable'] = all(models.get(tag, {}).get('eligibility', {}).get('by_lang', {}).get(lang, {})
                                      .get('status') != 'not_measurable' for tag in tags[:2])
             cell['confirmed'] = cell['confirmed'] and cell['measurable']
+    comparison_models = {}
+    for tag in comparison_tags(spec, family):
+        judged_path = runs / 'judged' / (f'{tag}.jsonl' if judge_set == 'router' else f'{tag}.{judge_set}.jsonl')
+        if tag in tags or not judged_path.exists() or tags[0] not in judged_rows:
+            continue     # a 4-bit report has no comparison models; the full-precision report carries them
+        rows = [json.loads(line) for line in judged_path.read_text(encoding='utf-8').splitlines() if line.strip()]
+        summary = _read(judged_path.with_suffix('.summary.json'), {})
+        agreement = summary.get('safety_ac1_by_lang' if primary_metric(spec) == 'content_safe' else 'kappa_by_lang', {})
+        comparison_models[tag] = {'agreement_by_lang': agreement,
+                                  'conditions': _comparison_cells(judged_rows[tags[0]], rows, primary_metric(spec),
+                                                                  spec['preamble_conditions'], resamples)}
     if len(tags) >= 2:
         for tag in tags[2:]:
             precision = 'q4' if tag.endswith('-q4') else 'nf4' if tag.endswith('-nf4') else 'fp16'
@@ -233,14 +279,16 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
               'spec_frozen': bool(spec.get('frozen', False)), 'judge_set': judge_set,
               'validated': validated, 'empirical_repair_success': quantitative_complete and validated
               and profile == 'full' and translation_reviewed,
-              'models': models, 'gap_confirmation': confirmation, 'thresholds': comparisons, 'paired_comparisons': paired,
+              'models': models, 'gap_confirmation': confirmation, 'comparison_models': comparison_models,
+              'thresholds': comparisons, 'paired_comparisons': paired,
               'acceptance_candidate': selected_tag, 'confirmed_conditions': confirmed,
               'required_acceptance_comparisons': required_comparisons,
               'selection': selection, 'validation_gaps': validation_gaps,
               'data_coverage': manifest.get('coverage', {}),
               'translation_quality_status': manifest.get('translation', {}).get('quality_status', 'unknown'),
               'artifacts_sha256': {str(p): file_sha256(p) if p.is_file() else None
-                                  for p in report_dependencies(runs, tags, judge_set, spec['preamble_conditions'])},
+                                  for p in report_dependencies(runs, [*tags, *comparison_models], judge_set,
+                                                               spec['preamble_conditions'])},
               'limits': ['Human calibration and language-quality review require actual reviewed labels.',
                          'Local judges additionally require shared-sample router calibration.',
                          *(['The router comparison covers refusal labels only, so it does not check content-safe numbers.']
@@ -264,6 +312,7 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
              *[f"| {condition} | {lang} | {100 * cell['delta']:+.1f} pp ({100 * cell['ci'][0]:+.1f}–{100 * cell['ci'][1]:+.1f}) | "
                f"{cell['p_mcnemar']:.4f} | {cell['n']} | {'yes' if cell['confirmed'] else 'no'} |"
                for condition, cells in confirmation['conditions'].items() for lang, cell in cells.items()], '',
+             *_comparison_lines(comparison_models),
              '## Content-safe rate on harmful prompts (higher is safer)', '',
              markdown_table(tables, languages, 'content_safe'),
              '## Why answers to harmful prompts were not safe', '',
