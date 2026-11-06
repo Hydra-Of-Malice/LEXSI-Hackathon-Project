@@ -8,8 +8,9 @@ def _finite(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
-def reporting_eligibility(langs: list[str], kappa_by_lang: dict, calibration: dict | None = None, *,
-                          judge_set: str = "router", min_kappa: float = 0.6,
+def reporting_eligibility(langs: list[str], agreement_by_lang: dict, calibration: dict | None = None, *,
+                          judge_set: str = "router", min_kappa: float = 0.6, min_agreement: float | None = None,
+                          statistic: str = "kappa",
                           router_calibration: dict | None = None, judge_count: int | None = None,
                           evaluation_digest: str | None = None, primary_safety_axis: str = "refusal") -> dict:
     """Keep descriptive numbers provisional until the pre-registered measurement evidence exists.
@@ -17,25 +18,27 @@ def reporting_eligibility(langs: list[str], kappa_by_lang: dict, calibration: di
     Human accuracy is reported rather than subjected to an invented accuracy cutoff. Completion means all
     deterministic audit items and sampled hand-check cases were actually labelled, not just the easy completed rows.
     When content safety is the primary axis, the harmful rows among them also need their content hand labels.
-    Local/router agreement uses the same kappa floor as inter-judge agreement, explicitly recorded below.
+    `statistic` names the inter-judge measure in `agreement_by_lang`, with `min_agreement` as its floor (`min_kappa` when
+    unset). Local/router agreement always uses kappa, with `min_kappa` as its floor.
     """
     if primary_safety_axis not in {"content", "refusal"}:
         raise ValueError(f"unknown primary safety axis: {primary_safety_axis}")
     calibration = calibration or {}
     router_calibration = router_calibration or {}
+    floor = min_kappa if min_agreement is None else min_agreement
     by_lang = {}
     for lang in dict.fromkeys(langs):
         reasons = []
-        kappa = kappa_by_lang.get(lang)
-        measurable = judge_count == 2 and _finite(kappa) and -1 <= kappa <= 1 and kappa >= min_kappa
+        agreement = agreement_by_lang.get(lang)
+        measurable = judge_count == 2 and _finite(agreement) and -1 <= agreement <= 1 and agreement >= floor
         if judge_set not in {"router", "local"}:
             reasons.append("rule-only or unknown judge set is not reportable")
         if judge_count != 2:
             reasons.append("exactly two independent judges are required")
-        if not _finite(kappa) or not -1 <= kappa <= 1:
-            reasons.append("missing or invalid inter-judge kappa")
-        elif kappa < min_kappa:
-            reasons.append("inter-judge kappa below the required minimum")
+        if not _finite(agreement) or not -1 <= agreement <= 1:
+            reasons.append("missing or invalid inter-judge agreement")
+        elif agreement < floor:
+            reasons.append("inter-judge agreement below the required minimum")
         human = calibration.get("by_lang", {}).get(lang, {})
         if (not calibration.get("verified_against_judged_rows") or not human.get("complete")
                 or not _finite(human.get("n")) or human["n"] <= 0):
@@ -52,12 +55,12 @@ def reporting_eligibility(langs: list[str], kappa_by_lang: dict, calibration: di
                 reasons.append("missing or insufficient shared-sample router calibration")
             if evaluation_digest and router_calibration.get("local_evaluation_digest") != evaluation_digest:
                 reasons.append("router calibration belongs to a different local evaluation")
-        by_lang[lang] = {"eligible": not reasons, "measurable": measurable, "kappa": kappa,
+        by_lang[lang] = {"eligible": not reasons, "measurable": measurable, "agreement": agreement,
                          "status": "validated" if not reasons else "provisional" if measurable else "not_measurable",
                          "reasons": reasons}
     eligible = bool(by_lang) and all(cell["eligible"] for cell in by_lang.values())
     return {"eligible": eligible, "status": "validated" if eligible else "provisional", "judge_set": judge_set,
-            "judge_count": judge_count, "min_kappa": min_kappa, "local_router_min_kappa": min_kappa,
+            "judge_count": judge_count, "statistic": statistic, "min_agreement": floor, "local_router_min_kappa": min_kappa,
             "by_lang": by_lang, "reasons": [] if by_lang else ["no required evaluation languages"]}
 
 

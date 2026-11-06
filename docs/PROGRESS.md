@@ -7,16 +7,49 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | 10-language MultiJail sweep with both judges; downloading the full Global, Fire and Base weights | Full Fire run: baseline, circuits, repairs, 4-bit checks |
-| Pallab's M1 Max | Free | Please pull `main` before restarting anything (see 4 Nov) |
-| Aditya | Accept the `tiny-aya-earth` licence (**now blocking**: Earth is the main model) | Send the brief to mentors |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | End-to-end tests on Earth and Fire, and the Water control | Full Earth run: baseline, circuits, repairs, 4-bit checks |
+| Pallab's M1 Max | Free | Please pull `main` before restarting anything |
+| Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
 ## Still needs a person
-- Native readers for Hindi/Hinglish, Bengali and Tamil, to review translations and hand-label a sample.
+- Native readers for Javanese first, then Bengali, Arabic, Swahili, Thai and Korean, to review translations and hand-label
+  a sample. Javanese matters most, because the main result depends on it.
 - HF credits, for the 32B judges that verify the free local judges.
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
+
+## 6 November 2026
+- **19:30** **A blind audit changed what we think the Javanese gap is.** Agreement between the judges looked terrible (kappa 0.30),
+  which would have marked every language `not_measurable` under our own rule. So two model readers, blind to the judges'
+  labels, read 153 pilot answers (repair split, oversampling disagreements). This is a model reading, not a human one.
+
+  | Judges said | n | Reader: safe | unsafe | invalid |
+  |---|---|---|---|---|
+  | Both safe | 42 | 39 | 1 | 2 |
+  | Aya safe, Qwen not | 68 | 28 | 24 | 16 |
+  | Qwen safe, Aya not | 20 | 13 | 1 | 6 |
+  | Neither safe | 23 | 3 | 3 | 17 |
+
+  - **"Both safe" holds up.** Aya misses real unsafe content and Qwen over-flags, but requiring both still works as a
+    conservative measure. The low kappa is mostly a statistical artefact: the judges agree on 95% of rows, and kappa collapses when
+    nearly everything is safe.
+  - **Most answers both judges reject aren't harmful: they're broken.** Repetition loops and prompt echoes, which the judges
+    rarely call `invalid`. Without the preamble, 19.8% of Earth's Javanese answers are degenerate by a simple rule, against
+    7.6% of Global's. Fire shows the same (21.4%).
+  - **So part of the "safety gap" may be a language-competence gap.** That changes the story and what a repair must do: a
+    refusal-style edit can't fix a model that loops. We now report unsafe and invalid separately. This is still pilot
+    evidence; held-out data decides it.
+
+  Changes, all made before any held-out data (SPEC.md, Amendments 15 to 18): a rule labels degenerate answers `invalid`; the
+  content axis gates on Gwet's AC1 instead of kappa; the gap is tested in both preamble conditions, corrected for all 14
+  tests; batch size goes from 2 to 16.
+- **19:15** **Speed sorted.** Batch 16 runs 6.5x faster than batch 2 and fits the 8 GB GPU (145 against 22 tokens/s, 7.2 GiB), so the
+  full run looks like about 3 to 4 days instead of over a week. llama-server on F16 only reached 169 tokens/s, not enough to
+  justify a second backend.
+- **19:00** The first end-to-end test exposed a real bug: every NF4 load failed its placement check, because Transformers 5 keeps no
+  device map for a single-device load. That would have stopped the full run at the 4-bit stage. Fixed (`d4a833e`). Long jobs
+  now run through `scripts/run_chain.py`, which survives a session ending. Earth's weights are in.
 
 ## 5 November 2026
 - **21:30** **Full sweep done: Javanese is the robust gap.** Content-safe rate, both judges agree, 131 repair-split prompts per

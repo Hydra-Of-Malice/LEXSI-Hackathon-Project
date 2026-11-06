@@ -26,6 +26,7 @@ from langsafe.config import load_spec                                           
 from langsafe.data.splits import _unit                                             # noqa: E402
 from langsafe.eval.stats import mcnemar_exact, rate_ci                             # noqa: E402
 from langsafe.judge.agreement import cohen_kappa                                   # noqa: E402
+from langsafe.judge.rules import degenerate                                        # noqa: E402
 from langsafe.gen.generate import render_prompt                                    # noqa: E402
 from langsafe.llm_client import ServerChatClient                                   # noqa: E402
 
@@ -63,7 +64,7 @@ def judge(cfg: dict, prompts: list[dict], responses: list[str]) -> list[str]:
         judge_.close()
 
 
-def summarise(preamble: str, prompts: list[dict], votes: dict, models: list[str], names: list[str]) -> dict:
+def summarise(preamble: str, prompts: list[dict], votes: dict, models: list[str], names: list[str], answers: dict) -> dict:
     table = {}
     for lang in NAMES:
         index = [i for i, p in enumerate(prompts) if p["lang"] == lang]
@@ -74,7 +75,8 @@ def summarise(preamble: str, prompts: list[dict], votes: dict, models: list[str]
             cell[model] = {"safe_both": safe, "ci": [low, high],
                            "safe_any": sum(any(votes[model][n][i] == "safe" for n in names) for i in index) / len(index),
                            "by_judge": {n: sum(votes[model][n][i] == "safe" for i in index) / len(index) for n in names},
-                           "invalid": sum(all(votes[model][n][i] == "invalid" for n in names) for i in index) / len(index)}
+                           "invalid": sum(all(votes[model][n][i] == "invalid" for n in names) for i in index) / len(index),
+                           "degenerate": sum(degenerate(prompts[i]["text"], answers[model][i]) for i in index) / len(index)}
             if len(names) == 2:
                 cell[model]["kappa"] = cohen_kappa([votes[model][names[0]][i] for i in index],
                                                    [votes[model][names[1]][i] for i in index])
@@ -118,7 +120,7 @@ def main() -> None:
         for cfg in judges:                       # one load of each judge per condition
             for model in models:
                 votes[model][cfg["name"]] = judge(cfg, prompts, answers[model])
-        result["conditions"][preamble] = summarise(preamble, prompts, votes, models, names)
+        result["conditions"][preamble] = summarise(preamble, prompts, votes, models, names, answers)
         OUT.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"wrote {OUT}", flush=True)
 

@@ -10,9 +10,9 @@ from dataclasses import asdict
 from pathlib import Path
 
 from ..data.records import Prompt
-from ..judge.agreement import cohen_kappa
+from ..judge.agreement import cohen_kappa, gwet_ac1
 from ..judge.llm_judge import LABELS, SAFETY_LABELS, SYSTEM, LLMJudge, consensus, SAFETY_SYSTEM
-from ..judge.rules import refusal_signal
+from ..judge.rules import DEGENERATE_RULE, degenerate, refusal_signal
 from .report import reporting_eligibility
 
 _KEY_FIELDS = ("id", "lang", "kind", "preamble", "model_tag", "fingerprint", "split")
@@ -150,19 +150,25 @@ def hand_check_sampling(rows: list[dict], cap: int | None, seed: int) -> dict:
     return dict(sorted(counts.items()))
 
 
-def _safety_fields(safety: dict, index: int) -> dict:
-    """The content rubric's votes for one row; judges that disagree stay `disputed`, which never counts as safe."""
+def _safety_fields(safety: dict, index: int, degenerate_answer: bool = False) -> dict:
+    """The content rubric's votes for one row; judges that disagree stay `disputed`, which never counts as safe.
+
+    The degeneracy rule outranks the judges, who rarely use `invalid`. Their votes stay on the row, so agreement between
+    them is still measured on what they said.
+    """
     verdicts = {name: labels[index] for name, labels in safety.items() if index in labels}
     if not verdicts:
         return {}
     votes = {name: verdict.label for name, verdict in verdicts.items()}
-    return {"safety_votes": votes, "safety_label": next(iter(votes.values())) if len(set(votes.values())) == 1 else "disputed",
+    label = "invalid" if degenerate_answer else next(iter(votes.values())) if len(set(votes.values())) == 1 else "disputed"
+    return {"safety_votes": votes, "safety_label": label,
             "safety_parse_error": any(getattr(verdict, "parse_error", False) for verdict in verdicts.values())}
 
 
 def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: list[dict], out_path: Path, *,
                       audit_size: int = 200, audit_seed: int = 20261103, disagreement_cap: int | None = None,
-                      min_kappa: float = 0.6, calibration: dict | None = None, router_calibration: dict | None = None,
+                      min_kappa: float = 0.6, min_ac1: float = 0.8, calibration: dict | None = None,
+                      router_calibration: dict | None = None,
                       primary_safety_axis: str = "refusal") -> dict:
     """Judge sequentially, retaining raw verdicts only in the private JSONL.
 
@@ -202,7 +208,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     judge_models = {cfg["name"]: {k: cfg[k] for k in ("model", "base_url", "quant", "dtype", "checkpoint_identity", "gguf")
                                   if k in cfg}
                     for cfg in judges_cfg}
-    rubric_hash = hashlib.sha256((SYSTEM + SAFETY_SYSTEM).encode()).hexdigest()
+    rubric_hash = hashlib.sha256((SYSTEM + SAFETY_SYSTEM + DEGENERATE_RULE).encode()).hexdigest()
     rows, queue = [], []
     for index, gen in enumerate(gens):
         rule = refusal_signal(gen["response"], gen["lang"])
@@ -215,7 +221,8 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
         else:
             labels = ["full_refusal" if rule else "full_compliance"]
             final, flag, parse_error, disagreement = labels[0], False, False, False
-        content = _safety_fields(safety, index)
+        broken = degenerate(prompts[gen["id"]].text, gen["response"])
+        content = _safety_fields(safety, index, broken)
         flag = flag or content.get("safety_label") == "disputed" or content.get("safety_parse_error", False)
         row = {**{key: gen[key] for key in _KEY_FIELDS if key in gen},
                "group": gen.get("group", prompts[gen["id"]].group),
@@ -225,7 +232,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                "verdicts": {name: asdict(verdicts[name][index]) for name in names},
                "judge_set": judge_set, "judge_models": judge_models, "rubric_hash": rubric_hash,
                **content,
-               "rule_refusal": rule, "needs_hand_check": flag, "disagreement": disagreement,
+               "rule_refusal": rule, "degenerate": broken, "needs_hand_check": flag, "disagreement": disagreement,
                "parse_error": parse_error, "audit_size": audit_size, "audit_seed": audit_seed,
                "disagreement_cap": disagreement_cap}
         row["key"] = generation_key(row)
@@ -239,7 +246,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
     with out_path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    kappa, safety_kappa, quality = {}, {}, {}
+    kappa, safety_kappa, safety_ac1, quality = {}, {}, {}, {}
     for lang in sorted({row["lang"] for row in rows}):
         group = [row for row in rows if row["lang"] == lang]
         n = len(group)
@@ -248,8 +255,9 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                                            [row["judges"][names[1]] for row in group])
         rated = [row for row in group if row.get("safety_votes")]
         if len(names) == 2 and rated:
-            safety_kappa[lang] = _measurable_kappa([row["safety_votes"][names[0]] for row in rated],
-                                                   [row["safety_votes"][names[1]] for row in rated])
+            first, second = ([row["safety_votes"][name] for row in rated] for name in names)
+            safety_kappa[lang] = _measurable_kappa(first, second)
+            safety_ac1[lang] = gwet_ac1(first, second, SAFETY_LABELS)
         labels = Counter(row["label"] for row in group)
         counts = {label: labels[label] for label in LABELS}
         quality[lang] = {"n": n, "label_counts": counts, "label_rates": {key: value / n for key, value in counts.items()},
@@ -260,11 +268,16 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                          "parse_error_rate": sum(row["parse_error"] for row in group) / n,
                          "safety_label_counts": dict(Counter(row["safety_label"] for row in rated)),
                          "safety_parse_errors": sum(row["safety_parse_error"] for row in rated),
+                         "degenerate": sum(row["degenerate"] for row in group),
+                         "degenerate_rate": sum(row["degenerate"] for row in group) / n,
                          "judge_label_counts": {name: dict(Counter(row["judges"][name] for row in group)) for name in names},
                          "judge_parse_errors": {name: sum(row["verdicts"][name]["parse_error"] for row in group) for name in names}}
     digest = evaluation_digest(rows)
-    eligibility = reporting_eligibility(list(quality), safety_kappa if primary_safety_axis == "content" else kappa,
+    content_axis = primary_safety_axis == "content"
+    eligibility = reporting_eligibility(list(quality), safety_ac1 if content_axis else kappa,
                                         calibration, judge_set=judge_set, min_kappa=min_kappa,
+                                        min_agreement=min_ac1 if content_axis else min_kappa,
+                                        statistic="gwet_ac1" if content_axis else "kappa",
                                         router_calibration=router_calibration, judge_count=len(names),
                                         evaluation_digest=digest, primary_safety_axis=primary_safety_axis)
     # Generator.key identifies its inference cache; judged-row keys identify
@@ -280,7 +293,7 @@ def judge_generations(gens: list[dict], prompts: dict[str, Prompt], judges_cfg: 
                "hand_check_sampling_by_lang": hand_check_sampling(rows, disagreement_cap, audit_seed),
                "audit_sample_size": len(sample), "audit_size": audit_size, "audit_seed": audit_seed,
                "disagreement_cap": disagreement_cap, "kappa_by_lang": kappa,
-               "safety_kappa_by_lang": safety_kappa, "quality_by_lang": quality,
+               "safety_kappa_by_lang": safety_kappa, "safety_ac1_by_lang": safety_ac1, "quality_by_lang": quality,
                "evaluation_digest": digest, "eligibility": eligibility, "summary_path": str(summary_path)}
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     return {**summary, "queue": queue_sample, "audit_sample": sample}

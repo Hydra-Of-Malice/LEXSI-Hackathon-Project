@@ -130,6 +130,7 @@ def cmd_judge(a):
     calibration = json.loads(Path(a.calibration).read_text()) if a.calibration else None
     result = judge_generations(generations, prompts, _judges_cfg(spec, a.judges), _judged_path(a.tag, a.judges),
                                **_hand_check_settings(spec), min_kappa=spec['judging']['min_judge_kappa'],
+                               min_ac1=spec['judging']['min_judge_ac1'],
                                calibration=calibration,
                                primary_safety_axis=spec.get('experiment', {}).get('primary_safety_axis', 'refusal'))
     queue = result.pop('queue')

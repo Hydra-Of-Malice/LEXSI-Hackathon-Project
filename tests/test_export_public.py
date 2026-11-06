@@ -1336,12 +1336,12 @@ def test_scan_streams_private_rows_instead_of_holding_them(out, tmp_path):
     private = tmp_path / 'gens' / 'large.jsonl'
     private.parent.mkdir()
     with private.open('w', encoding='utf-8') as stream:
-        for index in range(1500):
+        for index in range(3000):
             stream.write(json.dumps({'id': f'x-{index}::en', 'response': f'{index} ' + 'unrelated filler words ' * 70}) + '\n')
     size = private.stat().st_size
     tracemalloc.start()
     report = export_public.scan_output(out, [private], verified_prompts())
     peak = tracemalloc.get_traced_memory()[1]
     tracemalloc.stop()
-    assert report.ok and report.rows_compared == 1500
+    assert report.ok and report.rows_compared == 3000
     assert peak < size / 4
