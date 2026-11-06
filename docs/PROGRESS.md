@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Fire end-to-end test | Comparison check, NF4 test, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | NF4 test | Comparison check, freeze the spec, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -20,6 +20,9 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **03:30** **The Fire end-to-end test finished at 03:07,** with no failures or retries. Like Earth's, its cells are too small to mean
+  anything as results. The NF4 test on the Earth development run started at 03:26. `scripts/run_chain.py` has a new `e2e-baseline`
+  step for the comparison check, which writes to its own folder.
 - **02:00** **The Earth end-to-end test finished, the first pass through every stage.** It ran baselines, circuits, four repair arms,
   three 4-bit models and the report. Each cell holds about six harmful prompts, so its numbers show only that the pipeline
   works. It failed once, at 21:43: a local connection to the 4-bit model server dropped while the server sat idle, and that

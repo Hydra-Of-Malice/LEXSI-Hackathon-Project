@@ -24,6 +24,7 @@ STEPS = {
     "e2e-fire": CLI + ["experiment", "--family", "fire", "--profile", "development"],
     "water": SWEEP + ["--models", "global,fire,earth,water", "--preambles", "default,none"],
     "e2e-earth": CLI + ["experiment", "--family", "earth", "--profile", "development"],
+    "e2e-baseline": CLI + ["experiment", "--family", "earth", "--profile", "development", "--stop-after", "baseline"],
     "earth-baseline": CLI + ["experiment", "--family", "earth", "--profile", "full", "--stop-after", "baseline"],
     "earth-circuit": CLI + ["experiment", "--family", "earth", "--profile", "full", "--stop-after", "circuit"],
     "earth-repairs": CLI + ["experiment", "--family", "earth", "--profile", "full", "--stop-after", "repairs"],
@@ -33,7 +34,9 @@ STEPS = {
     "earth-nf4": NF4 + ["--source-run", "runs/experiments/full/earth", "--spec", "configs/spec.yaml",
                         "--output", "runs/experiments/full/earth-nf4"],
 }
-NEEDS_EARTH = {"e2e-earth", "earth-baseline", "earth-circuit", "earth-repairs", "earth-full", "e2e-nf4", "earth-nf4"}
+NEEDS_EARTH = {"e2e-earth", "e2e-baseline", "earth-baseline", "earth-circuit", "earth-repairs", "earth-full", "e2e-nf4", "earth-nf4"}
+# The comparison-model check needs a directory of its own: its spec differs from the finished development runs.
+STEP_ENV = {"e2e-baseline": {"LANGSAFE_RUNS_DIR": str(ROOT / "runs" / "experiments" / "development" / "earth-compare")}}
 
 
 def status(**fields) -> None:
@@ -64,7 +67,8 @@ def main() -> None:
                 time.sleep(60)
         status(running=step)
         with open(ROOT / "runs" / f"chain-{step}.log", "ab") as log:
-            code = subprocess.run(STEPS[step], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
+            code = subprocess.run(STEPS[step], cwd=ROOT, env={**env, **STEP_ENV.get(step, {})}, stdout=log,
+                                  stderr=subprocess.STDOUT).returncode
         if code:
             status(running=None, failed={"step": step, "exit_code": code})
             sys.exit(code)

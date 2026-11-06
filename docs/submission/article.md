@@ -181,8 +181,8 @@ Our package, `langsafe`, adds group-aware splits and a leakage check, translatio
 |---|---|---|
 | `CohereLabs/tiny-aya-earth` | Core model: the model under test and repair | CC-BY-NC 4.0 + Cohere Labs acceptable use policy |
 | `CohereLabs/tiny-aya-global` | Reference, repair donor and translator | CC-BY-NC 4.0 + acceptable use policy |
-| `CohereLabs/tiny-aya-fire` | Smaller comparison | CC-BY-NC 4.0 + acceptable use policy |
-| `CohereLabs/tiny-aya-water` | Control, still being run. We state no Water result | CC-BY-NC 4.0 + acceptable use policy |
+| `CohereLabs/tiny-aya-fire` | Comparison on Earth's held-out items | CC-BY-NC 4.0 + acceptable use policy |
+| `CohereLabs/tiny-aya-water` | Comparison on Earth's held-out items. So far only the 4-bit pilot in section 7.3 | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/tiny-aya-base` | Source of the ReSta safety vector (Global minus Base) | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/aya-expanse-32b` | Judge named in the specification | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/aya-expanse-8b` | Local judge | CC-BY-NC 4.0 + acceptable use policy |

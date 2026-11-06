@@ -85,8 +85,7 @@ The report refuses to claim success until these pass. They are separate from the
 | Circuit runs on Global and Earth in en, jv, bn, without the preamble | waiting on results | CPU on the laptop, since it does not fit in 8 GB |
 | Q4_K_M and NF4 re-tests | waiting on results | Both are required by `quantized_must_hold` |
 | `scripts/localisation_analysis.py` on the full run | waiting on results | Script is in the repo, and it reads content-safe labels as well as refusal |
-| Fire comparison on Earth's held-out items | needs a person | Optional. The pilot has Fire at 4-bit on repair items. No step runs Fire on held-out items in Earth's languages, so section 7.4's Fire columns stay empty until someone adds one |
-| Water control | waiting on results | The `water` step in `scripts/run_chain.py` has not finished. State no Water result until it has |
+| Fire and Water on Earth's held-out items | waiting on results | `experiment.comparison_models` generates both inside `earth-baseline` (Amendment 21). Water's 4-bit pilot is done; its held-out result isn't, so state only the pilot until then |
 
 ## Before the repo goes public
 
