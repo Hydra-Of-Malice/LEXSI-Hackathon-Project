@@ -15,6 +15,9 @@ runs/experiments/
 runs/pilot/
 runs/smoke/
 runs/*.log
+runs/*.out
+runs/*.err
+runs/chain-status.json
 runs/llm_cache.sqlite
 runs/checkpoints/
 runs/curatorkit/
