@@ -1,5 +1,6 @@
 import pytest
 import json
+from collections import Counter
 from pathlib import Path
 
 
@@ -255,3 +256,58 @@ def test_gap_confirmation_corrects_for_every_language_and_condition():
     assert result['conditions']['default']['jv']['p_mcnemar'] > result['alpha']
     assert not result['conditions']['default']['jv']['confirmed']
     assert not result['conditions']['none']['en']['confirmed']
+
+
+def _audit_run(tmp_path):
+    def write(path, rows):
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(''.join(json.dumps(row) + '\n' for row in rows), encoding='utf-8')
+
+    ids = [f'p{i}' for i in range(8)]
+    write(tmp_path / 'data' / 'heldout.jsonl', [{'id': i, 'text': f'prompt {i}'} for i in ids])
+    for tag in ('global', 'earth'):
+        rows = [{'id': i, 'lang': 'jv', 'kind': 'harmful', 'preamble': pre, 'safety_label': 'safe',
+                 'safety_votes': {'a': 'safe', 'b': 'safe'}, 'degenerate': False} for i in ids for pre in ('default', 'none')]
+        rows.append({'id': 'other', 'lang': 'en', 'kind': 'harmful', 'preamble': 'none', 'safety_label': 'safe'})
+        write(tmp_path / 'judged' / f'{tag}.local.jsonl', rows)
+        write(tmp_path / 'gens' / f'{tag}.jsonl', [{'id': r['id'], 'preamble': r['preamble'], 'response': f"{tag} answer"}
+                                                  for r in rows])
+
+
+def _audit_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location('blind_audit', 'scripts/blind_audit.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_blind_audit_hides_the_judges_and_pairs_the_models(tmp_path):
+    audit = _audit_module()
+    _audit_run(tmp_path)
+    assert audit.sample(tmp_path, ['global', 'earth'], 'jv', 5, seed=1)['items'] == 20
+    blind = audit.read_rows(tmp_path / 'audit' / 'blind.jsonl')
+    key = audit.read_rows(tmp_path / 'audit' / 'key.jsonl')
+    assert set(blind[0]) == {'audit_id', 'language', 'prompt', 'response'}
+    assert not any('safety' in field or field == 'tag' for row in blind for field in row)
+    pairs = Counter((row['id'], row['preamble']) for row in key)
+    assert set(pairs.values()) == {2} and len(pairs) == 10
+
+
+def test_blind_audit_scores_the_paired_gap_and_refuses_partial_labels(tmp_path):
+    audit = _audit_module()
+    _audit_run(tmp_path)
+    audit.sample(tmp_path, ['global', 'earth'], 'jv', 8, seed=1)
+    key = audit.read_rows(tmp_path / 'audit' / 'key.jsonl')
+    labels = [{'audit_id': row['audit_id'], 'label': 'invalid' if row['tag'] == 'earth' else 'safe'} for row in key]
+    audit.write_rows(tmp_path / 'audit' / 'labels_a.jsonl', labels[:-1])
+    with pytest.raises(ValueError, match="don't cover"):
+        audit.score(tmp_path, 'global', 200)
+    audit.write_rows(tmp_path / 'audit' / 'labels_a.jsonl', labels)
+    result = audit.score(tmp_path, 'global', 200)
+    cell = result['cells']['earth/none']
+    assert cell['invalid'] == 1 and cell['gap_to_reference']['delta'] == 1 and cell['gap_to_reference']['n'] == 8
+    assert cell['reader_agrees_when_judges_say_safe'] == 0
+    assert 'gap_to_reference' not in result['cells']['global/none']
+    assert 'prompt' not in (tmp_path / 'audit' / 'audit.json').read_text(encoding='utf-8')
