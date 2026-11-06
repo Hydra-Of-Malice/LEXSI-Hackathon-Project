@@ -14,11 +14,11 @@ do not count as human reviewers. Assign Hindi and Hinglish, Bengali, and Tamil
 rows to reviewers who can read those languages and understand the safety
 meaning; use a second human for `unclear` or rejected rows when needed. The
 current full-data packet is
-`runs/experiments/full/fire/review/translation_review.with-source.csv` with
+`runs/experiments/full/earth/review/translation_review.with-source.csv` with
 1,766 source-backed rows and no labels. Its private source reference is
-`runs/experiments/full/fire/review/multijail-source-reference.jsonl`. The
+`runs/experiments/full/earth/review/multijail-source-reference.jsonl`. The
 development packet is
-`runs/experiments/development/fire/review/translation_review.with-source.csv`
+`runs/experiments/development/earth/review/translation_review.with-source.csv`
 with 50 rows and no labels.
 
 ## Translation packet
@@ -28,22 +28,22 @@ CSV. It never fills `review_label`, `reviewer_id`, or `reviewed_at`.
 
 ```bash
 .venv/bin/python scripts/review_data.py export \
-  --data-dir runs/experiments/development/fire/data \
-  --manifest runs/experiments/development/fire/data/manifest.json \
-  --out runs/experiments/development/fire/review/translation_review.csv
+  --data-dir runs/experiments/development/earth/data \
+  --manifest runs/experiments/development/earth/data/manifest.json \
+  --out runs/experiments/development/earth/review/translation_review.csv
 ```
 
 If a translation's English source was dropped by the per-language cap, provide a private JSONL source index. Each
 line must contain an `id` matching `source_id` and the original `text`; the index is hashed into every packet row.
-The development packet uses `runs/experiments/development/fire/review/multijail-source-reference.jsonl` for five
+The development packet uses `runs/experiments/development/earth/review/multijail-source-reference.jsonl` for five
 capped-out MultiJail source IDs:
 
 ```bash
 .venv/bin/python scripts/review_data.py export \
-  --data-dir runs/experiments/development/fire/data \
-  --manifest runs/experiments/development/fire/data/manifest.json \
-  --source-reference runs/experiments/development/fire/review/multijail-source-reference.jsonl \
-  --out runs/experiments/development/fire/review/translation_review.with-source.csv
+  --data-dir runs/experiments/development/earth/data \
+  --manifest runs/experiments/development/earth/data/manifest.json \
+  --source-reference runs/experiments/development/earth/review/multijail-source-reference.jsonl \
+  --out runs/experiments/development/earth/review/translation_review.with-source.csv
 ```
 
 The reviewer edits only these fields:
@@ -64,11 +64,11 @@ Validate the completed packet without exposing its text in the terminal:
 
 ```bash
 .venv/bin/python scripts/review_data.py check \
-  --data-dir runs/experiments/development/fire/data \
-  --manifest runs/experiments/development/fire/data/manifest.json \
-  --source-reference runs/experiments/development/fire/review/multijail-source-reference.jsonl \
-  --packet runs/experiments/development/fire/review/translation_review.with-source.csv \
-  --out runs/experiments/development/fire/review/translation_review.checked.json
+  --data-dir runs/experiments/development/earth/data \
+  --manifest runs/experiments/development/earth/data/manifest.json \
+  --source-reference runs/experiments/development/earth/review/multijail-source-reference.jsonl \
+  --packet runs/experiments/development/earth/review/translation_review.with-source.csv \
+  --out runs/experiments/development/earth/review/translation_review.checked.json
 ```
 
 The JSON summary is descriptive evidence. `quality_status` becomes `human_reviewed` only when every row is labelled
@@ -93,7 +93,7 @@ Run a judge pass first. It writes a private JSONL and one hand-check sheet for t
 
 ```bash
 .venv/bin/python -m langsafe.cli --spec configs/development.yaml \
-  --runs-dir runs/experiments/development/fire \
+  --runs-dir runs/experiments/development/earth \
   judge --tag fire --judges local --split heldout
 ```
 
@@ -156,9 +156,9 @@ Import the finished sheet against the exact judged JSONL through the existing ca
 
 ```bash
 .venv/bin/python -m langsafe.cli --spec configs/development.yaml \
-  --runs-dir runs/experiments/development/fire \
+  --runs-dir runs/experiments/development/earth \
   calibrate --tag fire --judges local \
-  --sheet runs/experiments/development/fire/hand_check/fire.local.csv
+  --sheet runs/experiments/development/earth/hand_check/fire.local.csv
 ```
 
 The importer works out the selection again from the judged rows, so a sheet must be exactly that selection. A blank or
@@ -191,10 +191,10 @@ For a local judge result, run a router judge on the same generations and compare
 
 ```bash
 .venv/bin/python -m langsafe.cli --spec configs/development.yaml \
-  --runs-dir runs/experiments/development/fire \
+  --runs-dir runs/experiments/development/earth \
   judge --tag fire --judges router --split heldout
 .venv/bin/python -m langsafe.cli --spec configs/development.yaml \
-  --runs-dir runs/experiments/development/fire \
+  --runs-dir runs/experiments/development/earth \
   calibrate --tag fire --compare-router
 ```
 

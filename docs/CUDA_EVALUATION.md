@@ -76,8 +76,8 @@ On Linux, run:
 
 ```bash
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/run_nf4_evaluation.sh \
-  --source-run /mnt/lexsi/full-fire \
-  --spec /mnt/lexsi/full-fire/source-spec.yaml \
+  --source-run /mnt/lexsi/full-earth \
+  --spec /mnt/lexsi/full-earth/source-spec.yaml \
   --output /mnt/lexsi/nf4-earth \
   --family earth --judges local --check-hardware
 ```
@@ -118,8 +118,8 @@ or local-jury execution.
 
 ```bash
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/run_nf4_evaluation.sh \
-  --source-run /mnt/lexsi/full-fire \
-  --spec /mnt/lexsi/full-fire/source-spec.yaml \
+  --source-run /mnt/lexsi/full-earth \
+  --spec /mnt/lexsi/full-earth/source-spec.yaml \
   --output /mnt/lexsi/nf4-earth \
   --family earth --judges local --execute
 ```
