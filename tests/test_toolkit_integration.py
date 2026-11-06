@@ -1,5 +1,6 @@
 """CPU regressions at the pinned-toolkit and llama.cpp process boundaries."""
 import hashlib
+import io
 import json
 import os
 import shlex
@@ -14,6 +15,45 @@ from langsafe.quant import gguf
 from langsafe.repair import arms
 from langsafe.circuits import discover as circuits
 from langsafe.circuits import task
+
+
+def fake_server(monkeypatch, failures):
+    """urlopen that raises each failure in turn, then answers."""
+    calls = []
+
+    def urlopen(request, timeout):
+        calls.append(request.full_url)
+        if len(calls) <= len(failures):
+            raise failures[len(calls) - 1]
+        return io.BytesIO(b'{"ok": 1}')
+
+    monkeypatch.setattr(gguf.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(gguf.time, "sleep", lambda seconds: None)
+    return calls
+
+
+def http_error(code):
+    return gguf.urllib.error.HTTPError("http://x", code, "no", {}, None)
+
+
+def test_gguf_post_survives_a_dropped_local_connection(monkeypatch):
+    calls = fake_server(monkeypatch, [gguf.urllib.error.URLError(TimeoutError(10060, "timed out")), http_error(503)])
+    assert gguf._post("http://x/completion", {}) == {"ok": 1}
+    assert len(calls) == 3
+
+
+def test_gguf_post_gives_up_when_the_connection_stays_down(monkeypatch):
+    calls = fake_server(monkeypatch, [ConnectionResetError(10054, "reset")] * 5)
+    with pytest.raises(ConnectionResetError):
+        gguf._post("http://x/completion", {})
+    assert len(calls) == 5
+
+
+def test_gguf_post_does_not_repeat_a_rejected_request(monkeypatch):
+    calls = fake_server(monkeypatch, [http_error(400)])
+    with pytest.raises(gguf.urllib.error.HTTPError):
+        gguf._post("http://x/completion", {})
+    assert len(calls) == 1
 
 
 class Tokenizer:

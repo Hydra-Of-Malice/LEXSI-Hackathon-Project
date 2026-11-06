@@ -228,7 +228,8 @@ def cmd_capability(a):
                     scored = gguf_mmlu_accuracy(tokenizer, chunk, server=a.server, preamble=a.preamble or 'default')
                     if scored.get('n_unscorable') or not scored.get('complete', True):
                         atomic_json(RUNS / 'capability' / f'{a.tag}.unscorable.json', scored)
-                        raise RuntimeError('GGUF did not return exact candidate logits; capability is unscorable')
+                        reasons = sorted({row['reason'] for row in scored.get('outcomes', []) if row.get('reason')})
+                        raise RuntimeError(f'GGUF capability is unscorable: {reasons[:3]}')
                 else:
                     scored = accuracy(model, tokenizer, chunk,
                                       batch_size=a.batch_size or spec.get('experiment', {}).get('capability_batch_size', 1),

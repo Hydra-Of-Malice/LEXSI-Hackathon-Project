@@ -10,6 +10,7 @@ full-precision runs. The llama.cpp backend and quantized weights can both introd
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import math
 import subprocess
@@ -18,6 +19,7 @@ import time
 from pathlib import Path
 from typing import Iterable
 
+import urllib.error
 import urllib.request
 
 from ..config import ROOT
@@ -122,10 +124,24 @@ def quantize_gguf(source: str | Path, out: str | Path, llama_cpp_dir: str | Path
     return out
 
 
-def _post(url: str, body: dict) -> dict:
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        return json.loads(r.read())
+def _post(url: str, body: dict, attempts: int = 5) -> dict:
+    """A local connection can drop while the server is healthy. Every call here is safe to repeat; a 4xx is a real answer."""
+    data = json.dumps(body).encode()
+    for attempt in range(attempts):
+        request = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=600) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            if error.code < 500 or attempt == attempts - 1:
+                raise
+            print(f"llama-server {error.code}, retrying", flush=True)
+        except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError) as error:
+            if attempt == attempts - 1:
+                raise
+            print(f"llama-server connection failed ({type(error).__name__}), retrying", flush=True)
+        time.sleep(2 ** attempt)
+    raise RuntimeError("unreachable")
 
 
 class GGUFGenerator:
