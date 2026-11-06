@@ -215,9 +215,9 @@ def test_shell_script_exists_and_its_flags_are_real(command):
         assert all(flag in installer for flag in _flags(tokens))
 
 
-def test_figures_avoid_the_crashing_plots_option():
-    """render_results.py --plots raises IndexError: METRICS has four entries and its grid has three columns."""
-    assert not any("--plots" in command for command in SCRIPT_COMMANDS)
+def test_the_plots_grid_has_a_column_for_every_metric():
+    source = (ROOT / "scripts" / "render_results.py").read_text(encoding="utf-8")
+    assert "plt.subplots(2, len(METRICS)" in source
 
 
 def test_notebook_arms_exist_in_the_cli():

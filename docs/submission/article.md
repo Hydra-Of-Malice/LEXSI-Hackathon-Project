@@ -737,7 +737,7 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{RESULTS_URL}}` | Aggregate results repo or file | After publishing |
 | `{{LOGS_URL}}` | Sanitised logs from `scripts/export_public.py`. AuditKIT run files hold raw outputs and must not go up | After publishing |
 | `{{REPO_URL}}` | Public GitHub repo. Private as of 5 Nov | After the team's go-ahead |
-| `{{NOTEBOOK_URL}}` | Reproduction notebook. `notebooks/01_reproduce_results.ipynb` exists and still runs Fire | Team |
+| `{{NOTEBOOK_URL}}` | Reproduction notebook. `notebooks/01_reproduce_results.ipynb` exists and runs Earth, but hasn't been run on a GPU | Team |
 | `{{SPACE_URL}}` | Demo Space, if built | After publishing |
 | `{{DEMO_DESCRIPTION}}` | What the demo does. It must not show harmful completions | Team |
 | `{{FULL_RUN_HARDWARE_SENTENCE}}` | Which machine ran the full grid and NF4 | `nf4-environment.json`, team |

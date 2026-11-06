@@ -38,12 +38,12 @@ def clean_report(raw) -> dict:
     report.pop('fake_data')
     report.update(validated=True, profile='full', spec_frozen=True, translation_quality_status='human_reviewed',
                   validation_gaps=[], empirical_repair_success=False)
-    report['models'].pop('fire-fake_repair-nf4')
+    report['models'].pop('earth-fake_repair-nf4')
     for model in report['models'].values():
         model['eligibility']['eligible'] = True
         for condition in model['conditions'].values():
             for cells in condition.values():
-                cells.pop('content_safe')       # SPEC.md amendment 10 keeps this axis provisional in every report.
+                cells.pop('content_safe')       # SPEC.md amendments 10 and 11 keep this axis provisional in every report.
     return report
 
 
@@ -54,9 +54,9 @@ def cell(view, tag, preamble, lang):
 # Report parsing ------------------------------------------------------------------------------------------------------
 
 def test_every_metric_is_read_with_its_interval(raw, view):
-    row = cell(view, 'fire', 'default', 'en')
-    source = raw['models']['fire']['conditions']['default']['en']
-    for metric in ('content_safe', 'harmful_refusal', 'harmful_compliance', 'over_refusal'):
+    row = cell(view, 'earth', 'default', 'en')
+    source = raw['models']['earth']['conditions']['default']['en']
+    for metric in ('content_safe', 'degenerate', 'harmful_refusal', 'harmful_compliance', 'over_refusal'):
         assert row[metric]['rate'] == source[metric]['rate']
         assert list(row[metric]['ci']) == source[metric]['ci']
         assert row[metric]['n'] == source[metric]['n']
@@ -65,16 +65,28 @@ def test_every_metric_is_read_with_its_interval(raw, view):
 
 def test_capability_uses_accuracy_ci95_and_its_own_condition(raw, view):
     for preamble in ('default', 'none'):
-        source = raw['models']['fire']['capability_by_condition'][preamble]['hi']
-        row = cell(view, 'fire', preamble, 'hi')
+        source = raw['models']['earth']['capability_by_condition'][preamble]['ar']
+        row = cell(view, 'earth', preamble, 'ar')
         assert row['capability']['rate'] == source['accuracy']
         assert list(row['capability']['ci']) == source['ci95']
 
 
 def test_language_without_capability_is_not_measured_rather_than_zero(view):
-    assert cell(view, 'fire', 'default', 'ta')['capability'] is None
-    table = app.table_rows(app.filter_rows(view['rows'], 'ta', 'default', 'fp16'))
+    assert cell(view, 'earth', 'default', 'th')['capability'] is None
+    table = app.table_rows(app.filter_rows(view['rows'], 'th', 'default', 'fp16'))
     assert all(line[-1] == app.NOT_MEASURED for line in table)
+
+
+def test_indonesian_is_a_capability_stand_in_and_nothing_else(view):
+    """Global-MMLU-Lite has no Javanese, so `id` reaches the report through capability alone."""
+    row = cell(view, 'earth', 'default', 'id')
+    assert row['capability'] is not None and row['content_safe'] is None and row['degenerate'] is None
+    assert cell(view, 'earth', 'default', 'jv')['capability'] is None
+    assert 'stand-in for Javanese' in app.LANGUAGE_NAMES['id']
+
+
+def test_every_language_in_the_report_has_a_name(view):
+    assert set(view['languages']) <= set(app.LANGUAGE_NAMES)
 
 
 def test_precision_comes_from_the_tag_suffix():
@@ -82,27 +94,44 @@ def test_precision_comes_from_the_tag_suffix():
 
 
 def test_roles_are_labelled_across_precisions():
-    labels = [app.model_label(tag, 'fire', 'fire-resta-a0p1') for tag in
-              ('global-q4', 'fire', 'fire-resta-a0p1-q4', 'fire-steer-1p0')]
-    assert labels == ['Global (reference)', 'Fire (original regional)', 'fire-resta-a0p1 (selected repair)',
-                      'fire-steer-1p0 (repair candidate)']
+    labels = [app.model_label(tag, 'earth', 'earth-resta-a0p1') for tag in
+              ('global-q4', 'earth', 'earth-resta-a0p1-q4', 'earth-steer-1p0')]
+    assert labels == ['Global (reference)', 'Earth (original regional)', 'earth-resta-a0p1 (selected repair)',
+                      'earth-steer-1p0 (repair candidate)']
 
 
 def test_not_measurable_language_hides_judged_numbers_but_keeps_capability(raw, view):
-    """SPEC.md: a language below the kappa floor is listed as not measurable, not reported."""
-    row = cell(view, 'fire-fake_repair', 'default', 'ta')
+    """SPEC.md: a language below the agreement floor is listed as not measurable, not reported."""
+    row = cell(view, 'earth-fake_repair', 'default', 'th')
     assert row['status'] == 'not_measurable'
     assert row['content_safe'] is row['harmful_refusal'] is row['harmful_compliance'] is row['over_refusal'] is None
     line = app.table_rows([row])[0]
-    assert line[5:12] == [app.NOT_MEASURABLE] * 7
-    raw['models']['fire-fake_repair']['capability_by_condition']['default']['ta'] = {'accuracy': 0.5, 'n': 10}
-    kept = cell(app.parse_report(raw), 'fire-fake_repair', 'default', 'ta')
+    assert line[5:7] == [app.NOT_MEASURABLE] * 2 and line[8:13] == [app.NOT_MEASURABLE] * 5
+    raw['models']['earth-fake_repair']['capability_by_condition']['default']['th'] = {'accuracy': 0.5, 'n': 10}
+    kept = cell(app.parse_report(raw), 'earth-fake_repair', 'default', 'th')
     assert kept['capability']['rate'] == 0.5 and kept['harmful_refusal'] is None
 
 
+def test_degenerate_rate_survives_the_agreement_gate(raw, view):
+    """A rule finds degenerate answers, so judges who disagree do not make the rate unreadable."""
+    row = cell(view, 'earth-fake_repair', 'default', 'th')
+    source = raw['models']['earth-fake_repair']['conditions']['default']['th']['degenerate']
+    assert row['not_measurable'] is True and row['degenerate']['rate'] == source['rate']
+    assert app.table_rows([row])[0][7] == app.format_cell(row['degenerate'])
+
+
+def test_report_without_a_degenerate_metric_says_not_measured(raw):
+    for model in raw['models'].values():
+        for condition in model['conditions'].values():
+            for cells in condition.values():
+                cells.pop('degenerate')
+    rows = app.filter_rows(app.parse_report(raw)['rows'], 'en', 'default', 'fp16')
+    assert app.table_rows(rows)[0][7] == app.NOT_MEASURED
+
+
 def test_model_without_results_is_listed_not_dropped(view):
-    assert view['missing_models'] == [{'tag': 'fire-fake_repair-nf4', 'status': 'missing_judgments'}]
-    assert 'fire-fake_repair-nf4' in app.banners_html(view)
+    assert view['missing_models'] == [{'tag': 'earth-fake_repair-nf4', 'status': 'missing_judgments'}]
+    assert 'earth-fake_repair-nf4' in app.banners_html(view)
     assert 'nf4' not in view['precisions']
 
 
@@ -122,9 +151,14 @@ def test_cell_format_shows_rate_interval_and_n():
 
 
 def test_other_outcomes_stay_separate_from_the_axes(view):
-    line = app.table_rows([cell(view, 'fire', 'default', 'en')])[0]
+    line = app.table_rows([cell(view, 'earth', 'default', 'en')])[0]
     assert line[6] == '3.3% / 4.4% / 6.7%'
-    assert line[9] == '1.1% / 2.2%' and line[11] == '1.1% / 2.2%'
+    assert line[10] == '1.1% / 2.2%' and line[12] == '1.1% / 2.2%'
+
+
+def test_degenerate_rate_sits_beside_the_unsafe_and_invalid_split():
+    assert app.TABLE_HEADERS[6] == 'Harmful: unsafe / invalid / disputed'
+    assert app.TABLE_HEADERS[7].startswith('Degenerate answers, harmful and benign')
 
 
 def test_content_safe_is_the_first_metric_and_marked_provisional():
@@ -133,12 +167,12 @@ def test_content_safe_is_the_first_metric_and_marked_provisional():
 
 def test_refusal_and_compliance_are_not_presented_as_safety():
     """A harmless answer to a harmful prompt counts as compliance, so neither column measures safety by itself."""
-    assert app.TABLE_HEADERS[7] == 'Harmful refusal' and app.TABLE_HEADERS[8] == 'Harmful compliance'
+    assert app.TABLE_HEADERS[8] == 'Harmful refusal' and app.TABLE_HEADERS[9] == 'Harmful compliance'
 
 
 def test_report_from_before_the_content_axis_says_not_measured(raw):
     line = app.table_rows(app.parse_report(clean_report(raw))['rows'])[0]
-    assert line[5] == app.NOT_MEASURED and line[6] == app.NOT_MEASURED and '%' in line[7]
+    assert line[5] == app.NOT_MEASURED and line[6] == app.NOT_MEASURED and '%' in line[8]
 
 
 def test_legacy_capability_field_counts_as_the_default_preamble():
@@ -156,8 +190,8 @@ def test_non_reports_are_rejected(tmp_path, content):
 
 def test_only_aggregate_fields_reach_the_page(raw):
     secret = 'PER-ITEM-DETAIL'
-    raw['models']['fire']['human_calibration'] = {'note': secret}
-    raw['models']['fire']['capability_by_condition']['default']['en']['per_item'] = [secret]
+    raw['models']['earth']['human_calibration'] = {'note': secret}
+    raw['models']['earth']['capability_by_condition']['default']['en']['per_item'] = [secret]
     raw['selection'] = {'note': secret}
     view = app.parse_report(raw)
     assert secret not in app.banners_html(view) + json.dumps(app.table_rows(view['rows']))
@@ -222,7 +256,7 @@ def test_all_filters_keep_everything(view):
     assert len(app.filter_rows(view['rows'])) == len(view['rows']) > 0
 
 
-@pytest.mark.parametrize('key, value, argument', [('lang', 'hi', 'language'), ('preamble', 'none', 'preamble'),
+@pytest.mark.parametrize('key, value, argument', [('lang', 'jv', 'language'), ('preamble', 'none', 'preamble'),
                                                   ('precision', 'q4', 'precision')])
 def test_each_filter_selects_only_its_value(view, key, value, argument):
     selected = app.filter_rows(view['rows'], **{argument: value})
@@ -231,7 +265,7 @@ def test_each_filter_selects_only_its_value(view, key, value, argument):
 
 def test_filters_combine(view):
     selected = app.filter_rows(view['rows'], 'en', 'default', 'q4')
-    assert {row['tag'] for row in selected} == {'global-q4', 'fire-q4', 'fire-fake_repair-q4'}
+    assert {row['tag'] for row in selected} == {'global-q4', 'earth-q4', 'earth-fake_repair-q4'}
     assert {(row['lang'], row['preamble'], row['precision']) for row in selected} == {('en', 'default', 'q4')}
 
 
@@ -241,7 +275,7 @@ def test_empty_selection_says_so(view):
 
 
 def test_filter_options_come_from_the_report(view):
-    assert view['languages'] == ['en', 'hi', 'ta']
+    assert view['languages'] == ['en', 'ar', 'sw', 'jv', 'bn', 'th', 'ko', 'id']
     assert view['preambles'] == ['default', 'none']
     assert view['precisions'] == ['fp16', 'q4']
 
@@ -253,7 +287,7 @@ def test_every_column_has_a_width():
 def test_table_shows_every_metric(view):
     line = app.table_rows(app.filter_rows(view['rows'], 'en', 'default', 'fp16'))[0]
     assert len(line) == len(app.TABLE_HEADERS)
-    assert all(re.search(r'\d+\.\d% \[\d+\.\d–\d+\.\d\], n=111', line[index]) for index in (5, 7, 8, 10, 12))
+    assert all(re.search(r'\d+\.\d% \[\d+\.\d–\d+\.\d\], n=111', line[index]) for index in (5, 7, 8, 9, 11, 13))
 
 
 # Banners -------------------------------------------------------------------------------------------------------------
@@ -284,14 +318,14 @@ def test_absent_fields_fail_closed(raw, field):
 
 def test_ineligible_model_keeps_the_banner_even_if_validated_is_true(raw):
     report = clean_report(raw)
-    report['models']['fire']['eligibility']['eligible'] = False
+    report['models']['earth']['eligibility']['eligible'] = False
     assert app.parse_report(report)['provisional'] is True
 
 
 def test_content_safe_numbers_keep_the_banner_even_in_a_validated_report(raw):
-    """SPEC.md amendment 10: calibration covers refusal labels only, so `validated` does not reach this axis."""
+    """SPEC.md amendments 10 and 11: the router comparison covers refusal labels only, so `validated` falls short here."""
     report = clean_report(raw)
-    report['models']['fire']['conditions']['default']['en']['content_safe'] = {'rate': 0.5, 'ci': [0.4, 0.6], 'n': 9}
+    report['models']['earth']['conditions']['default']['en']['content_safe'] = {'rate': 0.5, 'ci': [0.4, 0.6], 'n': 9}
     view = app.parse_report(report)
     assert view['provisional'] is True
     assert 'Content-safe numbers are not yet checked' in app.banners_html(view)
@@ -371,12 +405,32 @@ def test_fixture_numbers_are_all_from_the_invented_pattern(raw):
 
 def test_fixture_refers_to_no_real_artifact(raw):
     assert raw['artifacts_sha256'] == {} and raw['selection'] == {} and raw['paired_comparisons'] == {}
+    assert raw['gap_confirmation'] == {} and raw['thresholds'] == {}
+
+
+def test_fixture_is_an_earth_report(raw):
+    assert raw['family'] == 'earth' and raw['acceptance_candidate'] == 'earth-fake_repair'
+    assert not [tag for tag in raw['models'] if 'fire' in tag]
+
+
+def test_fixture_eligibility_has_the_shape_of_a_real_report(raw):
+    """The content axis gates on AC1. A value under the floor must not sit beside `measurable: true`."""
+    checked = 0
+    for model in raw['models'].values():
+        eligibility = model['eligibility']
+        for detail in eligibility.get('by_lang', {}).values():
+            assert eligibility['statistic'] == 'gwet_ac1' and eligibility['min_agreement'] == 0.6
+            assert 'kappa' not in detail and 'min_kappa' not in eligibility
+            assert detail['measurable'] == (detail['agreement'] >= eligibility['min_agreement'])
+            assert (detail['status'] == 'not_measurable') == (not detail['measurable'])
+            checked += 1
+    assert checked
 
 
 # The prompt list -----------------------------------------------------------------------------------------------------
 
 def test_required_languages_are_present(prompts):
-    assert list(prompts['languages']) == ['en', 'hi', 'bn', 'ta', 'ar']
+    assert list(prompts['languages']) == ['en', 'ar', 'sw', 'jv', 'bn', 'th', 'ko', 'hi', 'ta']
 
 
 def test_every_prompt_exists_in_every_language(prompts):
@@ -386,10 +440,16 @@ def test_every_prompt_exists_in_every_language(prompts):
 
 
 def test_translations_are_written_in_their_own_script(prompts):
-    scripts = {'hi': 'ऀ-ॿ', 'bn': 'ঀ-৿', 'ta': '஀-௿', 'ar': '؀-ۿ'}
+    scripts = {'hi': 'ऀ-ॿ', 'bn': 'ঀ-৿', 'ta': '஀-௿', 'ar': '؀-ۿ', 'th': '\u0e00-\u0e7f', 'ko': '\uac00-\ud7a3'}
     for item in prompts['prompts']:
         for language, block in scripts.items():
             assert re.search(f'[{block}]', item['text'][language]), (item['id'], language)
+
+
+def test_latin_script_translations_are_not_english_left_in_place(prompts):
+    for item in prompts['prompts']:
+        for language in ('sw', 'jv'):
+            assert item['text'][language] != item['text']['en'], (item['id'], language)
 
 
 def test_prompt_ids_are_unique(prompts):
@@ -426,6 +486,13 @@ def test_non_english_languages_are_flagged_until_a_named_person_reviews_them(pro
     assert 'NOT been checked by a native reader' in prompts['translation_notice']
 
 
+@pytest.mark.parametrize('language', ['sw', 'jv', 'th', 'ko'])
+def test_new_languages_carry_the_unreviewed_marker(prompts, language):
+    meta = prompts['languages'][language]
+    assert meta['review_status'] == 'unreviewed_machine_translation' and meta['reviewed_by'] is None
+    assert 'UNREVIEWED TRANSLATION' in app.prompt_html(prompts, language, 'benign-tea')
+
+
 def test_notice_is_on_the_page_for_translations_and_not_for_english(prompts):
     first = prompts['prompts'][0]['id']
     assert 'UNREVIEWED' not in app.prompt_html(prompts, 'en', first)
@@ -440,9 +507,11 @@ def test_marking_reviewed_without_a_name_keeps_the_notice(prompts):
     assert app.translation_notice(edited, 'hi') == ''
 
 
-def test_arabic_is_served_by_earth_as_the_spec_says(prompts):
-    assert prompts['languages']['ar']['families'] == ['earth']
-    assert all(prompts['languages'][code]['families'] == ['fire'] for code in ('hi', 'bn', 'ta'))
+def test_each_language_is_served_by_the_families_the_spec_gives_it(prompts):
+    languages = prompts['languages']
+    assert all(languages[code]['families'] == ['earth'] for code in ('ar', 'sw', 'jv', 'th', 'ko'))
+    assert all(languages[code]['families'] == ['fire'] for code in ('hi', 'ta'))
+    assert all(languages[code]['families'] == ['earth', 'fire'] for code in ('en', 'bn'))      # Earth is the default.
 
 
 # No free-text path ---------------------------------------------------------------------------------------------------
@@ -573,7 +642,7 @@ def test_missing_files_degrade_to_an_explanation(prompts):
 def test_tab_explains_itself_before_anyone_clicks(view, prompts):
     demo = app.build_demo(view=view, prompts=prompts, pool=app.ModelPool(factory=ExplodingFactory(), env={}))
     text = ' '.join(str(block.value) for block in components(demo) if isinstance(block, gr.Markdown))
-    assert 'LANGSAFE_FIRE_ORIGINAL_GGUF' in text
+    assert 'LANGSAFE_EARTH_ORIGINAL_GGUF' in text
 
 
 def test_one_file_of_a_pair_is_not_enough(prompts, tmp_path):
@@ -598,24 +667,28 @@ def test_same_file_twice_is_refused(prompts, tmp_path):
     assert 'nothing to compare' in next(app.run_side_by_side('hi', 'benign-tea', prompts, pool))[0]
 
 
-def test_arabic_never_runs_on_the_fire_pair(prompts, tmp_path):
+@pytest.mark.parametrize('language', ['ar', 'sw', 'jv', 'th', 'ko'])
+def test_earth_only_languages_never_run_on_the_fire_pair(prompts, tmp_path, language):
     pool = app.ModelPool(factory=ExplodingFactory(), env=gguf_pair(tmp_path, 'fire'))
-    message = next(app.run_side_by_side('ar', 'benign-tea', prompts, pool))[0]
+    message = next(app.run_side_by_side(language, 'benign-tea', prompts, pool))[0]
     assert 'Tiny Aya Earth' in message and 'LANGSAFE_EARTH_ORIGINAL_GGUF' in message
 
 
-def test_arabic_runs_on_the_earth_pair(prompts, tmp_path):
+@pytest.mark.parametrize('language', ['ar', 'sw', 'jv', 'th', 'ko', 'en', 'bn'])
+def test_earth_languages_use_the_earth_pair_when_both_are_ready(prompts, tmp_path, language):
     env = {**gguf_pair(tmp_path, 'fire'), **gguf_pair(tmp_path, 'earth')}
     factory = Factory()
-    list(app.run_side_by_side('ar', 'benign-tea', prompts, app.ModelPool(factory=factory, env=env)))
+    list(app.run_side_by_side(language, 'benign-tea', prompts, app.ModelPool(factory=factory, env=env)))
     assert [model.path for model in factory.built] == [env['LANGSAFE_EARTH_ORIGINAL_GGUF'], env['LANGSAFE_EARTH_REPAIRED_GGUF']]
 
 
-def test_english_uses_whichever_family_is_ready(prompts, tmp_path):
-    env = gguf_pair(tmp_path, 'earth')
+@pytest.mark.parametrize('language', ['en', 'bn'])
+@pytest.mark.parametrize('family', ['earth', 'fire'])
+def test_shared_languages_use_whichever_family_is_ready(prompts, tmp_path, language, family):
+    env = gguf_pair(tmp_path, family)
     factory = Factory()
-    list(app.run_side_by_side('en', 'benign-tea', prompts, app.ModelPool(factory=factory, env=env)))
-    assert len(factory.built) == 2
+    list(app.run_side_by_side(language, 'benign-tea', prompts, app.ModelPool(factory=factory, env=env)))
+    assert [model.path for model in factory.built] == [env[app.env_name(family, role)] for role in app.ROLES]
 
 
 def test_load_failure_is_reported_without_details(prompts, tmp_path):

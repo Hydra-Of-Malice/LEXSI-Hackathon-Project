@@ -148,6 +148,11 @@ def build_report(tags: list[str], family: str, judge_set: str, runs: Path, outpu
     paired = {}
     confirmation = gap_confirmation(judged_rows.get(tags[0], []), judged_rows.get(tags[1], []) if len(tags) > 1 else [],
                                     primary_metric(spec), spec['preamble_conditions'], resamples)
+    for cells in confirmation['conditions'].values():
+        for lang, cell in cells.items():
+            cell['measurable'] = all(models.get(tag, {}).get('eligibility', {}).get('by_lang', {}).get(lang, {})
+                                     .get('status') != 'not_measurable' for tag in tags[:2])
+            cell['confirmed'] = cell['confirmed'] and cell['measurable']
     if len(tags) >= 2:
         for tag in tags[2:]:
             precision = 'q4' if tag.endswith('-q4') else 'nf4' if tag.endswith('-nf4') else 'fp16'

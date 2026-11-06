@@ -179,7 +179,8 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     in the pilot, so testing the default preamble alone could miss the gap the project is built on, and picking the condition
     after seeing held-out data would be worse. Each language is tested in both conditions, at McNemar p below 0.05 divided by
     all those tests (14 for Earth), with a paired 95% CI above zero. A repair claim applies only to a condition with a
-    confirmed gap for the target language; elsewhere the repair is exploratory and can't count as a success.
+    confirmed gap for the target language; elsewhere the repair is exploratory and can't count as a success. A language
+    below the agreement floor can't be confirmed, whatever its p-value.
 18. **Batch sizes raised** to 16 for generation and translation and 8 for capability, after measuring on the RTX 4060
     (`scripts/bench_generation.py`): 145 tokens/s and 7.2 GiB at batch 16, against 22 at batch 2. llama-server on an F16 GGUF
     reached 169 tokens/s, too small a gain to justify a second full-precision backend. Greedy output can differ slightly by

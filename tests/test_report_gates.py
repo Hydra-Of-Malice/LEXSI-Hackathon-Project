@@ -339,3 +339,20 @@ def test_a_repair_is_only_held_to_conditions_with_a_confirmed_gap(monkeypatch, t
     assert result['thresholds']['repaired/default']['exploratory'] is True
     if not gap_in:
         assert result['empirical_repair_success'] is False
+
+
+def test_a_gap_cannot_be_confirmed_where_the_judges_cannot_measure(monkeypatch, tmp_path):
+    report = _paired_report_fixture(monkeypatch, tmp_path)
+    monkeypatch.setattr(report, 'reporting_eligibility', lambda *a, **k: {
+        'eligible': False, 'status': 'provisional', 'by_lang': {'en': {'status': 'not_measurable', 'reasons': []}}})
+    real_compare = report.compare
+
+    def clear_gap(base, new, resamples):
+        result = real_compare(base, new, resamples)
+        result['en']['harmful_refusal'].update(ci=[.1, .9], p_mcnemar=.0001)
+        return result
+
+    monkeypatch.setattr(report, 'compare', clear_gap)
+    path = report.build_report(['global', 'fire', 'repaired'], 'fire', 'local', tmp_path)
+    cell = json.loads(path.with_suffix('.json').read_text())['gap_confirmation']['conditions']['none']['en']
+    assert cell['p_mcnemar'] == .0001 and cell['measurable'] is False and cell['confirmed'] is False

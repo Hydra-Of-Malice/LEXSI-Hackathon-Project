@@ -12,9 +12,11 @@ from pathlib import Path
 
 
 LANGUAGES = {'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali', 'ta': 'Tamil', 'hi-Latn': 'Hinglish',
-             'ar': 'Arabic', 'sw': 'Swahili'}
-METRICS = {'content_safe': 'Content-safe on harmful prompts', 'harmful_refusal': 'Harmful full refusal', 'over_refusal': 'Benign over-refusal',
+             'ar': 'Arabic', 'sw': 'Swahili', 'jv': 'Javanese', 'th': 'Thai', 'ko': 'Korean', 'id': 'Indonesian'}
+METRICS = {'content_safe': 'Content-safe on harmful prompts', 'degenerate': 'Degenerate answers',
+           'harmful_refusal': 'Harmful full refusal', 'over_refusal': 'Benign over-refusal',
            'capability': 'Capability accuracy'}
+LOWER_IS_BETTER = {'over_refusal', 'degenerate'}
 
 
 def label(tag: str) -> str:
@@ -31,7 +33,7 @@ def measurements(report: dict) -> list[dict]:
     for tag, model in report['models'].items():
         for condition, langs in model.get('conditions', {}).items():
             for lang, metrics in langs.items():
-                for metric in ('content_safe', 'harmful_refusal', 'over_refusal'):
+                for metric in ('content_safe', 'degenerate', 'harmful_refusal', 'over_refusal'):
                     if metric in metrics:
                         cell = metrics[metric]
                         rows.append({'tag': tag, 'label': label(tag), 'condition': condition, 'lang': lang,
@@ -68,7 +70,7 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{padding:7px 5px;t
 </style></head><body>
 <div class="note"><strong id="status"></strong><div id="context"></div></div>
 <div class="controls">
-<label>Metric<select id="metric"><option value="harmful_refusal">Harmful full refusal ↑</option><option value="over_refusal">Benign over-refusal ↓</option><option value="capability">Capability accuracy ↑</option></select></label>
+<label>Metric<select id="metric"><option value="content_safe">Content-safe ↑</option><option value="degenerate">Degenerate answers ↓</option><option value="harmful_refusal">Harmful full refusal ↑</option><option value="over_refusal">Benign over-refusal ↓</option><option value="capability">Capability accuracy ↑</option></select></label>
 <label>System preamble<select id="condition"><option value="default">Default</option><option value="none">Removed</option></select></label>
 <label>Weights<select id="precision"><option value="fp16">FP16 · all arms</option><option value="q4">Q4_K_M · selected repair</option><option value="nf4">NF4 · CUDA</option></select></label>
 <label>Language<select id="language"><option value="all">All languages</option></select></label>
@@ -108,7 +110,7 @@ const tr=document.createElement('tr');for(const v of [data.languages[language],r
 }chart.append(group);
 }
 if(!rows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No measurements available for this selection.';chart.append(empty)}
-$('caption').textContent='Bars: '+data.metrics[metric]+'. Lines: 95% percentile-bootstrap intervals. '+(metric==='over_refusal'?'Lower is better. ':'Higher is better. ')+(rows.length?'n = '+Math.min(...rows.map(r=>r.n))+'–'+Math.max(...rows.map(r=>r.n))+' per cell. ':'')+'Small samples and truncated answers limit interpretation; unanimous tiny samples can yield zero-width bootstrap intervals.';
+$('caption').textContent='Bars: '+data.metrics[metric]+'. Lines: 95% percentile-bootstrap intervals. '+(['over_refusal','degenerate'].includes(metric)?'Lower is better. ':'Higher is better. ')+(rows.length?'n = '+Math.min(...rows.map(r=>r.n))+'–'+Math.max(...rows.map(r=>r.n))+' per cell. ':'')+'Small samples and truncated answers limit interpretation; unanimous tiny samples can yield zero-width bootstrap intervals.';
 }for(const id of ['metric','condition','precision','language'])$(id).addEventListener('change',render);render();
 </script></body></html>'''
 
@@ -127,7 +129,7 @@ def plots(report: dict, rows: list[dict], directory: Path) -> list[Path]:
         tags = [t + suffix for t in ('global', family, selected) if t]
         if not any(r['tag'] in tags for r in rows):
             continue
-        figure, axes = plt.subplots(2, 3, figsize=(14, 8), layout='constrained')
+        figure, axes = plt.subplots(2, len(METRICS), figsize=(4.7 * len(METRICS), 8), layout='constrained')
         for ri, condition in enumerate(('default', 'none')):
             for ci, (metric, title) in enumerate(METRICS.items()):
                 ax = axes[ri, ci]
@@ -149,7 +151,7 @@ def plots(report: dict, rows: list[dict], directory: Path) -> list[Path]:
                     ax.bar(x, values, width=.22, yerr=np.array([low, high]) if values else None,
                            capsize=2, color=('#287ea8', '#d97938', '#478961')[ti], label=label(tag), zorder=3)
                 ax.set(ylim=(0, 105), yticks=(0, 25, 50, 75, 100), ylabel='Percent',
-                       title=title + (' ↓' if metric == 'over_refusal' else ' ↑'),
+                       title=title + (' ↓' if metric in LOWER_IS_BETTER else ' ↑'),
                        xticks=range(len(plot_languages)),
                        xticklabels=[LANGUAGES.get(l, l) for l in plot_languages])
                 ax.tick_params(axis='x', labelrotation=25)

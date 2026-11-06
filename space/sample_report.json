@@ -1,7 +1,7 @@
 {
  "_notice": "FAKE DATA. Invented numbers in the shape of a real report.json, so the demo works before real results exist. Not measured. Do not cite.",
  "fake_data": true,
- "family": "fire",
+ "family": "earth",
  "profile": "FAKE-DATA-fixture",
  "spec_digest": "FAKE-DATA",
  "spec_frozen": false,
@@ -16,31 +16,68 @@
     "status": "provisional",
     "judge_set": "local",
     "judge_count": 2,
-    "min_kappa": 0.6,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
     "local_router_min_kappa": 0.6,
     "by_lang": {
      "en": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "hi": {
+     "ar": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "ta": {
+     "sw": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
@@ -62,6 +99,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -92,7 +137,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -103,6 +148,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -133,7 +186,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -144,6 +197,210 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -188,6 +445,14 @@
        "invalid": 0.0444,
        "disputed": 0.0666
       },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
       "harmful_refusal": {
        "rate": 0.1234,
        "ci": [
@@ -217,7 +482,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -228,6 +493,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -258,7 +531,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -269,6 +542,210 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -310,12 +787,44 @@
       0.1734
      ]
     },
-    "hi": {
+    "bn": {
      "accuracy": 0.2345,
      "n": 111,
      "ci95": [
       0.1845,
       0.2845
+     ]
+    },
+    "ar": {
+     "accuracy": 0.3456,
+     "n": 111,
+     "ci95": [
+      0.2956,
+      0.3956
+     ]
+    },
+    "sw": {
+     "accuracy": 0.4567,
+     "n": 111,
+     "ci95": [
+      0.4067,
+      0.5067
+     ]
+    },
+    "ko": {
+     "accuracy": 0.5678,
+     "n": 111,
+     "ci95": [
+      0.5178,
+      0.6178
+     ]
+    },
+    "id": {
+     "accuracy": 0.6789,
+     "n": 111,
+     "ci95": [
+      0.6289,
+      0.7289
      ]
     }
    },
@@ -329,17 +838,15 @@
        0.1734
       ]
      },
-     "hi": {
+     "bn": {
       "accuracy": 0.2345,
       "n": 111,
       "ci95": [
        0.1845,
        0.2845
       ]
-     }
-    },
-    "none": {
-     "en": {
+     },
+     "ar": {
       "accuracy": 0.3456,
       "n": 111,
       "ci95": [
@@ -347,330 +854,15 @@
        0.3956
       ]
      },
-     "hi": {
+     "sw": {
       "accuracy": 0.4567,
       "n": 111,
       "ci95": [
        0.4067,
        0.5067
       ]
-     }
-    }
-   }
-  },
-  "fire": {
-   "status": "provisional",
-   "eligibility": {
-    "eligible": false,
-    "status": "provisional",
-    "judge_set": "local",
-    "judge_count": 2,
-    "min_kappa": 0.6,
-    "local_router_min_kappa": 0.6,
-    "by_lang": {
-     "en": {
-      "eligible": false,
-      "measurable": true,
-      "kappa": 0.7777,
-      "status": "provisional",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
      },
-     "hi": {
-      "eligible": false,
-      "measurable": true,
-      "kappa": 0.7777,
-      "status": "provisional",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
-     },
-     "ta": {
-      "eligible": false,
-      "measurable": true,
-      "kappa": 0.7777,
-      "status": "provisional",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
-     }
-    },
-    "reasons": []
-   },
-   "conditions": {
-    "default": {
-     "en": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "ta": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     }
-    },
-    "none": {
-     "en": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "ta": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     }
-    }
-   },
-   "capability": {
-    "en": {
-     "accuracy": 0.5678,
-     "n": 111,
-     "ci95": [
-      0.5178,
-      0.6178
-     ]
-    },
-    "hi": {
-     "accuracy": 0.6789,
-     "n": 111,
-     "ci95": [
-      0.6289,
-      0.7289
-     ]
-    }
-   },
-   "capability_by_condition": {
-    "default": {
-     "en": {
+     "ko": {
       "accuracy": 0.5678,
       "n": 111,
       "ci95": [
@@ -678,7 +870,7 @@
        0.6178
       ]
      },
-     "hi": {
+     "id": {
       "accuracy": 0.6789,
       "n": 111,
       "ci95": [
@@ -696,50 +888,119 @@
        0.8391
       ]
      },
-     "hi": {
+     "bn": {
       "accuracy": 0.8912,
       "n": 111,
       "ci95": [
        0.8412,
        0.9412
       ]
+     },
+     "ar": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "sw": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     },
+     "ko": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "id": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
      }
     }
    }
   },
-  "fire-fake_repair": {
+  "earth": {
    "status": "provisional",
    "eligibility": {
     "eligible": false,
     "status": "provisional",
     "judge_set": "local",
     "judge_count": 2,
-    "min_kappa": 0.6,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
     "local_router_min_kappa": 0.6,
     "by_lang": {
      "en": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "hi": {
+     "ar": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "ta": {
+     "sw": {
       "eligible": false,
-      "measurable": false,
-      "kappa": 0.1111,
-      "status": "not_measurable",
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
@@ -760,6 +1021,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -790,7 +1059,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -801,6 +1070,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -831,7 +1108,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -842,6 +1119,210 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -886,6 +1367,14 @@
        "invalid": 0.0444,
        "disputed": 0.0666
       },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
       "harmful_refusal": {
        "rate": 0.1234,
        "ci": [
@@ -915,7 +1404,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -926,6 +1415,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -956,7 +1453,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -967,6 +1464,1132 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     }
+    }
+   },
+   "capability": {
+    "en": {
+     "accuracy": 0.5678,
+     "n": 111,
+     "ci95": [
+      0.5178,
+      0.6178
+     ]
+    },
+    "bn": {
+     "accuracy": 0.6789,
+     "n": 111,
+     "ci95": [
+      0.6289,
+      0.7289
+     ]
+    },
+    "ar": {
+     "accuracy": 0.7891,
+     "n": 111,
+     "ci95": [
+      0.7391,
+      0.8391
+     ]
+    },
+    "sw": {
+     "accuracy": 0.8912,
+     "n": 111,
+     "ci95": [
+      0.8412,
+      0.9412
+     ]
+    },
+    "ko": {
+     "accuracy": 0.1234,
+     "n": 111,
+     "ci95": [
+      0.0734,
+      0.1734
+     ]
+    },
+    "id": {
+     "accuracy": 0.2345,
+     "n": 111,
+     "ci95": [
+      0.1845,
+      0.2845
+     ]
+    }
+   },
+   "capability_by_condition": {
+    "default": {
+     "en": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "bn": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     },
+     "ar": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "sw": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     },
+     "ko": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "id": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     }
+    },
+    "none": {
+     "en": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "bn": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
+     },
+     "ar": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "sw": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     },
+     "ko": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "id": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     }
+    }
+   }
+  },
+  "earth-fake_repair": {
+   "status": "provisional",
+   "eligibility": {
+    "eligible": false,
+    "status": "provisional",
+    "judge_set": "local",
+    "judge_count": 2,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
+    "local_router_min_kappa": 0.6,
+    "by_lang": {
+     "en": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ar": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "sw": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": false,
+      "agreement": 0.1111,
+      "status": "not_measurable",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     }
+    },
+    "reasons": []
+   },
+   "conditions": {
+    "default": {
+     "en": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ar": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     }
+    },
+    "none": {
+     "en": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ar": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -1008,12 +2631,44 @@
       0.1734
      ]
     },
-    "hi": {
+    "bn": {
      "accuracy": 0.2345,
      "n": 111,
      "ci95": [
       0.1845,
       0.2845
+     ]
+    },
+    "ar": {
+     "accuracy": 0.3456,
+     "n": 111,
+     "ci95": [
+      0.2956,
+      0.3956
+     ]
+    },
+    "sw": {
+     "accuracy": 0.4567,
+     "n": 111,
+     "ci95": [
+      0.4067,
+      0.5067
+     ]
+    },
+    "ko": {
+     "accuracy": 0.5678,
+     "n": 111,
+     "ci95": [
+      0.5178,
+      0.6178
+     ]
+    },
+    "id": {
+     "accuracy": 0.6789,
+     "n": 111,
+     "ci95": [
+      0.6289,
+      0.7289
      ]
     }
    },
@@ -1027,17 +2682,15 @@
        0.1734
       ]
      },
-     "hi": {
+     "bn": {
       "accuracy": 0.2345,
       "n": 111,
       "ci95": [
        0.1845,
        0.2845
       ]
-     }
-    },
-    "none": {
-     "en": {
+     },
+     "ar": {
       "accuracy": 0.3456,
       "n": 111,
       "ci95": [
@@ -1045,7 +2698,73 @@
        0.3956
       ]
      },
-     "hi": {
+     "sw": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
+     },
+     "ko": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "id": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     }
+    },
+    "none": {
+     "en": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "bn": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     },
+     "ar": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "sw": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     },
+     "ko": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "id": {
       "accuracy": 0.4567,
       "n": 111,
       "ci95": [
@@ -1063,31 +2782,68 @@
     "status": "provisional",
     "judge_set": "local",
     "judge_count": 2,
-    "min_kappa": 0.6,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
     "local_router_min_kappa": 0.6,
     "by_lang": {
      "en": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "hi": {
+     "ar": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "ta": {
+     "sw": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
@@ -1100,47 +2856,6 @@
     "default": {
      "en": {
       "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
        "rate": 0.8912,
        "ci": [
         0.8412,
@@ -1150,6 +2865,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -1180,7 +2903,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "ar": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -1191,6 +2914,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -1215,6 +2946,251 @@
        "ci": [
         0.2956,
         0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
        ],
        "n": 111,
        "partial": 0.0111,
@@ -1225,47 +3201,6 @@
     "none": {
      "en": {
       "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
        "rate": 0.4567,
        "ci": [
         0.4067,
@@ -1275,6 +3210,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -1305,7 +3248,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "ar": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -1316,6 +3259,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -1340,6 +3291,251 @@
        "ci": [
         0.7391,
         0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
        ],
        "n": 111,
        "partial": 0.0111,
@@ -1357,12 +3553,44 @@
       0.6178
      ]
     },
-    "hi": {
+    "bn": {
      "accuracy": 0.6789,
      "n": 111,
      "ci95": [
       0.6289,
       0.7289
+     ]
+    },
+    "ar": {
+     "accuracy": 0.7891,
+     "n": 111,
+     "ci95": [
+      0.7391,
+      0.8391
+     ]
+    },
+    "sw": {
+     "accuracy": 0.8912,
+     "n": 111,
+     "ci95": [
+      0.8412,
+      0.9412
+     ]
+    },
+    "ko": {
+     "accuracy": 0.1234,
+     "n": 111,
+     "ci95": [
+      0.0734,
+      0.1734
+     ]
+    },
+    "id": {
+     "accuracy": 0.2345,
+     "n": 111,
+     "ci95": [
+      0.1845,
+      0.2845
      ]
     }
    },
@@ -1376,17 +3604,15 @@
        0.6178
       ]
      },
-     "hi": {
+     "bn": {
       "accuracy": 0.6789,
       "n": 111,
       "ci95": [
        0.6289,
        0.7289
       ]
-     }
-    },
-    "none": {
-     "en": {
+     },
+     "ar": {
       "accuracy": 0.7891,
       "n": 111,
       "ci95": [
@@ -1394,7 +3620,73 @@
        0.8391
       ]
      },
-     "hi": {
+     "sw": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     },
+     "ko": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "id": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     }
+    },
+    "none": {
+     "en": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "bn": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
+     },
+     "ar": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "sw": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     },
+     "ko": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "id": {
       "accuracy": 0.8912,
       "n": 111,
       "ci95": [
@@ -1405,38 +3697,75 @@
     }
    }
   },
-  "fire-q4": {
+  "earth-q4": {
    "status": "provisional",
    "eligibility": {
     "eligible": false,
     "status": "provisional",
     "judge_set": "local",
     "judge_count": 2,
-    "min_kappa": 0.6,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
     "local_router_min_kappa": 0.6,
     "by_lang": {
      "en": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "hi": {
+     "ar": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
       ]
      },
-     "ta": {
+     "sw": {
       "eligible": false,
       "measurable": true,
-      "kappa": 0.7777,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
       "status": "provisional",
       "reasons": [
        "FAKE DATA: fixture only, no judging happened"
@@ -1459,6 +3788,14 @@
        "invalid": 0.0444,
        "disputed": 0.0666
       },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
       "harmful_refusal": {
        "rate": 0.5678,
        "ci": [
@@ -1488,7 +3825,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -1499,6 +3836,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -1529,7 +3874,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -1540,6 +3885,210 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -1584,6 +4133,14 @@
        "invalid": 0.0444,
        "disputed": 0.0666
       },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
       "harmful_refusal": {
        "rate": 0.1234,
        "ci": [
@@ -1613,7 +4170,7 @@
        "unclear": 0.0222
       }
      },
-     "hi": {
+     "ar": {
       "content_safe": {
        "rate": 0.8912,
        "ci": [
@@ -1624,6 +4181,14 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.5678,
@@ -1654,7 +4219,7 @@
        "unclear": 0.0222
       }
      },
-     "ta": {
+     "sw": {
       "content_safe": {
        "rate": 0.4567,
        "ci": [
@@ -1665,6 +4230,210 @@
        "unsafe": 0.0333,
        "invalid": 0.0444,
        "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
       },
       "harmful_refusal": {
        "rate": 0.1234,
@@ -1706,12 +4475,44 @@
       0.1734
      ]
     },
-    "hi": {
+    "bn": {
      "accuracy": 0.2345,
      "n": 111,
      "ci95": [
       0.1845,
       0.2845
+     ]
+    },
+    "ar": {
+     "accuracy": 0.3456,
+     "n": 111,
+     "ci95": [
+      0.2956,
+      0.3956
+     ]
+    },
+    "sw": {
+     "accuracy": 0.4567,
+     "n": 111,
+     "ci95": [
+      0.4067,
+      0.5067
+     ]
+    },
+    "ko": {
+     "accuracy": 0.5678,
+     "n": 111,
+     "ci95": [
+      0.5178,
+      0.6178
+     ]
+    },
+    "id": {
+     "accuracy": 0.6789,
+     "n": 111,
+     "ci95": [
+      0.6289,
+      0.7289
      ]
     }
    },
@@ -1725,17 +4526,15 @@
        0.1734
       ]
      },
-     "hi": {
+     "bn": {
       "accuracy": 0.2345,
       "n": 111,
       "ci95": [
        0.1845,
        0.2845
       ]
-     }
-    },
-    "none": {
-     "en": {
+     },
+     "ar": {
       "accuracy": 0.3456,
       "n": 111,
       "ci95": [
@@ -1743,330 +4542,15 @@
        0.3956
       ]
      },
-     "hi": {
+     "sw": {
       "accuracy": 0.4567,
       "n": 111,
       "ci95": [
        0.4067,
        0.5067
       ]
-     }
-    }
-   }
-  },
-  "fire-fake_repair-q4": {
-   "status": "provisional",
-   "eligibility": {
-    "eligible": false,
-    "status": "provisional",
-    "judge_set": "local",
-    "judge_count": 2,
-    "min_kappa": 0.6,
-    "local_router_min_kappa": 0.6,
-    "by_lang": {
-     "en": {
-      "eligible": false,
-      "measurable": true,
-      "kappa": 0.7777,
-      "status": "provisional",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
      },
-     "hi": {
-      "eligible": false,
-      "measurable": true,
-      "kappa": 0.7777,
-      "status": "provisional",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
-     },
-     "ta": {
-      "eligible": false,
-      "measurable": false,
-      "kappa": 0.1111,
-      "status": "not_measurable",
-      "reasons": [
-       "FAKE DATA: fixture only, no judging happened"
-      ]
-     }
-    },
-    "reasons": []
-   },
-   "conditions": {
-    "default": {
-     "en": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "ta": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     }
-    },
-    "none": {
-     "en": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "hi": {
-      "content_safe": {
-       "rate": 0.4567,
-       "ci": [
-        0.4067,
-        0.5067
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.1234,
-       "ci": [
-        0.0734,
-        0.1734
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.2345,
-       "ci": [
-        0.1845,
-        0.2845
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.3456,
-       "ci": [
-        0.2956,
-        0.3956
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     },
-     "ta": {
-      "content_safe": {
-       "rate": 0.8912,
-       "ci": [
-        0.8412,
-        0.9412
-       ],
-       "n": 111,
-       "unsafe": 0.0333,
-       "invalid": 0.0444,
-       "disputed": 0.0666
-      },
-      "harmful_refusal": {
-       "rate": 0.5678,
-       "ci": [
-        0.5178,
-        0.6178
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      },
-      "harmful_compliance": {
-       "rate": 0.6789,
-       "ci": [
-        0.6289,
-        0.7289
-       ],
-       "n": 111
-      },
-      "over_refusal": {
-       "rate": 0.7891,
-       "ci": [
-        0.7391,
-        0.8391
-       ],
-       "n": 111,
-       "partial": 0.0111,
-       "unclear": 0.0222
-      }
-     }
-    }
-   },
-   "capability": {
-    "en": {
-     "accuracy": 0.5678,
-     "n": 111,
-     "ci95": [
-      0.5178,
-      0.6178
-     ]
-    },
-    "hi": {
-     "accuracy": 0.6789,
-     "n": 111,
-     "ci95": [
-      0.6289,
-      0.7289
-     ]
-    }
-   },
-   "capability_by_condition": {
-    "default": {
-     "en": {
+     "ko": {
       "accuracy": 0.5678,
       "n": 111,
       "ci95": [
@@ -2074,7 +4558,7 @@
        0.6178
       ]
      },
-     "hi": {
+     "id": {
       "accuracy": 0.6789,
       "n": 111,
       "ci95": [
@@ -2092,7 +4576,961 @@
        0.8391
       ]
      },
-     "hi": {
+     "bn": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     },
+     "ar": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "sw": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     },
+     "ko": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "id": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
+     }
+    }
+   }
+  },
+  "earth-fake_repair-q4": {
+   "status": "provisional",
+   "eligibility": {
+    "eligible": false,
+    "status": "provisional",
+    "judge_set": "local",
+    "judge_count": 2,
+    "statistic": "gwet_ac1",
+    "min_agreement": 0.6,
+    "local_router_min_kappa": 0.6,
+    "by_lang": {
+     "en": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ar": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "sw": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "jv": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "bn": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "th": {
+      "eligible": false,
+      "measurable": false,
+      "agreement": 0.1111,
+      "status": "not_measurable",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     },
+     "ko": {
+      "eligible": false,
+      "measurable": true,
+      "agreement": 0.8888,
+      "status": "provisional",
+      "reasons": [
+       "FAKE DATA: fixture only, no judging happened"
+      ]
+     }
+    },
+    "reasons": []
+   },
+   "conditions": {
+    "default": {
+     "en": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ar": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     }
+    },
+    "none": {
+     "en": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ar": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "sw": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "jv": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "bn": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "th": {
+      "content_safe": {
+       "rate": 0.8912,
+       "ci": [
+        0.8412,
+        0.9412
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.5678,
+       "ci": [
+        0.5178,
+        0.6178
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.6789,
+       "ci": [
+        0.6289,
+        0.7289
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.7891,
+       "ci": [
+        0.7391,
+        0.8391
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     },
+     "ko": {
+      "content_safe": {
+       "rate": 0.4567,
+       "ci": [
+        0.4067,
+        0.5067
+       ],
+       "n": 111,
+       "unsafe": 0.0333,
+       "invalid": 0.0444,
+       "disputed": 0.0666
+      },
+      "degenerate": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "harmful_refusal": {
+       "rate": 0.1234,
+       "ci": [
+        0.0734,
+        0.1734
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      },
+      "harmful_compliance": {
+       "rate": 0.2345,
+       "ci": [
+        0.1845,
+        0.2845
+       ],
+       "n": 111
+      },
+      "over_refusal": {
+       "rate": 0.3456,
+       "ci": [
+        0.2956,
+        0.3956
+       ],
+       "n": 111,
+       "partial": 0.0111,
+       "unclear": 0.0222
+      }
+     }
+    }
+   },
+   "capability": {
+    "en": {
+     "accuracy": 0.5678,
+     "n": 111,
+     "ci95": [
+      0.5178,
+      0.6178
+     ]
+    },
+    "bn": {
+     "accuracy": 0.6789,
+     "n": 111,
+     "ci95": [
+      0.6289,
+      0.7289
+     ]
+    },
+    "ar": {
+     "accuracy": 0.7891,
+     "n": 111,
+     "ci95": [
+      0.7391,
+      0.8391
+     ]
+    },
+    "sw": {
+     "accuracy": 0.8912,
+     "n": 111,
+     "ci95": [
+      0.8412,
+      0.9412
+     ]
+    },
+    "ko": {
+     "accuracy": 0.1234,
+     "n": 111,
+     "ci95": [
+      0.0734,
+      0.1734
+     ]
+    },
+    "id": {
+     "accuracy": 0.2345,
+     "n": 111,
+     "ci95": [
+      0.1845,
+      0.2845
+     ]
+    }
+   },
+   "capability_by_condition": {
+    "default": {
+     "en": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "bn": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     },
+     "ar": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "sw": {
+      "accuracy": 0.8912,
+      "n": 111,
+      "ci95": [
+       0.8412,
+       0.9412
+      ]
+     },
+     "ko": {
+      "accuracy": 0.1234,
+      "n": 111,
+      "ci95": [
+       0.0734,
+       0.1734
+      ]
+     },
+     "id": {
+      "accuracy": 0.2345,
+      "n": 111,
+      "ci95": [
+       0.1845,
+       0.2845
+      ]
+     }
+    },
+    "none": {
+     "en": {
+      "accuracy": 0.3456,
+      "n": 111,
+      "ci95": [
+       0.2956,
+       0.3956
+      ]
+     },
+     "bn": {
+      "accuracy": 0.4567,
+      "n": 111,
+      "ci95": [
+       0.4067,
+       0.5067
+      ]
+     },
+     "ar": {
+      "accuracy": 0.5678,
+      "n": 111,
+      "ci95": [
+       0.5178,
+       0.6178
+      ]
+     },
+     "sw": {
+      "accuracy": 0.6789,
+      "n": 111,
+      "ci95": [
+       0.6289,
+       0.7289
+      ]
+     },
+     "ko": {
+      "accuracy": 0.7891,
+      "n": 111,
+      "ci95": [
+       0.7391,
+       0.8391
+      ]
+     },
+     "id": {
       "accuracy": 0.8912,
       "n": 111,
       "ci95": [
@@ -2103,7 +5541,7 @@
     }
    }
   },
-  "fire-fake_repair-nf4": {
+  "earth-fake_repair-nf4": {
    "status": "missing_judgments",
    "eligibility": {
     "eligible": false
@@ -2112,14 +5550,15 @@
    "capability": {}
   }
  },
+ "gap_confirmation": {},
  "thresholds": {},
  "paired_comparisons": {},
- "acceptance_candidate": "fire-fake_repair",
+ "acceptance_candidate": "earth-fake_repair",
  "required_acceptance_comparisons": [],
  "selection": {},
  "validation_gaps": [
   "FAKE DATA: this fixture contains no measurements",
-  "fire-fake_repair-nf4: missing judgments"
+  "earth-fake_repair-nf4: missing judgments"
  ],
  "data_coverage": {},
  "translation_quality_status": "FAKE-DATA",
