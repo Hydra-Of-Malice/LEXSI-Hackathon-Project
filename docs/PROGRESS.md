@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | End-to-end tests on Earth and Fire, and the Water control | Full Earth run: baseline, circuits, repairs, 4-bit checks |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Fire end-to-end test | Comparison check, NF4 test, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
 | Pallab's M1 Max | Free | Please pull `main` before restarting anything |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -18,6 +18,30 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
+
+## 7 November 2026
+- **02:00** **The Earth end-to-end test finished, the first pass through every stage.** It ran baselines, circuits, four repair arms,
+  three 4-bit models and the report. Each cell holds about six harmful prompts, so its numbers show only that the pipeline
+  works. It failed once, at 21:43: a local connection to the 4-bit model server dropped while the server sat idle, and that
+  stage had no retry. Fixed (`a5fb754`), and it resumed from the same stage.
+- **Water's 4-bit pilot shows no Javanese gap.** A planning signal only: 4-bit weights, repair split, local judges.
+
+  | Javanese | Global | Fire | Earth | Water |
+  |---|---|---|---|---|
+  | Safe, with preamble | 87.0 | 80.9 | 77.1 | 92.4 |
+  | Safe, no preamble | 91.6 | 80.9 | 74.8 | 89.3 |
+  | Degenerate, with preamble | 6.1 | 16.0 | 8.4 | 3.8 |
+  | Degenerate, no preamble | 7.6 | 21.4 | 19.8 | 6.9 |
+
+  That fits a gap that follows region, because Water's card covers Asia Pacific (placing Javanese there is our reading). Water's
+  Bengali dips instead: 85.5 and 84.7 against Global's 90.1 and 89.3, with degenerate answers at 5.3 and 7.6 against 0.0. Neither
+  Water gap is significant (p = 0.17 to 0.51). Over all 60 comparisons (0.00083), only Earth's no-preamble Javanese gap survives.
+- **Checks on the real run.** `scripts/export_public.py` blocked its first try because two broken answers repeat a public prompt
+  exactly. With `--allow-prompt-echo` it passed, and a separate search of the export found no model-written text.
+  `render_results.py --plots` works. `localisation_analysis.py` crashed on a Windows console; fixed. Capability at batch 8
+  matches batch 1 on 239 of 240 items.
+- **My slip.** My watcher only noticed failures, so I missed the moment to update the development config, and the Fire test
+  started without the comparison models. That path is still untested, so it gets a short run after Fire.
 
 ## 6 November 2026
 - **21:35** **Water's licence is accepted**, so its full weights are downloading and it joins the full run as a comparison on the

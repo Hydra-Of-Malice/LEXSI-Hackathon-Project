@@ -14,8 +14,8 @@
 > - The target language comes from the repair split, and confirmed languages come from held-out items, so they can differ. `{{TARGET_LANGUAGE}}` and `{{CONFIRMED_CELLS}}` keep them apart.
 > - Section 7.3 is the only place with pilot numbers. They come from 4-bit weights, repair-split items and local 8B judges, so they are planning signals, not results. Keep that label, and never move one into sections 7.4 to 7.8.
 > - Unsafe answers and answers where the model breaks down are different failures (`SPEC.md` Amendment 15). Keep them apart everywhere. "Not safe" does not mean "harmful".
-> - Water is a control still being run. State no Water result. Delete `{{WATER_CONTROL_SENTENCE}}` if the run does not finish.
-> - No step in the repo runs Fire on Earth's held-out items. If nobody adds one, delete the Fire columns in section 7.4 and `{{FIRE_COMPARISON_SENTENCE}}`.
+> - Water's only result so far is the 4-bit pilot in section 7.3. Fill `{{WATER_CONTROL_SENTENCE}}` from its held-out comparison, and delete it if that run does not finish.
+> - Fire and Water run on Earth's held-out items as comparisons (`SPEC.md` Amendment 21). If that run does not finish, delete the Fire columns in section 7.4 and `{{FIRE_COMPARISON_SENTENCE}}`.
 
 **Summary**
 
@@ -338,6 +338,7 @@ The mean and worst rows also include Chinese, Italian and Vietnamese, which are 
 - **Thai and Korean are weaker signals.** They ranked next with the preamble, but neither gap is significant, and Thai's reverses without the preamble. They joined the test set as languages to check, not as gaps we had found.
 - **Earth's own region shows no clear gap.** Arabic and Swahili stay in the test set because Earth is meant to serve them.
 - **Fire is not free of the problem.** It shows no gap in Bengali, its own region, in either condition. But its Javanese gap is 6.1 points with the preamble (p = 0.15) and 10.7 points without it (p = 0.003). It stays as a smaller comparison, and Javanese belongs to neither model's region.
+- **Water shows no Javanese gap in the pilot.** Its card calls it best for European and Asia Pacific languages, and placing Javanese there is our reading. Water scores 92.4% with the preamble and 89.3% without, against Global's 87.0% and 91.6% (p = 0.17 and 0.51). Its degenerate rate is 3.8% and 6.9%, against Earth's 8.4% and 19.8%. That fits a gap that follows region, but this is one 4-bit pilot. Water's Bengali dips instead, to 85.5% and 84.7% against Global's 90.1% and 89.3% (p = 0.29 and 0.26), with degenerate answers at 5.3% and 7.6% against Global's 0.0%.
 - **Means stay close,** which is why averages hide this.
 
 **Third check: a blind read of the answers.** Two model readers, blind to the judges' labels, labelled 153 answers from the pilot, oversampling disagreements. This is a model reading, not a human one.
@@ -694,8 +695,8 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 |---|---|---|
 | `{{TARGET_LANGUAGE}}` | Target language. Chosen on the repair split by the largest Global minus Earth gap on the content-safe rate | `selection.json` |
 | `{{CONFIRMED_CELLS}}` | Languages and preamble conditions that passed, in words | `report.json`, `gap_confirmation` |
-| `{{WATER_CONTROL_SENTENCE}}` | Whether Water shows the Javanese gap. Fill only from the finished run, and label it a planning signal, because the `water` step uses 4-bit weights and repair-split items. Delete otherwise | `runs/pilot/multijail.json`, once `water` in `scripts/run_chain.py` finishes |
-| `{{FIRE_COMPARISON_SENTENCE}}` | What Fire shows against Global on the same held-out items. Delete if that run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{WATER_CONTROL_SENTENCE}}` | Whether Water shows the Javanese gap on held-out items. Outside the 14 confirmatory tests, so it is context. Delete if that run does not finish | `baseline-gap.json`, key `water`, in the full run folder |
+| `{{FIRE_COMPARISON_SENTENCE}}` | What Fire shows against Global on the same held-out items. Delete if that run does not finish | `baseline-gap.json`, key `fire`, in the full run folder |
 | `{{TARGET_CONDITION}}` | The condition the headline uses, in words, such as 'without the preamble'. It must have a confirmed gap for the target language under ALT-A | `report.json`, `confirmed_conditions` |
 | `{{TARGET_SAFE_EARTH}}` | Earth content-safe rate in the target language, held out, % | `report.json` |
 | `{{TARGET_SAFE_GLOBAL}}` | Global content-safe rate in the target language, held out, % | `report.json` |

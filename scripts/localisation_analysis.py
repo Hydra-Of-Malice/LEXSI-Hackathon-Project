@@ -166,6 +166,8 @@ def main() -> None:
     parser.add_argument("run", type=Path)
     parser.add_argument("--judges", default="local")
     args = parser.parse_args()
+    if hasattr(sys.stdout, "reconfigure"):      # a Windows console can't encode the arrows in the report
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     result = analyse(args.run, args.judges)
     (args.run / "localisation.json").write_text(json.dumps(result, indent=2, allow_nan=False), encoding="utf-8")
     (args.run / "localisation.md").write_text(render(result), encoding="utf-8")

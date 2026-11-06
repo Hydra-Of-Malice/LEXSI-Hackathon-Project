@@ -107,7 +107,7 @@ The repo is private today, and all history goes public with it. No generation, j
 ## Before anything goes on Hugging Face
 
 - [ ] **Never upload `runs/auditkit/`.** AuditKIT's JSON saves full predictions, including `prompt` and `raw_output`. These are harmful completions.
-- [ ] **Run the sanitised log export on a real run.** The rules ask for public logs. `scripts/export_public.py` keeps hashes, settings, scores and aggregates, drops all model text, and has only been tested on fixtures.
+- [ ] **Run the sanitised log export on the full run.** The rules ask for public logs. `scripts/export_public.py` keeps hashes, settings, scores and aggregates, and drops all model text. It passed on the Earth development run on 7 Nov. It needs `--allow-prompt-echo`, because a broken answer can repeat a public prompt exactly. Check that count in `EXPORT_MANIFEST.json`.
 - [ ] Keep `runs/gens/`, `runs/judged/`, `runs/hand_check/`, `runs/calibration/` and all review CSVs private.
 - [ ] Decide which losing arms to publish. The proposal said every arm. It also said no weights less safe than the originals. Those conflict if an arm lowers refusal in any language. Set one rule, and use it in all cards.
 - [ ] Publish a checkpoint only after held-out re-evaluation. LSAL section 4 bars derivatives that were not repaired and re-evaluated from user-facing systems.

@@ -7,8 +7,8 @@ Cohere's Tiny Aya Earth (Africa, West Asia) and Fire (South Asia) sit close to T
 average**: 3.3 and 1.1 points below it. In their **weakest language** the gap is 9 to 10 points: 87.0% safe for Global,
 78.1% for Fire and 77.5% for Earth (Tiny Aya tech report, Table 7). The report doesn't name that language.
 
-Earth is the main drifted model and Global is the reference. Fire is a smaller comparison. Water is a control still being
-run, so no Water result is stated here. We test Arabic and Swahili (Earth's region), Javanese, Bengali, Thai and Korean
+Earth is the main drifted model and Global is the reference. Fire is a smaller comparison. Water is a control. So far it has
+only a 4-bit pilot, so no Water result is stated here. We test Arabic and Swahili (Earth's region), Javanese, Bengali, Thai and Korean
 (where our pilot found Earth weakest against Global), and English as the control. This project:
 
 1. checks the gap per language on held-out prompts at full precision, with content safety (safe, unsafe or invalid, the
