@@ -51,8 +51,8 @@ P("LEXSI LABS AI SAFETY &amp; ALIGNMENT HACKATHON · TRACK 2b: REPAIRING SAFETY 
   ParagraphStyle("k", parent=body, fontName="UI-B", fontSize=7.4, textColor=ACCENT, spaceAfter=1))
 P("Same model, different language, different safety",
   ParagraphStyle("t", fontName="UI-B", fontSize=16, leading=20, textColor=INK, spaceAfter=1))
-P("Team: Aditya Arnav, Pallab Das · Mentor brief, 6 November 2026 · Core model: Tiny Aya Earth (3.35B), "
-  "reference Tiny Aya Global · Repos: CuratorKIT, AuditKIT, CircuitKIT, SafeTune",
+P("Team: Aditya Arnav, Pallab Das · Mentor brief, 7 November 2026 · Core model: Tiny Aya Earth (3.35B), "
+  "reference Tiny Aya Global",
   ParagraphStyle("m", parent=body, fontName="UI-L", fontSize=8.2, textColor=MUTED, spaceAfter=4))
 
 H("The problem")
@@ -63,12 +63,14 @@ P("Tiny Aya's regional models average almost the same safety as Global, so a che
   "in a language neither model was tuned for.")
 
 H("What the pilot found (planning signal, not a result)")
-T([["Javanese, safe answers", "Global", "Fire", "Earth", "Mean of 10 languages (G / F / E)"],
-   ["With Tiny Aya's preamble", "87.0%", "80.9%", "77.1%", "94.9 / 94.1 / 91.6"],
-   ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "95.0 / 94.6 / 93.5"]],
-  [40 * mm, 18 * mm, 32 * mm, 32 * mm, 48 * mm])
+T([["Javanese, safe answers", "Global", "Fire", "Earth", "Water", "10-language mean (G / F / E / W)"],
+   ["With Tiny Aya's preamble", "87.0%", "80.9%", "77.1%", "92.4%", "94.9 / 94.1 / 91.6 / 94.9"],
+   ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "89.3%", "95.0 / 94.6 / 93.5 / 94.2"]],
+  [37 * mm, 14 * mm, 27 * mm, 28 * mm, 14 * mm, 50 * mm])
 P("131 prompts per language, repair split only, 4-bit weights, two local 8B judges standing in for Command A. Without the "
-  "preamble Earth's gap survives correction for all 40 comparisons, and Fire's only for 10 languages. <b>Caution:</b> both judges "
+  "preamble Earth's gap survives correction for all 60 comparisons, and Fire's only for 10 languages. Water shows no Javanese "
+  "gap, which fits a gap that follows a model's region, though placing Javanese in Water's region is our reading of its card. "
+  "Water dips in Bengali instead (85.5% and 84.7%, not significant). <b>Caution:</b> both judges "
   "call only 3 or 4 of Earth's 131 Javanese answers unsafe. The rest is judge disputes and breakdown: a blind read of 153 "
   "answers found many are repetition loops (19.8% of Earth's, 7.6% of Global's). The true gap is unknown until held-out data.")
 
@@ -103,9 +105,9 @@ B(["The gap must first be confirmed: full precision, held-out prompts, each prea
    "Every arm is reported, including losing ones and negative results."])
 
 H("Where we are today")
-P("The pipeline ran end to end on a small sample, and review and real-model tests fixed several crashes and silent errors. "
-  "Next: confirm the gap on held-out data, then run the repairs. We have also prepared six fixes for the kits (none "
-  "submitted yet).")
+P("The pipeline has run end to end on real Earth and Fire models at a small sample, and those runs fixed several crashes and "
+  "silent errors. Next: confirm the gap on held-out data, with Fire and Water alongside as context, then run the repairs. We "
+  "have also prepared six fixes for the kits (none submitted yet).")
 
 H("What we would value your view on")
 B(["Is content safety, as in the report, the right primary measure? And should a model that breaks down into repetition "

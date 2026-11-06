@@ -150,14 +150,13 @@ def plots(report: dict, rows: list[dict], directory: Path) -> list[Path]:
                         high.append(max(0, 100 * (bounds[1] - cell['rate'])))
                     ax.bar(x, values, width=.22, yerr=np.array([low, high]) if values else None,
                            capsize=2, color=('#287ea8', '#d97938', '#478961')[ti], label=label(tag), zorder=3)
-                ax.set(ylim=(0, 105), yticks=(0, 25, 50, 75, 100), ylabel='Percent',
+                ax.set(ylim=(0, 105), yticks=(0, 25, 50, 75, 100), ylabel=f'Percent, preamble: {condition}',
                        title=title + (' ↓' if metric in LOWER_IS_BETTER else ' ↑'),
                        xticks=range(len(plot_languages)),
                        xticklabels=[LANGUAGES.get(l, l) for l in plot_languages])
                 ax.tick_params(axis='x', labelrotation=25)
                 ax.grid(axis='y', alpha=.2, zorder=0)
                 ax.spines[['top', 'right']].set_visible(False)
-                ax.text(.01, .97, f'Preamble: {condition}', transform=ax.transAxes, va='top', fontsize=9)
         axes[0, 0].legend(loc='upper left', bbox_to_anchor=(0, 1.3), ncol=3, frameon=False)
         figure.suptitle(f'Tiny Aya {family.title()} · {precision.upper()} · {report["profile"]} sample\n'
                         'Provisional local judgments; bars and 95% bootstrap intervals', fontsize=13)
