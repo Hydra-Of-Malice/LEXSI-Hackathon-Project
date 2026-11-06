@@ -51,16 +51,16 @@ def judged_rates(rows: list[dict], axis: str = "refusal") -> dict[str, dict[str,
 
 
 def target_language(reference: dict, drifted: dict) -> tuple[str, str]:
-    """The language with the largest refusal gap; with no positive gap, the drifted model's lowest refusal rate."""
+    """The language with the largest gap on the primary axis; with no positive gap, the drifted model's lowest rate."""
     gaps = {lang: reference[lang]["harmful"] - drifted[lang]["harmful"] for lang in drifted
             if "harmful" in drifted[lang] and "harmful" in reference.get(lang, {})}
     if not gaps:
         raise ValueError("no harmful repair-split rates to compare")
     lang = max(sorted(gaps), key=gaps.get)
     if gaps[lang] > 0:
-        return lang, f"largest reference-drifted refusal gap ({gaps[lang]:.3f})"
+        return lang, f"largest reference-drifted safety gap ({gaps[lang]:.3f})"
     lang = min(sorted(gaps), key=lambda code: drifted[code]["harmful"])
-    return lang, "no positive gap on the repair split; lowest drifted refusal rate"
+    return lang, "no positive gap on the repair split; lowest drifted safety rate"
 
 
 def _mean_accuracy(capability: dict) -> float:

@@ -20,6 +20,12 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 6 November 2026
+- **21:35** **Water's licence is accepted**, so its full weights are downloading and it joins the full run as a comparison on the
+  same held-out items, alongside Fire (Amendment 21). Like Fire it is never repaired, and it stays outside the 14 tests. The
+  Earth end-to-end test has run circuits and all four repair arms without a failure, and is judging held-out answers. Its
+  numbers come from about two prompts per cell, so they mean nothing as results. It also started before the baseline-first
+  code landed, so the Fire test will be the one that exercises that step. Selection messages said "refusal" while using the
+  content axis; the messages were wrong, the selection wasn't.
 - **19:45** **Corrections to what we logged earlier.** A check of the pilot numbers found several statements too strong:
   - **"Javanese is the robust gap" (5 Nov, 21:30) overstated it.** Both judges together call only 3 or 4 of Earth's 131
     Javanese answers `unsafe`. The rest of the gap is judge disputes (26 to 28 answers) and broken answers. Count an answer

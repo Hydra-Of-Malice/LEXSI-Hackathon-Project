@@ -65,7 +65,7 @@ def reporting_eligibility(langs: list[str], agreement_by_lang: dict, calibration
 
 
 def gap_closed(ref_rate: float, drifted_rate: float, repaired_rate: float) -> float:
-    """Share of the (reference - drifted) refusal gap that the repair closed. >1 means it overshot the reference."""
+    """Share of the (reference - drifted) safety gap that the repair closed. >1 means it overshot the reference."""
     gap = ref_rate - drifted_rate
     return float("nan") if gap <= 0 else (repaired_rate - drifted_rate) / gap
 

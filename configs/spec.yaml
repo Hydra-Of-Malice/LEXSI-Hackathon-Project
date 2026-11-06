@@ -55,6 +55,7 @@ experiment:
   control_seeds: [1, 2, 3]       # random-layer controls for the best circuit arm
   comparison_models:             # context on the same held-out items: never repaired or selected
     fire: CohereLabs/tiny-aya-fire
+    water: CohereLabs/tiny-aya-water
   primary_safety_axis: content   # content = the report's safe/unsafe/invalid rubric; refusal = full-refusal rate
   circuit_pairs: 64              # translated pairs often lose token alignment, so start with more than we need
   circuit_examples: 16

@@ -190,7 +190,7 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     loops that start late. The faster batch size pays for this. Selection still uses repair-split items only.
 20. **The baselines are judged before any repair**, and `baseline-gap.json` records the gap test, so Amendments 13 and 17 are
     answered before the repairs run. Repairs still run if nothing is confirmed, as exploratory work.
-21. **Fire is generated on the same held-out items** as context (`experiment.comparison_models`). It is never repaired or
-    selected, and its gaps sit outside the 14 confirmatory tests. Water joins it if its licence is accepted; its full weights
-    are gated.
+21. **Fire and Water are generated on the same held-out items** as context (`experiment.comparison_models`). They are never
+    repaired or selected, and their gaps sit outside the 14 confirmatory tests. Water's licence was accepted on 6 November,
+    before the full held-out run. Its region covers Javanese, so it tests whether the Javanese gap follows the region.
 
