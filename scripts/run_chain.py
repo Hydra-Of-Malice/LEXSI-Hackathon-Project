@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATUS = ROOT / "runs" / "chain-status.json"
 CLI = [sys.executable, "-u", "-m", "langsafe.cli"]
 SWEEP = [sys.executable, "-u", "scripts/pilot_multijail.py"]
+NF4 = [sys.executable, "-u", "scripts/check_nf4_environment.py", "--family", "earth", "--min-vram-gib", "7", "--execute"]
 STEPS = {
     "e2e-fire": CLI + ["experiment", "--family", "fire", "--profile", "development"],
     "water": SWEEP + ["--models", "global,fire,earth,water", "--preambles", "default,none"],
@@ -27,8 +28,12 @@ STEPS = {
     "earth-circuit": CLI + ["experiment", "--family", "earth", "--profile", "full", "--stop-after", "circuit"],
     "earth-repairs": CLI + ["experiment", "--family", "earth", "--profile", "full", "--stop-after", "repairs"],
     "earth-full": CLI + ["experiment", "--family", "earth", "--profile", "full"],
+    "e2e-nf4": NF4 + ["--source-run", "runs/experiments/development/earth", "--spec", "configs/development.yaml",
+                      "--output", "runs/experiments/development/earth-nf4", "--allow-development"],
+    "earth-nf4": NF4 + ["--source-run", "runs/experiments/full/earth", "--spec", "configs/spec.yaml",
+                        "--output", "runs/experiments/full/earth-nf4"],
 }
-NEEDS_EARTH = {"e2e-earth", "earth-baseline", "earth-circuit", "earth-repairs", "earth-full"}
+NEEDS_EARTH = {"e2e-earth", "earth-baseline", "earth-circuit", "earth-repairs", "earth-full", "e2e-nf4", "earth-nf4"}
 
 
 def status(**fields) -> None:

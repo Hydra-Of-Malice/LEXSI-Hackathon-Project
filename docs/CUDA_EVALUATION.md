@@ -1,20 +1,18 @@
 # Portable CUDA/NF4 evaluation
 
-NF4 is an in-process `bitsandbytes` format. It requires a Linux CUDA host and
+NF4 is an in-process `bitsandbytes` format. It requires a CUDA host, Linux or Windows, and
 the same float16 experiment inputs used by the source run. The Mac workflow
 does not execute NF4: `scripts/run_nf4_evaluation.sh --dry-run` only validates
 the handoff and prints a plan.
 
-The current source-machine inventory and Mac completion state are recorded in
-[MAC_STATUS.md](MAC_STATUS.md). There is no active CUDA host or notebook
-session configured in this workspace. The documented target is a fresh Linux
-NVIDIA host, preferably a Kaggle T4 or Colab T4; its non-secret hardware and
-software identity are captured by `--check-hardware` on that host.
+The main run uses the laptop's RTX 4060 through the `earth-nf4` step of
+`scripts/run_chain.py`, with `--min-vram-gib 7`. A Kaggle or Colab T4 also works;
+its non-secret hardware and software identity are captured by `--check-hardware`.
 
 The handoff is deliberately isolated. Point `--source-run` at a completed
 experiment directory and `--output` at a new directory on the CUDA machine.
 The source run must contain its manifest, repair/held-out JSONL files,
-`selection.json`, Global/Fire/selected-repair generations, two-judge judgments,
+`selection.json`, Global/Earth/selected-repair generations, two-judge judgments,
 AuditKIT records, and both capability conditions. The planner hashes these
 files, the source spec, all checkpoint files, and the code/runtime identity.
 It rejects mismatched specs or data hashes, overlapping repair/held-out groups,
@@ -26,19 +24,19 @@ GGUF files as NF4.
 
 ```bash
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/run_nf4_evaluation.sh \
-  --source-run runs/experiments/full/fire \
+  --source-run runs/experiments/full/earth \
   --spec configs/spec.yaml \
-  --output /mnt/lexsi/nf4-fire \
-  --family fire --judges local --dry-run > nf4-plan.json
+  --output /mnt/lexsi/nf4-earth \
+  --family earth --judges local --dry-run > nf4-plan.json
 ```
 
 The plan must say `status: planned_not_executed`, `precision: nf4`, and
 `hardware_checked: false`. It lists exactly three NF4 model tags:
-`global-nf4`, `fire-nf4`, and the repair tag recorded in
+`global-nf4`, `earth-nf4`, and the repair tag recorded in
 `selection.json` with `-nf4` appended. Every tag is generated on the complete
 held-out prompt set; capability is run with both `default` and `none`
 preambles. Each tag then receives the configured two judges, AuditKIT, and a
-report containing same-precision Global/Fire/repair comparisons. No `--limit`
+report containing same-precision Global/Earth/repair comparisons. No `--limit`
 is added to a full-profile plan. Development specs are refused unless
 `--allow-development` is supplied and remain development-only evidence.
 
@@ -80,8 +78,8 @@ On Linux, run:
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/run_nf4_evaluation.sh \
   --source-run /mnt/lexsi/full-fire \
   --spec /mnt/lexsi/full-fire/source-spec.yaml \
-  --output /mnt/lexsi/nf4-fire \
-  --family fire --judges local --check-hardware
+  --output /mnt/lexsi/nf4-earth \
+  --family earth --judges local --check-hardware
 ```
 
 Preflight requires one visible CUDA device, compute capability 7.0 or newer,
@@ -122,8 +120,8 @@ or local-jury execution.
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/run_nf4_evaluation.sh \
   --source-run /mnt/lexsi/full-fire \
   --spec /mnt/lexsi/full-fire/source-spec.yaml \
-  --output /mnt/lexsi/nf4-fire \
-  --family fire --judges local --execute
+  --output /mnt/lexsi/nf4-earth \
+  --family earth --judges local --execute
 ```
 
 The runner copies the selected repair checkpoint into the isolated output,
@@ -139,14 +137,14 @@ precision report comparisons, and artifact hashes.
 Useful post-run checks, all against the isolated output, are:
 
 ```bash
-.venv/bin/python -m langsafe.cli --spec /mnt/lexsi/nf4-fire/source-spec.yaml \
-  --runs-dir /mnt/lexsi/nf4-fire ledger-verify
-.venv/bin/python -m langsafe.cli --spec /mnt/lexsi/nf4-fire/source-spec.yaml \
-  --runs-dir /mnt/lexsi/nf4-fire status --directory /mnt/lexsi/nf4-fire
+.venv/bin/python -m langsafe.cli --spec /mnt/lexsi/nf4-earth/source-spec.yaml \
+  --runs-dir /mnt/lexsi/nf4-earth ledger-verify
+.venv/bin/python -m langsafe.cli --spec /mnt/lexsi/nf4-earth/source-spec.yaml \
+  --runs-dir /mnt/lexsi/nf4-earth status --directory /mnt/lexsi/nf4-earth
 python - <<'PY'
 import json
 from pathlib import Path
-p = Path('/mnt/lexsi/nf4-fire')
+p = Path('/mnt/lexsi/nf4-earth')
 status = json.loads((p / 'nf4-status.json').read_text())
 assert status['software_run_complete'] and status['nf4_cuda'] == 'executed'
 assert json.loads((p / 'report.json').read_text())['validation_gaps'] == []
