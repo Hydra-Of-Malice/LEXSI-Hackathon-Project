@@ -19,7 +19,7 @@ license_name: code-mit-models-cc-by-nc-4.0
 The public demo for our Lexsi Labs AI Safety & Alignment Hackathon project (Track 2b). It asks whether Tiny Aya's
 regional models behave less safely in some languages, and whether that can be repaired without retraining.
 
-Tiny Aya Earth is the main model under test, with Global as the reference and Fire as a smaller comparison. Earth's
+Tiny Aya Earth is the main model under test, with Global as the reference and Fire and Water as comparisons. Earth's
 languages are Arabic and Swahili (its region), Javanese, Bengali, Thai and Korean (where an early pilot found it weakest),
 and English as the control.
 

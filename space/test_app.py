@@ -547,6 +547,10 @@ def test_no_dropdown_takes_custom_values_and_the_table_is_read_only(demo):
     assert all(block.interactive is False for block in components(demo) if isinstance(block, gr.Dataframe))
 
 
+def test_the_model_column_stays_visible_when_the_table_scrolls():
+    assert 'position: sticky' in app.LAUNCH_OPTIONS['css'] and '.body-cell.first-column' in app.LAUNCH_OPTIONS['css']
+
+
 def test_mcp_and_uploads_are_off():
     assert app.LAUNCH_OPTIONS['mcp_server'] is False
     assert gr.utils._parse_file_size(app.LAUNCH_OPTIONS['max_file_size']) == 1

@@ -67,7 +67,13 @@ GENERATION_EOS_TOKEN = 3
 QUEUE_SIZE = 16
 # Gradio keeps a generic upload route even on a page with no upload component. Nothing here needs it, and a public Space
 # should not offer anonymous disk storage, so the limit refuses every real file.
-LAUNCH_OPTIONS = {'mcp_server': False, 'ssr_mode': False, 'show_error': False, 'max_file_size': '1b',
+# Gradio's pinned_columns does nothing for a read-only table with these settings, and scrolling right lost the row labels.
+PIN_MODEL_COLUMN = '''
+.virtual-table-viewport .header-cell.first-column, .virtual-table-viewport .body-cell.first-column {
+    position: sticky !important; left: 0; z-index: 3; background: var(--background-fill-primary);
+}
+'''
+LAUNCH_OPTIONS = {'mcp_server': False, 'ssr_mode': False, 'show_error': False, 'max_file_size': '1b', 'css': PIN_MODEL_COLUMN,
                   'footer_links': ['gradio', 'settings']}
 
 
@@ -536,7 +542,7 @@ INTRO = """# Same model, different language, different safety
 
 A research demo from the Lexsi Labs AI Safety & Alignment Hackathon (Track 2b). We ask whether the safety behaviour of
 Cohere's Tiny Aya regional models changes with the language of the prompt, and whether it can be repaired without
-retraining. Tiny Aya Earth is the main model under test, with Global as the reference and Fire as a smaller comparison.
+retraining. Tiny Aya Earth is the main model under test, with Global as the reference and Fire and Water as comparisons.
 Nothing here is a validated safety claim unless the Results explorer says so."""
 
 EXPLORER_NOTES = """Cells show the rate, its 95% percentile-bootstrap interval and the sample size. Tiny samples can
@@ -613,7 +619,7 @@ def build_demo(view: dict | None = None, prompts: dict | None = None, pool: Mode
                 summary = gr.Markdown(summary_text(view['rows'], view))
                 table = gr.Dataframe(value=table_rows(view['rows'], view['fake']), headers=TABLE_HEADERS,
                                      interactive=False, wrap=True, label='Per-language results',
-                                     column_widths=COLUMN_WIDTHS, pinned_columns=1)
+                                     column_widths=COLUMN_WIDTHS)
                 gr.Markdown(EXPLORER_NOTES)
             with gr.Tab('Side-by-side'):
                 gr.Markdown(SIDE_NOTES)
