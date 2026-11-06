@@ -51,7 +51,7 @@ P("LEXSI LABS AI SAFETY &amp; ALIGNMENT HACKATHON · TRACK 2b: REPAIRING SAFETY 
   ParagraphStyle("k", parent=body, fontName="UI-B", fontSize=7.4, textColor=ACCENT, spaceAfter=1))
 P("Same model, different language, different safety",
   ParagraphStyle("t", fontName="UI-B", fontSize=16, leading=20, textColor=INK, spaceAfter=1))
-P("Team: Aditya Arnav, Pallab Das · Mentor brief, 5 November 2026 · Core model: Tiny Aya Earth (3.35B), "
+P("Team: Aditya Arnav, Pallab Das · Mentor brief, 6 November 2026 · Core model: Tiny Aya Earth (3.35B), "
   "reference Tiny Aya Global · Repos: CuratorKIT, AuditKIT, CircuitKIT, SafeTune",
   ParagraphStyle("m", parent=body, fontName="UI-L", fontSize=8.2, textColor=MUTED, spaceAfter=4))
 
@@ -68,8 +68,9 @@ T([["Javanese, safe answers", "Global", "Fire", "Earth", "Mean of 10 languages (
    ["Without the preamble", "91.6%", "80.9% (p=0.003)", "<b>74.8%</b> (p&lt;0.001)", "95.0 / 94.6 / 93.5"]],
   [40 * mm, 18 * mm, 32 * mm, 32 * mm, 48 * mm])
 P("131 prompts per language, repair split only, 4-bit weights, two local 8B judges standing in for Command A. Without the "
-  "preamble both gaps survive correction for 10 languages; no other language's gap does. Agreement between "
-  "the two judges is weak, so this still has to be confirmed.")
+  "preamble both gaps survive correction for 10 languages; no other language's gap does. <b>Caution:</b> a blind read of 153 "
+  "answers found that many rejected Javanese answers are repetition loops, not harmful content: 19.8% of Earth's "
+  "against 7.6% of Global's. Part of this gap may be the model breaking down, so we now report the two separately.")
 
 H("What we are doing")
 T([["Step", "What happens", "Lexsi kit"],
@@ -95,18 +96,20 @@ T([["Arm", "Edit", "Why it is there"],
   [30 * mm, 70 * mm, 70 * mm])
 
 H("How we will judge success (fixed before any repair)")
-B(["The gap must first be confirmed: full precision, held-out prompts, paired CI above zero, corrected p below 0.05.",
+B(["The gap must first be confirmed: full precision, held-out prompts, each preamble condition, paired CI above zero, "
+   "corrected p below 0.05.",
    "Then close at least <b>half</b> of it, with wrongful refusal up by <b>at most 2 points</b> in any language and ability "
    "down by <b>at most 1 point</b>, all still holding at 4-bit.",
    "Every arm is reported, including losing ones and negative results."])
 
 H("Where we are today")
-P("The pipeline ran end to end on a small sample, and a code review before the full run fixed one crash and several silent "
-  "errors. Next: confirm the gap on held-out data, then run the repairs. We have also prepared six fixes for "
-  "the kits (none submitted yet).")
+P("The pipeline ran end to end on a small sample, and review and real-model tests fixed several crashes and silent errors. "
+  "Next: confirm the gap on held-out data, then run the repairs. We have also prepared six fixes for the kits (none "
+  "submitted yet).")
 
 H("What we would value your view on")
-B(["Is content safety, as in the report, the right primary measure, with refusal reported alongside it?",
+B(["Is content safety, as in the report, the right primary measure? And should a model that breaks down into repetition "
+   "count as a safety failure, as the report's rubric implies, or be reported only as a separate failure?",
    "Do you know which language is behind the report's 78.1, and are our 8B judges a reasonable stand-in for Command A?",
    "Is a public multilingual eval set (prompts and labels only) acceptable under Cohere's acceptable-use policy?"])
 
