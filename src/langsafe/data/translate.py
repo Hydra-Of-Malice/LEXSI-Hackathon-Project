@@ -34,10 +34,14 @@ _TRANSLATION_REFUSAL = re.compile(
     r"(?:translate|provide (?:a |the )?translation)\b", re.I,
 )
 _COMMENTARY = re.compile(r"^(?:here (?:is|are)\b|(?:the )?translation\s*:|<think>)", re.I)
-# The translator sometimes answers the prompt, or adds a word-by-word explanation, in the target language. Neither is a
-# prompt, and no format check sees it, but a real translation stays close to its source's length.
+_LABEL_LINE = re.compile(r"^\**[^*\n:]{1,24}:\**$")
+_QUOTED = re.compile(r'^["“]([^"“”]*)["”]$')
+_LIST_ITEM = re.compile(r"^(?:\d+[.)]|[-•])\s")
+# A real translation stays close to its source's length. After unwrapping, the median ratio is about 1 in every language.
 MAX_LENGTH_RATIO = 3.0
 LENGTH_ALLOWANCE = 60        # short sources vary more
+QUESTION_MARKS = "?؟？"
+NO_QUESTION_MARK = {"th"}    # written Thai doesn't use one
 
 
 def _messages(p: Prompt, target: str) -> list[dict]:
@@ -45,20 +49,42 @@ def _messages(p: Prompt, target: str) -> list[dict]:
             {"role": "user", "content": f"Translate into {name(target)}. {STYLE.get(target, '')}\n\nText:\n{p.text}"}]
 
 
+def _unwrapped(output: str) -> str:
+    """The translation inside its wrapper. Global often writes a label, the translation, then a word-by-word explanation:
+    172 of 250 Javanese outputs and 86 Swahili ones. Without this, the label and the explanation become part of the prompt."""
+    lines = [line.strip() for line in output.strip().splitlines() if line.strip()]
+    if len(lines) > 1 and _LABEL_LINE.match(lines[0]):
+        lines = lines[1:2]
+    text, previous = "\n".join(lines), None
+    while text != previous:
+        previous = text
+        text = text.strip("*").strip()
+        quoted = _QUOTED.match(text)
+        text = quoted.group(1).strip() if quoted else text
+    return text
+
+
 def _checked_translation(client: ChatClient, p: Prompt, target: str, output: str) -> tuple[Prompt | None, str | None]:
     if not isinstance(output, str):
         return None, "invalid_output"
-    out = output.strip()
+    one_line = "\n" not in p.text.strip()
+    out = _unwrapped(output) if one_line else output.strip()
     if not out:
         return None, "empty_output"
     if _TRANSLATION_REFUSAL.search(out[:300]) or refusal_signal(out, target):
         return None, "translator_refusal"
     if _COMMENTARY.search(out):
         return None, "commentary_output"
+    if "\ufffd" in out:      # a token cut through a character: 13 Thai outputs, some with Vietnamese mixed in
+        return None, "broken_text"
+    if (one_line and "\n" in out) or "**" in out or _LIST_ITEM.match(out):
+        return None, "extra_text"
     if len(out) > max(MAX_LENGTH_RATIO * len(p.text), LENGTH_ALLOWANCE):
         return None, "overlong_output"
     if repeat_share(out) >= REPEAT_SHARE_MIN:
         return None, "repetition_loop"
+    if p.text.strip().endswith("?") and target not in NO_QUESTION_MARK and not any(mark in out for mark in QUESTION_MARKS):
+        return None, "answered_not_translated"
     if script_share(out, LANGS[target][1]) < 0.5:
         return None, "wrong_script"
     if target != p.lang and out.casefold() == p.text.strip().casefold():

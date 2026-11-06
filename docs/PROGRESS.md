@@ -20,6 +20,20 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **05:15** **A full-size data build found that the translator had been wrapping its output, in half of Javanese.** The 8-row
+  development sample hid this. Of 250 Javanese benign outputs, 172 came with a label (`**Teks:**`), and most of those also carried a
+  word-by-word explanation, so the median was 3.2 times the source length. Swahili (86) and Bengali (38) did it too. The translation
+  inside was usually fine, so the build now takes it out of the wrapper, then rejects what still isn't a translation: answers,
+  lists, repetition and broken characters. A prompt that ended in a question mark must keep one, except in Thai, where 156 real
+  questions have none because the written language doesn't use it. Run over all 1,500 cached outputs, 1,432 pass. Javanese keeps
+  241 of 250 with a median ratio of 1.06, and no labels remain. Nothing checks meaning: some accepted rows are simply wrong, such as
+  Thai "child abuse" coming back as a question about fetuses. Native review stays a hard requirement.
+- **The 661 ms per step slowdown has a cause.** In both Fire runs I checked, the first batch held a 965-token runaway translation. It
+  overloaded memory, and the next batches stayed slow until they got small. The longest batch known to run fine is 616 tokens and
+  the known-bad one 1,093, and the full run could reach about 744, so that range gets measured before the freeze. Tests running on
+  the CPU also roughly doubled generation time, so they shouldn't run during measurements.
+- **The comparison check passed.** `baseline-gap.json` has `earth`, `fire` and `water`, 14 tests each, on identical items and the right
+  weights. The report's new section matches it exactly, and the public export kept all 28 cells after clearing 1,104 private rows.
 - **04:10** **An independent audit of the full-run path found real problems before the freeze.** Each was checked against code and
   data here. Nothing about the full run has started yet.
   - **Bad translations were kept.** Global sometimes answers the prompt, or adds a word-by-word explanation, instead of translating:
