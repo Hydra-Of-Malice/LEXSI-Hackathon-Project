@@ -176,3 +176,7 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     (`scripts/bench_generation.py`): 145 tokens/s and 7.2 GiB at batch 16, against 22 at batch 2. llama-server on an F16 GGUF
     reached 169 tokens/s, too small a gain to justify a second full-precision backend. Greedy output can differ slightly by
     batch size, so all compared models use the same setting.
+19. **Selection sample raised** from 40 to 80 prompts per language and kind, and selection answers from 96 to 128 tokens. A
+    10-point gap is four prompts at 40, so candidates would have been separated by noise, and short answers hide repetition
+    loops that start late. The faster batch size pays for this. Selection still uses repair-split items only.
+

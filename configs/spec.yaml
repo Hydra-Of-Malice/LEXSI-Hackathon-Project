@@ -50,8 +50,8 @@ experiment:
   family: earth
   local_batch_size: 16            # scripts/bench_generation.py: 145 tokens/s and 7.2 GiB on the RTX 4060, against 22 at batch 2
   capability_batch_size: 8
-  repair_per_cell: 40
-  selection_max_new_tokens: 96
+  repair_per_cell: 80            # per language and kind; a 10-point gap is only 4 prompts at 40, so the knob choice was noise
+  selection_max_new_tokens: 128  # long enough for a repetition loop to show
   control_seeds: [1, 2, 3]       # random-layer controls for the best circuit arm
   primary_safety_axis: content   # content = the report's safe/unsafe/invalid rubric; refusal = full-refusal rate
   circuit_pairs: 64              # translated pairs often lose token alignment, so start with more than we need
