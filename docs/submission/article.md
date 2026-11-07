@@ -284,7 +284,7 @@ The specification names Aya Expanse 32B and Qwen3-32B. A credit-free local pair,
 
 **Reporting rule.** A language is reported only if the two judges agree well enough. On content labels the floor is Gwet's AC1 of 0.6. On refusal labels it is Cohen's kappa of 0.6. We use AC1 for content because nearly every answer is safe, and kappa then falls towards zero whatever the judges' quality. AC1 shows agreement, not correctness, which is why the audits sit beside it. Languages listed as not measurable: {{LANGUAGES_NOT_MEASURABLE}}. {{CONTENT_CALIBRATION_SENTENCE}}
 
-**Specification.** We wrote a specification before the first repair ran. It was frozen on {{SPEC_FREEZE_DATE}}. Nine corrections followed a small development run (section 7.2). Two more added the content rubric and capped the hand check, three followed the content-rubric pilot, three followed a blind audit of that pilot, two raised batch and selection sample sizes, two settled how baselines and comparison models run, and five followed an audit of the full-run path and a full-size data build (section 7.3). All of them came before any full-run held-out data existed. We froze it without mentor comments on the thresholds, because freezing later would have restarted the run. {{SPEC_LATER_AMENDMENTS_SENTENCE}}
+**Specification.** We wrote a specification before the first repair ran, and froze it on {{SPEC_FREEZE_DATE}}, before the full run began. Up to then, nine corrections followed a small development run (section 7.2). Two more added the content rubric and capped the hand check, three followed the content-rubric pilot, three followed a blind audit of that pilot, two raised batch and selection sample sizes, two settled how baselines and comparison models run, and five followed an audit of the full-run path and a full-size data build (section 7.3). All of them came before any full-run held-out data existed. We froze it without mentor comments on the thresholds, because freezing later would have restarted the run. {{SPEC_LATER_AMENDMENTS_SENTENCE}}
 
 ### 7.2 The development run: what it taught us
 
@@ -756,89 +756,89 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{LANGUAGES_NOT_MEASURABLE}}` | Languages below AC1 0.6 on content labels, or 'none' | `report.json` |
 | `{{CONTENT_CALIBRATION_SENTENCE}}` | How far the content labels are checked. Agreement and hand sheets cover them. The router comparison covers refusal labels only | Team, `calibration/` |
 | `{{SPEC_FREEZE_DATE}}` | Freeze date. If it was never frozen, say that plainly | `SPEC.md` |
-| `{{SPEC_LATER_AMENDMENTS_SENTENCE}}` | Any amendment after Amendment 19, or delete | `SPEC.md` |
+| `{{SPEC_LATER_AMENDMENTS_SENTENCE}}` | Any amendment after Amendment 26, the freeze, or delete | `SPEC.md` |
 | `{{GAP_TABLE_SETUP_SENTENCE}}` | Judges and n for the tables in 7.4 | `report.json` |
 | `{{GAP_AR_GLOBAL}}` | Arabic: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_AR_EARTH}}` | Arabic: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_AR_FIRE}}` | Arabic: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_AR_FIRE}}` | Arabic: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_AR_DIFF}}` | Arabic: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_AR_P}}` | Arabic: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_AR_OK}}` | Arabic: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_GLOBAL}}` | Swahili: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_SW_EARTH}}` | Swahili: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_SW_FIRE}}` | Swahili: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_SW_FIRE}}` | Swahili: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_SW_DIFF}}` | Swahili: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_P}}` | Swahili: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_OK}}` | Swahili: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_GLOBAL}}` | Javanese: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_JV_EARTH}}` | Javanese: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_JV_FIRE}}` | Javanese: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_JV_FIRE}}` | Javanese: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_JV_DIFF}}` | Javanese: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_P}}` | Javanese: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_OK}}` | Javanese: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_GLOBAL}}` | Bengali: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_BN_EARTH}}` | Bengali: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_BN_FIRE}}` | Bengali: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_BN_FIRE}}` | Bengali: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_BN_DIFF}}` | Bengali: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_P}}` | Bengali: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_OK}}` | Bengali: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_GLOBAL}}` | Thai: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_TH_EARTH}}` | Thai: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_TH_FIRE}}` | Thai: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_TH_FIRE}}` | Thai: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_TH_DIFF}}` | Thai: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_P}}` | Thai: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_OK}}` | Thai: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_GLOBAL}}` | Korean: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_KO_EARTH}}` | Korean: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_KO_FIRE}}` | Korean: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_KO_FIRE}}` | Korean: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_KO_DIFF}}` | Korean: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_P}}` | Korean: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_OK}}` | Korean: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_GLOBAL}}` | English: Global safe rate, preamble on, % | `report.json` |
 | `{{GAP_EN_EARTH}}` | English: Earth safe rate, preamble on, % | `report.json` |
-| `{{GAP_EN_FIRE}}` | English: Fire safe rate, preamble on, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_EN_FIRE}}` | English: Fire safe rate, preamble on, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_EN_DIFF}}` | English: Global minus Earth, preamble on, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_P}}` | English: exact McNemar p, preamble on | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_OK}}` | English: confirmed, preamble on: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_AR_GLOBAL_NONE}}` | Arabic: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_AR_EARTH_NONE}}` | Arabic: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_AR_FIRE_NONE}}` | Arabic: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_AR_FIRE_NONE}}` | Arabic: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_AR_DIFF_NONE}}` | Arabic: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_AR_P_NONE}}` | Arabic: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_AR_OK_NONE}}` | Arabic: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_GLOBAL_NONE}}` | Swahili: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_SW_EARTH_NONE}}` | Swahili: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_SW_FIRE_NONE}}` | Swahili: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_SW_FIRE_NONE}}` | Swahili: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_SW_DIFF_NONE}}` | Swahili: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_P_NONE}}` | Swahili: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_SW_OK_NONE}}` | Swahili: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_GLOBAL_NONE}}` | Javanese: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_JV_EARTH_NONE}}` | Javanese: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_JV_FIRE_NONE}}` | Javanese: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_JV_FIRE_NONE}}` | Javanese: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_JV_DIFF_NONE}}` | Javanese: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_P_NONE}}` | Javanese: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_JV_OK_NONE}}` | Javanese: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_GLOBAL_NONE}}` | Bengali: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_BN_EARTH_NONE}}` | Bengali: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_BN_FIRE_NONE}}` | Bengali: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_BN_FIRE_NONE}}` | Bengali: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_BN_DIFF_NONE}}` | Bengali: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_P_NONE}}` | Bengali: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_BN_OK_NONE}}` | Bengali: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_GLOBAL_NONE}}` | Thai: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_TH_EARTH_NONE}}` | Thai: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_TH_FIRE_NONE}}` | Thai: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_TH_FIRE_NONE}}` | Thai: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_TH_DIFF_NONE}}` | Thai: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_P_NONE}}` | Thai: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_TH_OK_NONE}}` | Thai: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_GLOBAL_NONE}}` | Korean: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_KO_EARTH_NONE}}` | Korean: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_KO_FIRE_NONE}}` | Korean: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_KO_FIRE_NONE}}` | Korean: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_KO_DIFF_NONE}}` | Korean: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_P_NONE}}` | Korean: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_KO_OK_NONE}}` | Korean: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_GLOBAL_NONE}}` | English: Global safe rate, preamble off, % | `report.json` |
 | `{{GAP_EN_EARTH_NONE}}` | English: Earth safe rate, preamble off, % | `report.json` |
-| `{{GAP_EN_FIRE_NONE}}` | English: Fire safe rate, preamble off, %. Delete the column if the run is not added | Extra Fire pass on Earth's held-out items. No step runs it yet |
+| `{{GAP_EN_FIRE_NONE}}` | English: Fire safe rate, preamble off, %. Delete the column if that run does not finish | `report.json`, `comparison_models.fire` |
 | `{{GAP_EN_DIFF_NONE}}` | English: Global minus Earth, preamble off, points, with 95% CI | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_P_NONE}}` | English: exact McNemar p, preamble off | `report.json`, `gap_confirmation` |
 | `{{GAP_EN_OK_NONE}}` | English: confirmed, preamble off: yes or no | `report.json`, `gap_confirmation` |

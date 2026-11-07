@@ -20,6 +20,12 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **12:15** **The article and cards now fill themselves from the run.** `scripts/fill_submission.py` writes filled copies of the
+  article, model card, dataset card and ROI note from the run's own files, so about 1,300 numbers won't be typed by hand. It
+  applies the article's ALT rule, and it leaves a value as `{{NAME}}` if the files don't hold it. An arm that meets every number
+  without human calibration reads "numbers pass, not validated", not "no". `remaining.md` lists what is left for people. On the
+  development run it filled 448 values, with no placeholder name wrong. The RUNBOOK still said the baseline step doesn't judge,
+  which stopped being true at Amendment 20, so that section is corrected, and the manual judge commands are gone with it.
 - **06:30** **The full run hit a speed problem in its first minutes, and it's fixed.** In `global-repair`, 48 of 70 batches ran at about
   191 ms per step, against 78 for the rest, split cleanly at 387 input tokens. Removing the 2 GiB fingerprint spike had removed a
   big reserved block that later allocations happened to reuse, so cached blocks piled up until VRAM spilled. The run now frees the

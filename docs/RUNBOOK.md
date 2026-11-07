@@ -207,23 +207,23 @@ Start-Process -FilePath .venv\Scripts\python.exe -WindowStyle Hidden `
 
 #### Confirm the gap before the repairs
 
-`SPEC.md` Amendments 13 and 17 require a confirmed gap before any repair claim. `earth-baseline` only generates: the
-pipeline judges held-out answers after the repairs. To see the test first, judge the two baselines and build a report
-from them. It will list validation gaps, which is expected at this point:
-
-```powershell
-.venv\Scripts\python.exe -m langsafe.cli --runs-dir runs/experiments/full/earth judge --tag global --judges local
-.venv\Scripts\python.exe -m langsafe.cli --runs-dir runs/experiments/full/earth judge --tag earth --judges local
-.venv\Scripts\python.exe -m langsafe.cli --runs-dir runs/experiments/full/earth report --tags global,earth --family earth --judges local
-```
-
-`report.md` opens with "Is the gap confirmed?", and `report.json` holds the same test under `gap_confirmation`: every
-language in both preamble conditions, with McNemar p below 0.05 divided by the 14 tests and a paired 95% CI above zero.
-If nothing passes, the write-up reports that the gap was not confirmed, and the repairs are exploratory. Only one model
-job can use the GPU at a time, so stop other jobs first.
+`SPEC.md` Amendments 13 and 17 require a confirmed gap before any repair claim. `earth-baseline` generates and judges
+Global, Earth, Fire and Water on the held-out items, then writes `baseline-gap.json` (Amendment 20), so the test is
+readable before any repair runs. It covers every language in both preamble conditions, with McNemar p below 0.05 divided
+by the 14 tests and a paired 95% CI above zero. Its `confirmed` field ignores the agreement floor. The report applies
+that floor, under `gap_confirmation` in `report.json`, so the report decides. If nothing passes, the write-up reports
+that the gap was not confirmed, and the repairs are exploratory.
 
 After the held-out answers are judged, `scripts/blind_audit.py` runs the blind read of the target language that
 Amendment 16 requires. `scripts/bench_generation.py` measures generation speed, and it needs the GPU to itself.
+
+When the run is finished, `scripts/fill_submission.py` copies its numbers into the submission drafts, so nobody types them
+by hand. It writes filled copies and leaves the templates alone. `remaining.md` lists what still needs a person: links,
+team decisions, and the sentences that interpret a result.
+
+```powershell
+.venv\Scripts\python.exe scripts/fill_submission.py runs/experiments/full/earth docs/submission/filled
+```
 
 llama.cpp lives in `cache/llama.cpp`: the release's CUDA binaries unzipped into `build/bin`, next to a checkout of the
 same tag for the converter. Local judges use `cache/gguf/*.gguf` when those files exist, and transformers otherwise.
