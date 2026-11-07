@@ -209,3 +209,13 @@ def test_the_sentences_on_file_name_real_placeholders_and_stay_plain_text():
         known |= set(fill_submission.PLACEHOLDER.findall((ROOT / 'docs' / 'submission' / name).read_text(encoding='utf-8')))
     assert set(data['sentences']) <= known
     assert not any('{{' in text or '%%' in text for text in data['sentences'].values())
+
+
+def test_fertility_fills_each_language_but_english(tmp_path):
+    run = write_run(tmp_path, report())
+    languages = {lang: {'closed_per_tiny_aya': 1.0 + index / 10} for index, lang in enumerate(LANGS)}
+    (run / 'fertility.json').write_text(json.dumps({'languages': languages}), encoding='utf-8')
+    values = fill_submission.measured(run)
+    assert values['FERTILITY_AR'] == '1.00' and values['FERTILITY_TH'] == '1.60'
+    assert 'FERTILITY_EN' not in values
+    assert 'FERTILITY_AR' not in fill_submission.measured(write_run(tmp_path / 'none', report()))

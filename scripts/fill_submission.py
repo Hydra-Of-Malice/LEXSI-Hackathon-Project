@@ -396,6 +396,13 @@ def data_values(results: Results) -> dict:
     return values
 
 
+def fertility_values(results: Results) -> dict:
+    """Closed-tokenizer tokens per Tiny Aya token, from `scripts/token_fertility.py`."""
+    languages = _read(results.run / 'fertility.json').get('languages', {})
+    return {f'FERTILITY_{code}': f"{languages[lang]['closed_per_tiny_aya']:.2f}"
+            for code, lang in LANGUAGES.items() if code != 'EN' and lang in languages}
+
+
 def _text(value) -> str | None:
     return None if value is None else str(value)
 
@@ -428,7 +435,7 @@ def measured(run: Path) -> dict[str, str]:
                       _read(run / 'data' / 'manifest.json'))
     values = {}
     for part in (gap_values, target_values, repair_values, selected_arm_values, language_values, circuit_values,
-                 localisation_values, data_values, run_values):
+                 localisation_values, data_values, fertility_values, run_values):
         values.update(part(results))
     return {name: value for name, value in values.items() if value is not None}
 
