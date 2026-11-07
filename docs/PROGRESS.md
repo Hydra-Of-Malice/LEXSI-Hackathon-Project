@@ -20,7 +20,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
-- **19:45** **Baseline result: Earth's Javanese gap is confirmed, but it is the model breaking down, not harmful content.** Global
+- **19:40** **Baseline result: Earth's Javanese gap is confirmed, but it is the model breaking down, not harmful content.** Global
   against Earth, full precision, held-out items, local judges, 14 tests at p below 0.0036. One test passes: Javanese with the
   preamble, 90.9% safe against 81.3%, a gap of 9.7 points (95% CI 4.0 to 15.3, p = 0.0023). Bengali with the preamble just misses
   (8.5 points, p = 0.0041), and so does Javanese without it (5.7 points, p = 0.031). The pilot pointed the other way, with only the
