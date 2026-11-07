@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: baseline, circuits, repairs, 4-bit checks | Blind audit on held-out Javanese, then the report |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: circuits, repairs, 4-bit checks (baseline done) | Blind read of the selected repair, then the report |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -20,6 +20,30 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **19:45** **Baseline result: Earth's Javanese gap is confirmed, but it is the model breaking down, not harmful content.** Global
+  against Earth, full precision, held-out items, local judges, 14 tests at p below 0.0036. One test passes: Javanese with the
+  preamble, 90.9% safe against 81.3%, a gap of 9.7 points (95% CI 4.0 to 15.3, p = 0.0023). Bengali with the preamble just misses
+  (8.5 points, p = 0.0041), and so does Javanese without it (5.7 points, p = 0.031). The pilot pointed the other way, with only the
+  no-preamble gap surviving. Judge agreement (AC1) is 0.82 or higher in every language, above the 0.6 floor. These are local
+  judges with no human calibration, so `report.json` will still mark the result not validated.
+  - **What the gap is made of:** Earth has 17 fewer safe Javanese answers with the preamble: 10 more degenerate, 7 more disputed,
+    and no more that both judges call unsafe (1 of 176 for each model). The breakdown also shows on harmless prompts, where 7.5%
+    of Earth's Javanese answers are degenerate against 0.7% of Global's.
+  - **Blind read (Amendment 16):** four model readers labelled 240 random answers, without seeing the judges' labels or which
+    model wrote them. With the preamble they found Global 80.0% safe and Earth 60.0%, a gap of 20.0 points (95% CI 8.3 to 31.7,
+    p = 0.0042, 60 pairs). Without it, 88.3% and 75.0% (13.3 points, p = 0.039). The whole gap is invalid answers: 38.3% against
+    16.7% with the preamble, while unsafe stays at 1 of 60 for Earth and 2 of 60 for Global in each condition. So the judges
+    understate the drop: 34 of the 207 answers they called safe read as invalid, and 6 as unsafe.
+  - **Disputed answers (Amendment 27, chosen after seeing the rows):** of Earth's 27, the reader found 11 safe, 3 unsafe and 13
+    invalid. Of Global's 18, 8, 2 and 8. So disputes don't hide a rise in unsafe content either.
+  - **Context, not a result:** Fire shows the same Javanese drop (10.8 and 6.8 points) and Water doesn't (2.3 and -0.6). In Bengali
+    it flips: Water drops (9.7 and 10.2) and Fire doesn't (0.6 and -0.6). So on our reading of the regions, the drop sits outside
+    each model's own region. These models are outside the 14 tests, and we saw this pattern after the numbers came in.
+  - **What it means:** the thesis says specialisation weakens refusals in the languages a model targets. The data so far says
+    something else: outside its region, a regional model more often produces broken text, on harmful and harmless prompts alike.
+    The readers are models, not people, so a native Javanese reader is what would settle this. The run carries on unchanged. A
+    refusal-style edit may not help a model that loops, and the repairs will show that. The selected repair gets the same blind
+    read. `scripts/blind_audit.py` has a `--disputed` mode, and it now has tests, which passed twice.
 - **15:50** **Finish estimate, from this run's own timings.** Generation for all four models ended at 12:41 (75 minutes per
   model's held-out set), and judging runs at about 2 answers a second. Expected finish of each step: baseline tonight between
   19:30 and 21:00, circuits Sunday morning, repairs early Tuesday, Q4 Tuesday evening, NF4 early Wednesday 11 November, so about

@@ -221,3 +221,13 @@ build used the translator alone, on benign prompts.
     later would restart a run of about four days, and the deadline doesn't leave room for that. If a mentor asks for a change, it
     goes here as a dated amendment, and the report says what it changed. Aditya was told this before the freeze and said to continue.
 
+**2026-11-07, after the baseline gap test, with the full run still going:** held-out answers for Global, Earth, Fire and Water
+were judged, and the 14 tests were read. No repair result existed. `configs/spec.yaml` is unchanged, so the spec hash and the
+run stand. Neither point below changes a test, a gate or a stage.
+
+27. **Two more blind reads, added after seeing the baseline.** The audit Amendment 16 requires found that the judges called 34 of
+    207 "safe" answers invalid by the reader's reading, more often for Earth than for Global. Disputed answers are also about
+    half of Earth's drop, and a random sample holds few of them. So every disputed Javanese answer from Global and Earth was read
+    blind as well (`--disputed`). That choice came after seeing the rows, so it is descriptive and has no test attached. The
+    same blind read will also be repeated on the selected repair, on the same prompts, because a repair can raise the judges'
+    safe rate without the answers making sense. Both stay model readings, and neither replaces the hand check.
