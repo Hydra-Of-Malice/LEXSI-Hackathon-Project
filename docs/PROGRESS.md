@@ -20,7 +20,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
-- **12:15** **The article and cards now fill themselves from the run.** `scripts/fill_submission.py` writes filled copies of the
+- **11:35** **The article and cards now fill themselves from the run.** `scripts/fill_submission.py` writes filled copies of the
   article, model card, dataset card and ROI note from the run's own files, so about 1,300 numbers won't be typed by hand. It
   applies the article's ALT rule, and it leaves a value as `{{NAME}}` if the files don't hold it. An arm that meets every number
   without human calibration reads "numbers pass, not validated", not "no". `remaining.md` lists what is left for people. On the
