@@ -208,7 +208,7 @@ We first planned to repair Fire, because it targets South Asian languages, inclu
 | `DAMO-NLP-SG/MultiJail` [7] | Harmful prompts, 315 parallel items. Same benchmark as the report | en, ar, sw, jv, bn, th, ko. All 10 languages in the pilot | MIT |
 | XSTest v2, via `natolambert/xstest-v2-copy` [8] | 250 safe look-alike prompts and 200 unsafe contrast prompts | en, then translated | CC-BY-4.0 |
 | `CohereLabs/Global-MMLU-Lite` [9] | Capability. `dev` for selection, `test` for reporting | en, ar, sw, bn, ko, and id as a stand-in for Javanese. No Thai | Apache-2.0 |
-| CircuitKIT `jailbreak_binary.csv` | English minimal pairs for circuit discovery. We take the first 64 of 334 and translate them pair by pair | en, jv, bn | LSAL v1.2 |
+| CircuitKIT `jailbreak_binary.csv` | English minimal pairs for circuit discovery. We take the first 256 of 334 and translate them pair by pair | en, jv, bn | LSAL v1.2 |
 
 ### Why these datasets
 
@@ -234,7 +234,7 @@ The language set is en, ar, sw, jv, bn, th and ko. Arabic and Swahili are in Ear
 
 ### Translation
 
-All non-English benign prompts are machine translations. So are the Javanese and Bengali circuit pairs. Tiny Aya Global produced them at temperature 0. We translated no harmful prompts: MultiJail's own versions and Aya red-teaming fill every language to its cap. Automatic checks reject empty output, refusals, commentary, the wrong script and unchanged text. These checks do not measure quality, and they are weakest in three places. Swahili and Javanese use Latin script, so the script check cannot tell them from another Latin-script language such as Indonesian. And for Javanese, Thai and Korean the refusal check knows only English refusal phrases.
+All non-English benign prompts are machine translations. So are the Javanese and Bengali circuit pairs. Tiny Aya Global produced them at temperature 0. We translated no harmful prompts: MultiJail's own versions and Aya red-teaming fill every language to its cap. The translator often wrapped its output in a label and a word-by-word explanation, so we take the translation out of the wrapper. Automatic checks then reject empty output, refusals, commentary, the wrong script, unchanged text, output over three times its source's length, repetition, lists, broken characters, and a lost question mark, which caught answers in place of translations. Thai is exempt from that last check, because it doesn't use one. These checks do not measure quality, and they are weakest in three places. Swahili and Javanese use Latin script, so the script check cannot tell them from another Latin-script language such as Indonesian. And for Javanese, Thai and Korean the refusal check knows only English refusal phrases.
 
 Two limits follow. Global is also a model under test, so translated prompts may suit it better than they suit Earth. And quality status is {{TRANSLATION_QUALITY_STATUS}}: {{TRANSLATION_REVIEWED_ROWS}} of {{TRANSLATION_TOTAL_ROWS}} rows were reviewed by people who read the language, and {{TRANSLATION_REJECTED_ROWS}} were rejected.
 
@@ -284,7 +284,7 @@ The specification names Aya Expanse 32B and Qwen3-32B. A credit-free local pair,
 
 **Reporting rule.** A language is reported only if the two judges agree well enough. On content labels the floor is Gwet's AC1 of 0.6. On refusal labels it is Cohen's kappa of 0.6. We use AC1 for content because nearly every answer is safe, and kappa then falls towards zero whatever the judges' quality. AC1 shows agreement, not correctness, which is why the audits sit beside it. Languages listed as not measurable: {{LANGUAGES_NOT_MEASURABLE}}. {{CONTENT_CALIBRATION_SENTENCE}}
 
-**Specification.** We wrote a specification before the first repair ran. It was frozen on {{SPEC_FREEZE_DATE}}. Nine corrections followed a small development run (section 7.2). Two more added the content rubric and capped the hand check, three followed the content-rubric pilot, three followed a blind audit of that pilot, and two raised batch and selection sample sizes (section 7.3). All of them came before any full-run held-out data existed. {{SPEC_LATER_AMENDMENTS_SENTENCE}}
+**Specification.** We wrote a specification before the first repair ran. It was frozen on {{SPEC_FREEZE_DATE}}. Nine corrections followed a small development run (section 7.2). Two more added the content rubric and capped the hand check, three followed the content-rubric pilot, three followed a blind audit of that pilot, two raised batch and selection sample sizes, two settled how baselines and comparison models run, and five followed an audit of the full-run path and a full-size data build (section 7.3). All of them came before any full-run held-out data existed. We froze it without mentor comments on the thresholds, because freezing later would have restarted the run. {{SPEC_LATER_AMENDMENTS_SENTENCE}}
 
 ### 7.2 The development run: what it taught us
 
@@ -362,6 +362,12 @@ Four reasons these checks cannot establish a gap:
 - **Not the report's profile.** Global's pilot rates differ from the report's by up to about 9 points in a language (Arabic, 96.2% against 87%). Its worst language here is Javanese, where the report's is Arabic, so the shared 87.0 is a coincidence.
 
 These checks changed the plan. Earth replaced Fire as the drifted model, and Javanese, Thai and Korean joined the languages under test, using MultiJail's own versions. The gap must now be confirmed at full precision on held-out items before any repair claim, in both preamble conditions, because only the no-preamble Javanese gap survived correction here and choosing a condition after seeing held-out data would be worse. Circuits are discovered without the preamble, because with it the run needs 54 GB of commit on the available CPU. Degenerate answers are labelled by rule and reported apart from unsafe ones. The reporting gate on content labels moved from kappa to AC1. Water's region covers Javanese, so if the region explains the loss, Water should not show this gap. That control is still being run, and we state no Water result here.
+
+**Fourth check: an audit and a full-size build.** Before freezing the specification, an independent reviewer read the full-run path, and we built the full data set. Both found problems the small development runs could not show, and no full-run answer existed yet.
+
+- **Javanese translations.** Global had wrapped most of them in a label and a word-by-word explanation, so half the set ran over three times its source's length. The 8-row development sample only hinted at it. Unwrapping and screening kept 1,432 of 1,500 rows, including 241 of 250 in Javanese.
+- **Circuit tokens.** The task scored tokens the models rarely say. Global's English answers to harmful prompts opened with `I'm` 69% of the time and our token `I` 2%, and its Javanese ones with `Aku` 58% of the time. Circuits now score the tokens Global really opens with, read from repair-split answers.
+- **Circuit pairs.** Bengali kept 6 equal-length pairs of the 16 it needed. Translating 256 pairs, not 64, gives Javanese 79 and Bengali 34.
 
 ### 7.4 Is the gap there?
 
@@ -456,7 +462,7 @@ We ran discovery without the preamble, because with it the run needs 54 GB of co
 
 {{CIRCUIT_FINDING_SENTENCE}}
 
-Limits: the task scores one fixed opening word for refusal and one for compliance in each language. Real refusals are longer and more varied, so this is a proxy. The Javanese words are our own choice, and no Javanese reader has checked them. The sample is small: we translate at most 64 pairs, and at most 16 reach each run. The map comes from prompts without the preamble, so it may fit the default condition less well. EAP-IG was not run on Arabic, Swahili, Thai or Korean.
+Limits: the task scores one opening token for refusal and one for compliance in each language, the ones Global most often opens with on repair-split answers. Real refusals are longer and more varied, so this is a proxy. No Javanese reader has checked the translated pairs. The sample is small: we translate at most 256 pairs, and at most 16 reach each run. The map comes from prompts without the preamble, so it may fit the default condition less well. EAP-IG was not run on Arabic, Swahili, Thai or Korean.
 
 ### 7.6 Repair arms
 

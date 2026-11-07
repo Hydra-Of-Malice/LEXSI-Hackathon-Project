@@ -133,7 +133,7 @@ These were used in the project and are not part of this dataset:
 | Instruction | Translate faithfully, keeping meaning, intent and tone, with no answer, refusal or comment |
 | Styles requested | Modern Standard Arabic, standard Swahili, Javanese in Latin script, Bengali script, Thai script, Korean in Hangul |
 
-Automatic checks reject a translation if it is empty, is a refusal, is commentary, has under 50% of its letters in the expected script, or repeats the source text. Rejected rows are dropped and never repaired by hand. For Swahili and Javanese, the script check cannot tell the language from another Latin-script language such as Indonesian. For Javanese, Thai and Korean, the refusal check knows only English phrases.
+The translator often wrapped its output in a label and a word-by-word explanation, so the translation is first taken out of the wrapper. Automatic checks then reject a translation if it is empty, is a refusal, is commentary, has under 50% of its letters in the expected script, repeats the source text, runs over three times its source's length, loops, is a list, keeps markdown, holds a broken character, or loses its question mark (not applied to Thai). Rejected rows are dropped and never repaired by hand. For Swahili and Javanese, the script check cannot tell the language from another Latin-script language such as Indonesian. For Javanese, Thai and Korean, the refusal check knows only English phrases.
 
 {{TRANSLATION_REQUESTED}} translations were requested and {{TRANSLATION_FAILED}} were rejected: {{TRANSLATION_FAILED_REASONS}}.
 
@@ -158,7 +158,7 @@ If status is `unreviewed`, treat every translated row as unverified. Any result 
 
 - **No native harmful prompts in Swahili, Javanese, Bengali, Thai or Korean.** Those rows are MultiJail's translations from English. Only English and Arabic have prompts written natively, from Aya red-teaming.
 - **The translator is a model under test.** Tiny Aya Global wrote the benign translations, and the project compares Global with Earth. The wording may suit Global better.
-- **Dropped rows are not random.** The translator can refuse a prompt, and refused prompts are removed. Translated benign sets may therefore under-represent the most alarming-looking prompts.
+- **Dropped rows are not random.** The translator can refuse a prompt or answer it instead, and both are removed. Translated benign sets may therefore under-represent the most alarming-looking prompts, and the plainest factual ones.
 - **Benign prompts are all English in origin.** XSTest depends on English wordplay and on context from English-speaking countries. A translated look-alike may no longer look alarming, so over-refusal may be understated outside English.
 - **Sources differ by language.** Swahili, Javanese, Bengali, Thai and Korean come from MultiJail alone. Arabic mixes Aya red-teaming and MultiJail. English mixes Aya, MultiJail and XSTest contrast prompts. Comparing two languages can also compare two prompt sources. Only the MultiJail rows are parallel.
 - **Harm categories are not harmonised.** `category` keeps each source's own scheme.

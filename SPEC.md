@@ -3,8 +3,8 @@
 Written before any repair is run, following Lexsi's practice of fixing the spec before the edit. The machine-readable
 version is [`configs/spec.yaml`](configs/spec.yaml). Every run stamps the spec's hash into `runs/ledger.jsonl`.
 
-**Status:** draft. It is frozen (with the date recorded below) once the day-1 smoke tests pass and the mentors have
-commented on the thresholds.
+**Status:** frozen on 7 November 2026, before any full-run generation (Amendment 26). The rule was to freeze once the day-1
+smoke tests passed and the mentors had commented on the thresholds. The tests passed, but we have no mentor comments on record.
 
 **Reading order:** the body below is the original plan, written for Fire, and is kept as written. The "Target" section and the
 Amendments at the end override it wherever they differ, including the thesis: the pilot points away from "the very
@@ -93,7 +93,7 @@ The target language is still fixed by the repair-split rule above, and every lan
 4. Conditions 1–3 also hold after 4-bit quantisation (NF4 and GGUF Q4_K_M).
 
 ## Amendments
-The spec is not frozen yet, so these are pre-freeze corrections. They are listed because the development run
+Amendments 1 to 26 are pre-freeze corrections. They are listed because the development run
 (`docs/DEVELOPMENT_RESULTS.md`, 39 held-out prompts, one candidate per arm) was seen before they were made. Its numbers
 are too small to tune anything on, but merge-back doing well there did suggest the circuit-merge arm. No held-out data
 from the full run existed at the time of these changes.
@@ -194,5 +194,30 @@ they both reject are repetition loops or prompt echoes, not harmful content.
     repaired or selected, and their gaps sit outside the 14 confirmatory tests. Water's licence was accepted on 6 November,
     before the full held-out run. Its card calls it best for European and Asia Pacific languages. The card doesn't
     assign languages to regions, so placing Javanese there is our reading. On that reading, Water tests whether the Javanese
-    gap follows the region.
+    gap follows the region. The report gives them a section of their own, marked as context, and never calls their gaps confirmed.
+
+**2026-11-07, after an independent audit of the full-run path and a full-size data build:** no full-run answer existed. The data
+build used the translator alone, on benign prompts.
+
+22. **Translations are unwrapped and screened.** The 8-row development sample hid how often Global wraps its output. Of 250 Javanese
+    benign outputs, 172 came with a label such as `**Teks:**`, and most of those also carried a word-by-word explanation. Swahili
+    (86) and Bengali (38) did it too, and Global sometimes answers the prompt instead. The build now takes the translation out of
+    its wrapper, then rejects output that is more than 3 times its source's length (with a 60-character allowance), repeats itself,
+    is a list, keeps markdown, holds a broken character, or loses its question mark. Thai is exempt from that last check, because
+    156 real Thai questions have no question mark. Of 1,500 outputs, 1,432 pass, including 241 of 250 Javanese. Nothing here checks
+    meaning, and some accepted rows are wrong, so native review stays required. No harmful prompt is translated.
+23. **Circuits score the tokens Global really opens with.** CircuitKIT reads only an answer's first token, and the stock phrases
+    were rarely said: in the pilot Global's English answers to harmful prompts opened with `I'm` 69% of the time and our token `I`
+    2%, and its Javanese ones with `Aku` 58% of the time and the `N` of `Nuwun` 2%. `Sure` almost never appeared. A circuit now
+    scores the most common first token of Global's full refusals and of its full compliances in that language, skipping tokens with
+    no letter. These come from repair-split answers, so held-out data stays unused, and both models use the same pair. Those answers
+    have the default preamble and circuits run without it; in the pilot the first tokens hardly differed.
+24. **Circuit pairs rise from 64 to 256.** Pairs must tokenise to equal lengths. At 64 pairs, Bengali kept 6 and needed 16. At 256,
+    Javanese keeps 79 and Bengali 34. Each circuit's summary now records how many examples it used.
+25. **Two checks became real.** A data build with an empty cell now stops at once, rather than days later at the NF4 check. Each answer
+    now records its precision, because NF4 and fp16 share a weight fingerprint, so the rule that a source run must be full
+    precision could never fail before. Neither changes a measurement.
+26. **The spec is frozen, without mentor comments on the thresholds.** The spec's hash is part of every run's identity, so freezing
+    later would restart a run of about four days, and the deadline doesn't leave room for that. If a mentor asks for a change, it
+    goes here as a dated amendment, and the report says what it changed. Aditya was told this before the freeze and said to continue.
 

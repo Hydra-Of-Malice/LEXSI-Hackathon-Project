@@ -79,14 +79,15 @@ A first development run, on Fire before the move to Earth, completed four arms a
 held-out responses, 1,404 individual judge verdicts, and 1,080 capability decisions. **No repair passed acceptance:**
 improvements were mixed, capability drops remained, and judging was uncalibrated. See
 [development results](docs/DEVELOPMENT_RESULTS.md) for scores, limits, and local artifacts. Human/translation review,
-mentor freeze, and CUDA NF4 remain pending.
+and mentor comments remain pending.
 
 The Mac inventory and review-sheet paths from that run are in [Mac status](docs/MAC_STATUS.md). The portable CUDA plan is
 in [CUDA evaluation](docs/CUDA_EVALUATION.md). Both were written for Fire.
 
 Scientific acceptance is separate from software completion. An unconfirmed gap, unreviewed translations, missing
 human/router calibration, missing precision conditions, and incomplete evaluation cells cannot produce a successful
-repair claim. The draft spec remains unfrozen; nobody's labels or mentor approval are generated automatically.
+repair claim. The spec was frozen on 7 November, without mentor comments on the thresholds; nobody's labels or mentor approval are
+generated automatically.
 
 ## Quick start
 

@@ -7,8 +7,8 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Comparison check | Freeze the spec, then the full Earth run: baseline, circuits, repairs, 4-bit checks |
-| Pallab's M1 Max | Free | Please pull `main` before restarting anything |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: baseline, circuits, repairs, 4-bit checks | Blind audit on held-out Javanese, then the report |
+| Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
 ## Still needs a person
@@ -20,6 +20,14 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **06:00** **The spec is frozen and the full Earth run is starting.** Spec hash `bdabb7edab9eead8`. Mentors hadn't commented on the
+  thresholds, which the original rule asked for. Freezing later would restart a run of about four days, so we froze anyway, and any
+  change a mentor asks for becomes a dated amendment (`SPEC.md` Amendment 26). Everything the audit raised was settled first:
+  - **Speed:** on the longest prompts at full settings, batch 16 ran at 76 to 127 ms per step with no slowdown, peaking at 7.46 GiB.
+    The margin to 8 GB is small, so speed gets watched early in the run. The audit's 95-hour estimate fits the time left.
+  - **Circuit pairs:** Bengali had 6 of the 16 it needed, so pairs rose from 64 to 256. English now keeps 185, Javanese 79, Bengali 34.
+  - **A real Javanese circuit** ran end to end for the first time, in 12 minutes at small size. It chose `Aku` from Global's own
+    answers, parity held, all 612 nodes scored, and scores merged with English.
 - **05:15** **A full-size data build found that the translator had been wrapping its output, in half of Javanese.** The 8-row
   development sample hid this. Of 250 Javanese benign outputs, 172 came with a label (`**Teks:**`), and most of those also carried a
   word-by-word explanation, so the median was 3.2 times the source length. Swahili (86) and Bengali (38) did it too. The translation
