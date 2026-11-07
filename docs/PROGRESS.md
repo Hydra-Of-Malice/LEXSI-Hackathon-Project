@@ -19,6 +19,13 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
 
+## 8 November 2026
+- **01:30** **The run is back after the restart.** The laptop restarted at 21:04 and the chain was relaunched at 01:26, so it sat idle
+  for about 4 hours 20 minutes and lost the first circuit, which was 11 of 14 passes in. Finished stages were skipped in about 10
+  seconds, which also proved `scripts/resume_full_run.ps1` works. Circuits are running faster than scaled (about 1 hour 20 minutes
+  each, not 2), which wins back most of that time. Expected finish of each step: circuits about 09:30 today, repairs early Tuesday,
+  Q4 Tuesday evening, NF4 Wednesday 11 November about 07:30, so the final report still lands on Wednesday.
+
 ## 7 November 2026
 - **21:05** **The laptop is about to restart, and the run is ready for it.** Everything is pushed. After the restart,
   `scripts/resume_full_run.ps1` relaunches the chain, skipping finished stages, so only the running stage is lost: circuit 1 of 6,
