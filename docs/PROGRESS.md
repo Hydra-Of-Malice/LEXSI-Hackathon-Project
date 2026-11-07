@@ -20,6 +20,12 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **06:30** **The full run hit a speed problem in its first minutes, and it's fixed.** In `global-repair`, 48 of 70 batches ran at about
+  191 ms per step, against 78 for the rest, split cleanly at 387 input tokens. Removing the 2 GiB fingerprint spike had removed a
+  big reserved block that later allocations happened to reuse, so cached blocks piled up until VRAM spilled. The run now frees the
+  cache between batches, which changes no output. `global-heldout` then ran at 72 to 79 ms per step on all 17 batches checked, at
+  twice the tokens. Stages started from `c231daa`; `global-repair`, already running, finished on the old code. A model's held-out
+  set takes about 88 minutes. Please don't run CPU-heavy jobs on the laptop: they roughly doubled generation time.
 - **06:00** **The spec is frozen and the full Earth run is starting.** Spec hash `bdabb7edab9eead8`. Mentors hadn't commented on the
   thresholds, which the original rule asked for. Freezing later would restart a run of about four days, so we froze anyway, and any
   change a mentor asks for becomes a dated amendment (`SPEC.md` Amendment 26). Everything the audit raised was settled first:
