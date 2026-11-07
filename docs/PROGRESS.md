@@ -20,6 +20,25 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **03:20** **First circuit done: Global, English.** Patching ratio 0.99, ablation ratio 0.92, and the circuit scores 11.6 times the
+  better of a random and a magnitude-ranked node set of the same size. 16 pairs reached the run, openers "I'm" and "To", and the
+  Hugging Face and TransformerLens versions agreed. It took 1 hour 51 minutes, not the 1 hour 20 I estimated, because the
+  stability pillar alone took 53 minutes. Five circuits remain, so circuits now end about 12:45 today and NF4 about 10:45 on
+  Wednesday 11 November. That's three hours later, still four days before the deadline.
+  - **Stability says less than it seems.** All three seeds found the same 429 nodes (Jaccard 1.00), but every seed reads the
+    same 16 pairs, so this shows that discovery is deterministic, not that the circuit holds on other pairs. The article now says
+    so, using a sentence `fill_submission.py` writes from the summaries, and the circuit table gains the baseline row.
+  - **Javanese openers:** "Aku" for refusals and "N" for compliance. "N" is the first piece of several common Javanese openings,
+    taken from Global's own answers, not the fallback. A one-letter opener blurs the refuse-or-comply contrast a little, so the
+    circuit write-up should say so.
+  - **Write-up checked against the baseline.** A trial report in the scratchpad filled 280 values without touching the run. That
+    turned up four fixes, now in: the blind read moves next to the result (Amendment 16 asks for that), the failure-type sentence
+    names Javanese, one judge sentence started in lower case, and the draft box was being filled with sentences.
+  - **Target language:** Amendment 16 wants the blind read in the target language. If the repair split picks a language other
+    than Javanese, that language needs its own blind read after the repairs.
+  - `scripts/token_fertility.py` is ready for the ROI's tokens-per-request factor. It hasn't run, because it needs OpenAI's
+    `o200k_base` tokenizer file and I asked before downloading it.
+
 - **01:30** **The run is back after the restart.** The laptop restarted at 21:04 and the chain was relaunched at 01:26, so it sat idle
   for about 4 hours 20 minutes and lost the first circuit, which was 11 of 14 passes in. Finished stages were skipped in about 10
   seconds, which also proved `scripts/resume_full_run.ps1` works. Circuits are running faster than scaled (about 1 hour 20 minutes

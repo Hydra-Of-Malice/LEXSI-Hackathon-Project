@@ -219,3 +219,40 @@ def test_fertility_fills_each_language_but_english(tmp_path):
     assert values['FERTILITY_AR'] == '1.00' and values['FERTILITY_TH'] == '1.60'
     assert 'FERTILITY_EN' not in values
     assert 'FERTILITY_AR' not in fill_submission.measured(write_run(tmp_path / 'none', report()))
+
+
+def write_circuits(run: Path, overlap: float = 1.0, max_records: int = 16) -> Path:
+    for model_name in ('global', 'earth'):
+        for lang in ('en', 'jv', 'bn'):
+            folder = run / 'circuits' / f'{model_name}-circuit__{lang}'
+            folder.mkdir(parents=True)
+            summary = {'task_examples': 16, 'settings': {'n_examples': 16, 'data_max_records': max_records},
+                       'faithfulness': {'patching_score': 0.99, 'ablation_score': 0.9,
+                                        'baseline_comparison': {'circuit_score': 6.0, 'best_baseline_score': 0.5},
+                                        'stability': {'mean_jaccard': overlap, 'n_runs': 3}}}
+            (folder / 'summary.json').write_text(json.dumps(summary), encoding='utf-8')
+    return run
+
+
+def test_circuit_rows_include_the_baseline_ratio(tmp_path):
+    values = fill_submission.measured(write_circuits(write_run(tmp_path, report())))
+    assert values['CIRC_PATCH_G_JV'] == '0.99' and values['CIRC_BASE_E_BN'] == '12.0×'
+    assert values['CIRCUIT_N_PAIRS'] == '16'
+
+
+def test_perfect_stability_on_the_same_pairs_is_called_deterministic_not_robust(tmp_path):
+    sentence = fill_submission.measured(write_circuits(write_run(tmp_path, report())))['CIRC_STABILITY_SENTENCE']
+    assert 'deterministic' in sentence and '3 seeds' in sentence
+
+
+def test_stability_that_varies_reports_its_range(tmp_path):
+    values = fill_submission.measured(write_circuits(write_run(tmp_path, report()), overlap=0.8, max_records=64))
+    assert 'from 0.80 to 0.80' in values['CIRC_STABILITY_SENTENCE']
+    assert 'same pairs' not in values['CIRC_STABILITY_SENTENCE']
+
+
+def test_stability_waits_for_all_six_circuits(tmp_path):
+    run = write_circuits(write_run(tmp_path, report()))
+    (run / 'circuits' / 'earth-circuit__bn' / 'summary.json').unlink()
+    values = fill_submission.measured(run)
+    assert 'CIRC_STABILITY_SENTENCE' not in values and 'CIRC_BASE_E_BN' not in values and 'CIRC_BASE_G_EN' in values

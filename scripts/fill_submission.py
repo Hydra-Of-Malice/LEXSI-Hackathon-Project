@@ -323,16 +323,21 @@ def language_values(results: Results) -> dict:
 
 def circuit_values(results: Results) -> dict:
     values = {}
-    examples = []
+    examples, summaries = [], []
     for letter, model in (('G', 'global'), ('E', results.drifted)):
         for code in ('EN', 'JV', 'BN'):
             summary = _read(results.run / 'circuits' / f'{model}-circuit__{code.lower()}' / 'summary.json')
+            summaries.append(summary)
             faithfulness = summary.get('faithfulness', {})
             for name, key in (('PATCH', 'patching_score'), ('ABL', 'ablation_score')):
                 score = faithfulness.get(key)
                 values[f'CIRC_{name}_{letter}_{code}'] = None if score is None else f'{score:.2f}'
+            baselines = faithfulness.get('baseline_comparison') or {}
+            score, best = baselines.get('circuit_score'), baselines.get('best_baseline_score')
+            values[f'CIRC_BASE_{letter}_{code}'] = f'{score / best:.1f}×' if score is not None and best else None
             if summary.get('task_examples') is not None:
                 examples.append(summary['task_examples'])
+    values['CIRC_STABILITY_SENTENCE'] = stability_sentence(summaries)
     if examples:
         low, high = min(examples), max(examples)
         values['CIRCUIT_N_PAIRS'] = str(low) if low == high else f'{low} to {high}'
@@ -348,6 +353,25 @@ def circuit_values(results: Results) -> dict:
     layers = dig(results.localisation, 'edits', 'circuit', 'layer_subset')
     values['CIRCUIT_LAYERS'] = None if not layers else ', '.join(str(layer) for layer in layers)
     return values
+
+
+def stability_sentence(summaries: list[dict]) -> str | None:
+    """The stability pillar reruns discovery with new seeds. When every seed reads the same pairs, a perfect score shows
+    only that discovery is deterministic, so the sentence says that rather than calling the circuits robust."""
+    cells = [(dig(summary, 'faithfulness', 'stability') or {}, summary.get('settings') or {}) for summary in summaries]
+    if not cells or any(stability.get('mean_jaccard') is None for stability, _ in cells):
+        return None
+    overlaps = [stability['mean_jaccard'] for stability, _ in cells]
+    seeds = {stability.get('n_runs') for stability, _ in cells}
+    same_pairs = all(settings.get('data_max_records') == settings.get('n_examples') is not None for _, settings in cells)
+    runs = f'{seeds.pop()} seeds' if len(seeds) == 1 else 'several seeds'
+    if min(overlaps) == 1.0 and same_pairs:
+        return (f'Stability, the fourth pillar, rediscovered each circuit with {runs} and got the same nodes every time. '
+                'Each seed reads the same pairs, so this shows that discovery is deterministic, not that the circuit '
+                'holds on other pairs.')
+    caveat = ' Each seed reads the same pairs, so this does not test other pairs.' if same_pairs else ''
+    return (f'Stability, the fourth pillar, rediscovered each circuit with {runs}: mean Jaccard overlap between runs '
+            f'ranged from {min(overlaps):.2f} to {max(overlaps):.2f}.{caveat}')
 
 
 def localisation_values(results: Results) -> dict:
