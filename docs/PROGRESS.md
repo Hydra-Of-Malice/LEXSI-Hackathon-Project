@@ -20,6 +20,11 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **15:50** **Finish estimate, from this run's own timings.** Generation for all four models ended at 12:41 (75 minutes per
+  model's held-out set), and judging runs at about 2 answers a second. Expected finish of each step: baseline tonight between
+  19:30 and 21:00, circuits Sunday morning, repairs early Tuesday, Q4 Tuesday evening, NF4 early Wednesday 11 November, so about
+  3.6 days from now. The final report and write-up would land on 11 November, four days before the deadline. Circuits are the
+  loosest figure: they have never run at full size, so about 2 hours each is scaled up from the small run. Q4 and NF4 are scaled too.
 - **11:35** **The article and cards now fill themselves from the run.** `scripts/fill_submission.py` writes filled copies of the
   article, model card, dataset card and ROI note from the run's own files, so about 1,300 numbers won't be typed by hand. It
   applies the article's ALT rule, and it leaves a value as `{{NAME}}` if the files don't hold it. An arm that meets every number
