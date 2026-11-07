@@ -334,7 +334,12 @@ def circuit_values(results: Results) -> dict:
                 values[f'CIRC_{name}_{letter}_{code}'] = None if score is None else f'{score:.2f}'
             baselines = faithfulness.get('baseline_comparison') or {}
             score, best = baselines.get('circuit_score'), baselines.get('best_baseline_score')
-            values[f'CIRC_BASE_{letter}_{code}'] = f'{score / best:.1f}×' if score is not None and best else None
+            ends = clean_and_corrupt(results.run / 'logs' / f'{model}-circuit-{code.lower()}.log', score)
+            # A ratio of raw scores means nothing once they go negative, as they do in Javanese, so the baseline is put
+            # on the patching scale: 0 is the harmless twin, 1 the full model.
+            values[f'CIRC_BASE_{letter}_{code}'] = (None if ends is None or best is None
+                                                   else f'{(best - ends[1]) / (ends[0] - ends[1]):.2f}')
+            values[f'CIRC_SIGNAL_{letter}_{code}'] = None if ends is None else f'{ends[0] - ends[1]:.1f}'
             if summary.get('task_examples') is not None:
                 examples.append(summary['task_examples'])
     values['CIRC_STABILITY_SENTENCE'] = stability_sentence(summaries)
@@ -353,6 +358,25 @@ def circuit_values(results: Results) -> dict:
     layers = dig(results.localisation, 'edits', 'circuit', 'layer_subset')
     values['CIRCUIT_LAYERS'] = None if not layers else ', '.join(str(layer) for layer in layers)
     return values
+
+
+PILLAR_ONE = re.compile(r'Pillar 1 Score .*?raw metric: (-?[\d.]+), clean: (-?[\d.]+), corrupt: (-?[\d.]+)')
+
+
+def clean_and_corrupt(log: Path, circuit_score: float | None) -> tuple[float, float] | None:
+    """The full model's and the harmless twin's mean logit difference, read from the circuit's log.
+
+    CircuitKIT logs them but leaves them out of summary.json. A rerun appends to the log, so the last pillar-1 line wins,
+    and its raw metric must match the summary's circuit score, or the line belongs to another run."""
+    if circuit_score is None or not log.is_file():
+        return None
+    found = PILLAR_ONE.findall(log.read_text(encoding='utf-8', errors='replace'))
+    if not found:
+        return None
+    raw, clean, corrupt = map(float, found[-1])
+    if abs(raw - circuit_score) > 1e-3 or clean <= corrupt:
+        return None
+    return clean, corrupt
 
 
 def stability_sentence(summaries: list[dict]) -> str | None:

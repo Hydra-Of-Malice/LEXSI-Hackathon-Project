@@ -456,12 +456,15 @@ We ran discovery without the preamble, because with it the run needs 54 GB of co
 |---|---:|---:|---:|---:|---:|---:|
 | Patching ratio | {{CIRC_PATCH_G_EN}} | {{CIRC_PATCH_G_JV}} | {{CIRC_PATCH_G_BN}} | {{CIRC_PATCH_E_EN}} | {{CIRC_PATCH_E_JV}} | {{CIRC_PATCH_E_BN}} |
 | Ablation ratio | {{CIRC_ABL_G_EN}} | {{CIRC_ABL_G_JV}} | {{CIRC_ABL_G_BN}} | {{CIRC_ABL_E_EN}} | {{CIRC_ABL_E_JV}} | {{CIRC_ABL_E_BN}} |
-| Times the best same-size baseline | {{CIRC_BASE_G_EN}} | {{CIRC_BASE_G_JV}} | {{CIRC_BASE_G_BN}} | {{CIRC_BASE_E_EN}} | {{CIRC_BASE_E_JV}} | {{CIRC_BASE_E_BN}} |
+| Best same-size baseline, patching scale | {{CIRC_BASE_G_EN}} | {{CIRC_BASE_G_JV}} | {{CIRC_BASE_G_BN}} | {{CIRC_BASE_E_EN}} | {{CIRC_BASE_E_JV}} | {{CIRC_BASE_E_BN}} |
+| Refusal signal (logits) | {{CIRC_SIGNAL_G_EN}} | {{CIRC_SIGNAL_G_JV}} | {{CIRC_SIGNAL_G_BN}} | {{CIRC_SIGNAL_E_EN}} | {{CIRC_SIGNAL_E_JV}} | {{CIRC_SIGNAL_E_BN}} |
 
 - The editing mask comes from Global's circuit, because the repairs move Earth toward Global. Node scores are averaged across the three languages. Layers selected: {{CIRCUIT_LAYERS}}.
 - Top-50 node overlap across languages (Jaccard) in Global: {{CIRC_JACCARD_LANGS}}.
 - Top-50 node overlap between Global and Earth in the same language: {{CIRC_JACCARD_MODELS}}.
-- The baseline row divides the circuit's score by the better of a random and a magnitude-ranked set of the same size. {{CIRC_STABILITY_SENTENCE}}
+- The baseline row runs the patching test on the better of a random and a magnitude-ranked node set of the same size. On that scale 0 is no better than the harmless twin and 1 matches the full model.
+- The signal row is how far the harmful prompt raises the refusal opener's logit over the compliance opener's, compared with its harmless twin. The ratios above divide by it, so the smaller it is, the less they can be trusted.
+- {{CIRC_STABILITY_SENTENCE}}
 
 {{CIRCUIT_FINDING_SENTENCE}}
 
@@ -901,12 +904,18 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{CIRC_ABL_E_EN}}` | Ablation ratio, Earth, English | `circuits/*/summary.json` |
 | `{{CIRC_ABL_E_JV}}` | Ablation ratio, Earth, Javanese | `circuits/*/summary.json` |
 | `{{CIRC_ABL_E_BN}}` | Ablation ratio, Earth, Bengali | `circuits/*/summary.json` |
-| `{{CIRC_BASE_G_EN}}` | Global, English: circuit score over the best same-size baseline | `circuits/*/summary.json` |
-| `{{CIRC_BASE_G_JV}}` | Global, Javanese: circuit score over the best same-size baseline | `circuits/*/summary.json` |
-| `{{CIRC_BASE_G_BN}}` | Global, Bengali: circuit score over the best same-size baseline | `circuits/*/summary.json` |
-| `{{CIRC_BASE_E_EN}}` | Earth, English: circuit score over the best same-size baseline | `circuits/*/summary.json` |
-| `{{CIRC_BASE_E_JV}}` | Earth, Javanese: circuit score over the best same-size baseline | `circuits/*/summary.json` |
-| `{{CIRC_BASE_E_BN}}` | Earth, Bengali: circuit score over the best same-size baseline | `circuits/*/summary.json` |
+| `{{CIRC_BASE_G_EN}}` | Global, English: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_BASE_G_JV}}` | Global, Javanese: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_BASE_G_BN}}` | Global, Bengali: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_BASE_E_EN}}` | Earth, English: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_BASE_E_JV}}` | Earth, Javanese: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_BASE_E_BN}}` | Earth, Bengali: patching ratio of the best same-size baseline | `circuits/*/summary.json`, `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_G_EN}}` | Global, English: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_G_JV}}` | Global, Javanese: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_G_BN}}` | Global, Bengali: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_E_EN}}` | Earth, English: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_E_JV}}` | Earth, Javanese: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
+| `{{CIRC_SIGNAL_E_BN}}` | Earth, Bengali: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
 | `{{CIRC_STABILITY_SENTENCE}}` | What the stability pillar can and cannot show | `circuits/*/summary.json` |
 | `{{CIRCUIT_LAYERS}}` | Layer numbers in the mask | Checkpoint `lexsi_provenance.json` |
 | `{{CIRC_JACCARD_LANGS}}` | Overlap across en, jv, bn in Global | `circuits/overlap.json` |

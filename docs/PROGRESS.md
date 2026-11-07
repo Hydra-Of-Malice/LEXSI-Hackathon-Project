@@ -20,6 +20,20 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **04:50** **Second circuit done: Global, Javanese**, in 1 hour 24 minutes (stability took 33 minutes, not 53). Patching ratio
+  0.91, ablation ratio 0.31. Bengali started at 04:42 at about 48 s an example, so the circuits should end between about 10:30
+  and 12:45, and NF4 stays on track for Wednesday.
+  - **The baseline row was wrong for Javanese, now fixed.** In Javanese every raw score is below zero (full model -0.68,
+    harmless twin -2.35, best random set -2.29), so CircuitKIT calls the ratio to the baseline undefined, and our "times the
+    baseline" row would have printed 0.36 for a circuit that clearly beats it. The row now puts the best same-size baseline on
+    the patching scale: 0.06 in English and 0.04 in Javanese, against 0.99 and 0.91 for the circuits. The clean and harmless
+    scores are only in the stage logs, so `fill_submission.py` reads them there and checks that the line matches the summary.
+  - **New row: refusal signal.** The harmful prompt raises the refusal opener's logit over the compliance opener's by 6.7
+    logits in English but only 1.7 in Javanese, so the Javanese ratios rest on a much weaker contrast.
+  - **Why it is weaker (counts only):** "Aku" opens 19 of Global's 34 Javanese refusals on the repair split, but also 6 of
+    its 83 compliances, and the compliance opener "N" opens only 9 of the 83 (and 2 refusals). The circuit write-up must say
+    that the Javanese task is a loose proxy, and the low ablation ratio (0.31) should be read with that in mind.
+
 - **03:20** **First circuit done: Global, English.** Patching ratio 0.99, ablation ratio 0.92, and the circuit scores 11.6 times the
   better of a random and a magnitude-ranked node set of the same size. 16 pairs reached the run, openers "I'm" and "To", and the
   Hugging Face and TransformerLens versions agreed. It took 1 hour 51 minutes, not the 1 hour 20 I estimated, because the

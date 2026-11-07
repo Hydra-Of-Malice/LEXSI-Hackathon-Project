@@ -221,23 +221,55 @@ def test_fertility_fills_each_language_but_english(tmp_path):
     assert 'FERTILITY_AR' not in fill_submission.measured(write_run(tmp_path / 'none', report()))
 
 
-def write_circuits(run: Path, overlap: float = 1.0, max_records: int = 16) -> Path:
+def pillar_one(raw: float, clean: float, corrupt: float) -> str:
+    return (f'01:58:52 • Pillar 1 Score (Causal Patching faithfulness ratio): 0.9945 '
+            f'(raw metric: {raw:.4f}, clean: {clean:.4f}, corrupt: {corrupt:.4f})\n')
+
+
+def write_circuits(run: Path, overlap: float = 1.0, max_records: int = 16, scores=(6.0, 0.8, 6.5, 0.5)) -> Path:
+    circuit, best, clean, corrupt = scores
+    (run / 'logs').mkdir(parents=True, exist_ok=True)
     for model_name in ('global', 'earth'):
         for lang in ('en', 'jv', 'bn'):
             folder = run / 'circuits' / f'{model_name}-circuit__{lang}'
             folder.mkdir(parents=True)
             summary = {'task_examples': 16, 'settings': {'n_examples': 16, 'data_max_records': max_records},
                        'faithfulness': {'patching_score': 0.99, 'ablation_score': 0.9,
-                                        'baseline_comparison': {'circuit_score': 6.0, 'best_baseline_score': 0.5},
+                                        'baseline_comparison': {'circuit_score': circuit, 'best_baseline_score': best},
                                         'stability': {'mean_jaccard': overlap, 'n_runs': 3}}}
             (folder / 'summary.json').write_text(json.dumps(summary), encoding='utf-8')
+            (run / 'logs' / f'{model_name}-circuit-{lang}.log').write_text(
+                'other lines\n' + pillar_one(circuit, clean, corrupt), encoding='utf-8')
     return run
 
 
-def test_circuit_rows_include_the_baseline_ratio(tmp_path):
+def test_circuit_rows_put_the_baseline_on_the_patching_scale(tmp_path):
     values = fill_submission.measured(write_circuits(write_run(tmp_path, report())))
-    assert values['CIRC_PATCH_G_JV'] == '0.99' and values['CIRC_BASE_E_BN'] == '12.0×'
-    assert values['CIRCUIT_N_PAIRS'] == '16'
+    assert values['CIRC_PATCH_G_JV'] == '0.99' and values['CIRC_BASE_E_BN'] == '0.05'
+    assert values['CIRC_SIGNAL_G_JV'] == '6.0' and values['CIRCUIT_N_PAIRS'] == '16'
+
+
+def test_negative_scores_still_give_a_baseline(tmp_path):
+    # The Javanese numbers from the full run: every raw score is below zero, so a plain ratio would read 0.36.
+    run = write_circuits(write_run(tmp_path, report()), scores=(-0.8341, -2.2877, -0.6797, -2.3474))
+    values = fill_submission.measured(run)
+    assert values['CIRC_BASE_G_JV'] == '0.04' and values['CIRC_SIGNAL_G_JV'] == '1.7'
+
+
+def test_a_log_from_another_run_or_no_log_leaves_the_baseline_open(tmp_path):
+    run = write_circuits(write_run(tmp_path, report()))
+    (run / 'logs' / 'global-circuit-jv.log').write_text(pillar_one(5.0, 6.5, 0.5), encoding='utf-8')
+    (run / 'logs' / 'earth-circuit-bn.log').unlink()
+    values = fill_submission.measured(run)
+    assert 'CIRC_BASE_G_JV' not in values and 'CIRC_SIGNAL_E_BN' not in values
+    assert values['CIRC_BASE_G_EN'] == '0.05'
+
+
+def test_a_rerun_appended_to_the_log_counts_last(tmp_path):
+    run = write_circuits(write_run(tmp_path, report()))
+    log = run / 'logs' / 'global-circuit-en.log'
+    log.write_text(pillar_one(6.0, 9.0, 1.0) + log.read_text(encoding='utf-8'), encoding='utf-8')
+    assert fill_submission.measured(run)['CIRC_SIGNAL_G_EN'] == '6.0'
 
 
 def test_perfect_stability_on_the_same_pairs_is_called_deterministic_not_robust(tmp_path):
