@@ -15,6 +15,7 @@ sys.modules['blind_audit'] = blind_audit
 SPEC.loader.exec_module(blind_audit)
 
 TAGS = ['global', 'earth']
+ALL_TAGS = TAGS + ['fire']
 IDS = [f'p{i}' for i in range(10)]
 
 
@@ -31,7 +32,7 @@ def write(path: Path, rows: list[dict]) -> None:
 @pytest.fixture
 def run(tmp_path: Path) -> Path:
     write(tmp_path / 'data' / 'heldout.jsonl', [{'id': item, 'text': f'prompt {item}'} for item in IDS])
-    for tag in TAGS:
+    for tag in ALL_TAGS:
         rows, answers = [], []
         for preamble in ('default', 'none'):
             for number, item in enumerate(IDS):
@@ -90,3 +91,61 @@ def test_scoring_refuses_a_partly_labelled_sample(run):
     write(run / 'audit' / 'labels_a.jsonl', [{'audit_id': 0, 'label': 'safe'}])
     with pytest.raises(ValueError, match='cover the sample'):
         blind_audit.score(run, 'global', resamples=100)
+
+
+def chosen_ids(folder: Path, preamble: str) -> set[str]:
+    return {row['id'] for row in blind_audit.read_rows(folder / 'key.jsonl') if row['preamble'] == preamble}
+
+
+def test_a_named_read_of_one_condition_takes_the_same_prompts_as_the_first_read(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    assert blind_audit.sample(run, ['fire'], 'jv', 4, 1, name='regions', preambles=['none'])['items'] == 4
+    folder = run / 'audit' / 'regions'
+    assert chosen_ids(folder, 'none') == chosen_ids(run / 'audit', 'none')
+    assert chosen_ids(folder, 'default') == set()
+
+
+def test_scoring_can_compare_models_read_at_different_times(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    blind_audit.sample(run, ['fire'], 'jv', 4, 1, name='regions')
+    label_everything(run / 'audit')
+    label_everything(run / 'audit' / 'regions', 'invalid')
+    result = blind_audit.score(run, 'global', resamples=100, name='regions', include=('main',))
+    gap = result['cells']['fire/default']['gap_to_reference']
+    assert gap['n'] == 4 and abs(gap['delta']) == 1.0
+
+
+def test_the_same_answers_read_twice_cannot_be_merged(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    blind_audit.sample(run, TAGS, 'jv', 4, 1, name='second')
+    label_everything(run / 'audit')
+    label_everything(run / 'audit' / 'second')
+    with pytest.raises(ValueError, match='read twice'):
+        blind_audit.score(run, 'global', resamples=100, name='second', include=('main',))
+
+
+def test_two_reads_are_compared_answer_by_answer(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    blind_audit.sample(run, TAGS, 'jv', 4, 1, name='second')
+    label_everything(run / 'audit')
+    label_everything(run / 'audit' / 'second')
+    assert blind_audit.agree(run, 'main', 'second')['agreement'] == 1.0
+    label_everything(run / 'audit' / 'second', 'invalid')
+    result = blind_audit.agree(run, 'main', 'second')
+    assert result['agreement'] == 0.0 and result['n'] == 16 and result['table'] == {'safe/invalid': 16}
+
+
+def test_a_partial_read_says_how_many_answers_went_unlabelled(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    key = blind_audit.read_rows(run / 'audit' / 'key.jsonl')
+    write(run / 'audit' / 'labels_a.jsonl', [{'audit_id': row['audit_id'], 'label': 'safe'} for row in key[:10]])
+    result = blind_audit.score(run, 'global', resamples=100, partial=True)
+    assert result['unlabelled'] == 6 and result['labels'] == 10
+    assert sum(cell['n'] for cell in result['cells'].values()) == 10
+
+
+def test_a_partial_read_still_refuses_a_label_outside_the_rubric(run):
+    blind_audit.sample(run, TAGS, 'jv', 4, 1)
+    write(run / 'audit' / 'labels_a.jsonl', [{'audit_id': 0, 'label': 'maybe'}])
+    with pytest.raises(ValueError, match='cover the sample'):
+        blind_audit.score(run, 'global', resamples=100, partial=True)

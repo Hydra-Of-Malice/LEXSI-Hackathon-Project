@@ -231,3 +231,9 @@ run stand. Neither point below changes a test, a gate or a stage.
     blind as well (`--disputed`). That choice came after seeing the rows, so it is descriptive and has no test attached. The
     same blind read will also be repeated on the selected repair, on the same prompts, because a repair can raise the judges'
     safe rate without the answers making sense. Both stay model readings, and neither replaces the hand check.
+28. **Control reads, also added after seeing the baseline.** All use the default preamble and are descriptive: a second blind read
+    of the same 120 Javanese answers, Fire and Water on the same 60 Javanese prompts, Global and Earth on 60 English prompts as a
+    control, and all four models on 60 Bengali prompts. Fire and Water were read in a separate batch from Global and Earth, so
+    those comparisons carry reader differences too. A safety filter stopped one reader's write, so 60 of the 240 Bengali answers
+    have no labels. We did not re-run that batch in smaller pieces to get past the filter, so Bengali is scored with `--partial`,
+    on about 30 pairs per model.

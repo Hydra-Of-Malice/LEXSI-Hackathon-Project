@@ -19,6 +19,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DRAFTS = ('article.md', 'model_card_template.md', 'dataset_card_template.md', 'roi.md')
+SENTENCES = ROOT / 'docs' / 'submission' / 'sentences.json'
 TEAM_SECTION = re.compile(r'^## (Appendix for the team|Placeholder list)', re.M)
 PLACEHOLDER = re.compile(r'\{\{([A-Z0-9_]+)\}\}')
 LIST_ROW = re.compile(r'^\| `\{\{([A-Z0-9_]+)\}\}` \| (.+?) \|', re.M)
@@ -432,6 +433,12 @@ def measured(run: Path) -> dict[str, str]:
     return {name: value for name, value in values.items() if value is not None}
 
 
+def written(report: dict, path: Path = SENTENCES) -> dict[str, str]:
+    """Sentences a person or reader wrote for one run. Another run's numbers differ, so they apply only to that run's spec."""
+    data = _read(path)
+    return dict(data.get('sentences', {})) if data.get('spec_digest') == report.get('spec_digest') else {}
+
+
 def kept_blocks(report: dict, selection: dict) -> dict[str, bool]:
     """Which [ALT-*] blocks stay. A block missing here keeps its markers, because the rule can't settle it from the files."""
     conditions = dig(report, 'gap_confirmation', 'conditions')
@@ -470,8 +477,8 @@ def main() -> int:
     parser.add_argument('run', type=Path)
     parser.add_argument('out', type=Path)
     args = parser.parse_args()
-    values = measured(args.run)
     report, selection = _read(args.run / 'report.json'), _read(args.run / 'selection.json')
+    values = {**written(report), **measured(args.run)}
     blocks = kept_blocks(report, selection)
     args.out.mkdir(parents=True, exist_ok=True)
     lines = ['# What is still open', '',

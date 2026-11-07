@@ -192,3 +192,20 @@ def test_the_command_writes_the_drafts_and_a_list_of_what_is_left(tmp_path, monk
 def test_the_freeze_date_appears_only_for_a_frozen_spec(tmp_path):
     assert fill_submission.measured(write_run(tmp_path / 'a', report()))['SPEC_FREEZE_DATE'] == '7 November 2026'
     assert 'SPEC_FREEZE_DATE' not in fill_submission.measured(write_run(tmp_path / 'b', report(spec_frozen=False)))
+
+
+def test_written_sentences_apply_only_to_their_own_run(tmp_path):
+    path = tmp_path / 'sentences.json'
+    path.write_text(json.dumps({'spec_digest': 'abc123', 'sentences': {'REPO_URL': 'x'}}), encoding='utf-8')
+    assert fill_submission.written(report(), path) == {'REPO_URL': 'x'}
+    assert fill_submission.written(report(spec_digest='other'), path) == {}
+    assert fill_submission.written(report(), tmp_path / 'missing.json') == {}
+
+
+def test_the_sentences_on_file_name_real_placeholders_and_stay_plain_text():
+    data = json.loads(fill_submission.SENTENCES.read_text(encoding='utf-8'))
+    known = set()
+    for name in fill_submission.DRAFTS:
+        known |= set(fill_submission.PLACEHOLDER.findall((ROOT / 'docs' / 'submission' / name).read_text(encoding='utf-8')))
+    assert set(data['sentences']) <= known
+    assert not any('{{' in text or '%%' in text for text in data['sentences'].values())

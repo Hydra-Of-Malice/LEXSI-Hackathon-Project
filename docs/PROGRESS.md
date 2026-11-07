@@ -20,9 +20,31 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **20:12** **Blind controls: Earth's Javanese result holds, but the regional pattern from 19:40 isn't confirmed.** All reads use the
+  default preamble, and the readers are models, not people (Amendment 28).
+  - **Second read of the same 120 Javanese answers:** 94% of labels match the first read. The gap is 13.3 points (95% CI 3.3 to 25.0)
+    against 20.0 the first time, because this reader was stricter. Both put the gap in invalid answers: Earth's unsafe count is 1 of
+    60 in both reads, and Global's is 2 and 3. All readers are the same model, so this shows consistency, not correctness.
+  - **English control:** no gap (3.3 points, p = 0.63), with 1 of 60 invalid for each model. So the readers aren't marking Earth
+    down in general, and the Javanese result isn't a reader habit.
+  - **Fire and Water on the same 60 Javanese prompts:** Global 80.0% safe, Earth 60.0%, Fire 75.0%, Water 76.7%. Fire's gap is 5.0
+    points (95% CI -3.3 to 13.3), so this read can't confirm the 10.8 points the judges show, and it can't rule them out either.
+    Fire and Water were read in a separate batch from Global and Earth.
+  - **Bengali, all four models, partial:** Global 87.8% safe, Earth 82.2%, Fire 82.6%, Water 81.2%, on 41 to 48 answers each. No gap is
+    clear on about 30 pairs. Water's 9.7 points on the judges' numbers is mostly disputed answers, and the readers found only 2.9.
+  - **Correction:** at 19:40 I said the drop sits outside each model's own region. That holds on the judges' numbers only. The blind
+    reads are too small to confirm it, so it stays an open question and the write-up says so. Earth's Javanese finding doesn't depend
+    on it.
+  - **Missing labels:** a safety filter stopped one reader's write, so 60 of the 240 Bengali answers have no labels. That reader
+    suggested re-running in smaller slices to avoid the filter. We didn't, because that would be working around a safety control.
+    Bengali was an optional check, so it is scored with `--partial`.
+  - **Also new:** readers described Earth's invalid answers mostly as off-topic or misreading the prompt, as for Global, plus
+    repetition, which was nearly Earth-only (9 against 1). `docs/submission/sentences.json` holds the sentences that interpret the
+    baseline, and `scripts/fill_submission.py` uses them only for this run's spec. `scripts/blind_audit.py` gained `--name`, `agree`
+    and `--partial`, with tests that passed twice.
 - **19:40** **Baseline result: Earth's Javanese gap is confirmed, but it is the model breaking down, not harmful content.** Global
   against Earth, full precision, held-out items, local judges, 14 tests at p below 0.0036. One test passes: Javanese with the
-  preamble, 90.9% safe against 81.3%, a gap of 9.7 points (95% CI 4.0 to 15.3, p = 0.0023). Bengali with the preamble just misses
+  preamble, 90.9% safe against 81.2%, a gap of 9.7 points (95% CI 4.0 to 15.3, p = 0.0023). Bengali with the preamble just misses
   (8.5 points, p = 0.0041), and so does Javanese without it (5.7 points, p = 0.031). The pilot pointed the other way, with only the
   no-preamble gap surviving. Judge agreement (AC1) is 0.82 or higher in every language, above the 0.6 floor. These are local
   judges with no human calibration, so `report.json` will still mark the result not validated.
@@ -39,6 +61,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   - **Context, not a result:** Fire shows the same Javanese drop (10.8 and 6.8 points) and Water doesn't (2.3 and -0.6). In Bengali
     it flips: Water drops (9.7 and 10.2) and Fire doesn't (0.6 and -0.6). So on our reading of the regions, the drop sits outside
     each model's own region. These models are outside the 14 tests, and we saw this pattern after the numbers came in.
+    **Corrected at 20:12: the blind reads don't confirm this pattern.**
   - **What it means:** the thesis says specialisation weakens refusals in the languages a model targets. The data so far says
     something else: outside its region, a regional model more often produces broken text, on harmful and harmless prompts alike.
     The readers are models, not people, so a native Javanese reader is what would settle this. The run carries on unchanged. A

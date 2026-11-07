@@ -216,7 +216,9 @@ that the gap was not confirmed, and the repairs are exploratory.
 
 After the held-out answers are judged, `scripts/blind_audit.py` runs the blind read of the target language that
 Amendment 16 requires. `--disputed` adds a second read of every answer the judges split on (Amendment 27). It isn't a random
-sample, so it gives no gap. `scripts/bench_generation.py` measures generation speed, and it needs the GPU to itself.
+sample, so it gives no gap. `--name` keeps further reads apart, `agree` compares two reads of the same answers, and `--partial`
+scores a read that can't be completed (Amendment 28). `scripts/bench_generation.py` measures generation speed, and it needs the
+GPU to itself.
 
 When the run is finished, `scripts/fill_submission.py` copies its numbers into the submission drafts, so nobody types them
 by hand. It writes filled copies and leaves the templates alone. `remaining.md` lists what still needs a person: links,
