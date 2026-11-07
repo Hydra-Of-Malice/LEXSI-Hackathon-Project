@@ -220,6 +220,13 @@ sample, so it gives no gap. `--name` keeps further reads apart, `agree` compares
 scores a read that can't be completed (Amendment 28). `scripts/bench_generation.py` measures generation speed, and it needs the
 GPU to itself.
 
+The chain doesn't restart by itself after a reboot. `scripts/resume_full_run.ps1` relaunches it, and it refuses to start a second
+copy. Finished stages are skipped in seconds, so a restart costs only the stage that was running.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/resume_full_run.ps1
+```
+
 When the run is finished, `scripts/fill_submission.py` copies its numbers into the submission drafts, so nobody types them
 by hand. It writes filled copies and leaves the templates alone. `remaining.md` lists what still needs a person: links,
 team decisions, and the sentences that interpret a result.

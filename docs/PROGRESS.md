@@ -20,6 +20,9 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 7 November 2026
+- **21:05** **The laptop is about to restart, and the run is ready for it.** Everything is pushed. After the restart,
+  `scripts/resume_full_run.ps1` relaunches the chain, skipping finished stages, so only the running stage is lost: circuit 1 of 6,
+  due to finish around 21:15. It takes about 1 hour 20 minutes, against the 2 hours I had scaled from the small run.
 - **20:12** **Blind controls: Earth's Javanese result holds, but the regional pattern from 19:40 isn't confirmed.** All reads use the
   default preamble, and the readers are models, not people (Amendment 28).
   - **Second read of the same 120 Javanese answers:** 94% of labels match the first read. The gap is 13.3 points (95% CI 3.3 to 25.0)
