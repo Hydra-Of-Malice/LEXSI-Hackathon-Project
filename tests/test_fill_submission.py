@@ -249,6 +249,18 @@ def test_circuit_rows_put_the_baseline_on_the_patching_scale(tmp_path):
     assert values['CIRC_SIGNAL_G_JV'] == '6.0' and values['CIRCUIT_N_PAIRS'] == '16'
 
 
+def test_the_unclipped_ratios_fill_the_table(tmp_path):
+    run = write_circuits(write_run(tmp_path, report()))
+    path = run / 'circuits' / 'global-circuit__bn' / 'summary.json'
+    summary = json.loads(path.read_text(encoding='utf-8'))
+    summary['faithfulness'].update(patching_score=1.0, ablation_score=1.0,
+                                   metadata={'patching_raw_ratio': 1.0086, 'ablation_raw_ratio': 1.0554})
+    path.write_text(json.dumps(summary), encoding='utf-8')
+    values = fill_submission.measured(run)
+    assert values['CIRC_PATCH_G_BN'] == '1.01' and values['CIRC_ABL_G_BN'] == '1.06'
+    assert values['CIRC_ABL_G_EN'] == '0.90'
+
+
 def test_negative_scores_still_give_a_baseline(tmp_path):
     # The Javanese numbers from the full run: every raw score is below zero, so a plain ratio would read 0.36.
     run = write_circuits(write_run(tmp_path, report()), scores=(-0.8341, -2.2877, -0.6797, -2.3474))

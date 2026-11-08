@@ -329,8 +329,11 @@ def circuit_values(results: Results) -> dict:
             summary = _read(results.run / 'circuits' / f'{model}-circuit__{code.lower()}' / 'summary.json')
             summaries.append(summary)
             faithfulness = summary.get('faithfulness', {})
-            for name, key in (('PATCH', 'patching_score'), ('ABL', 'ablation_score')):
-                score = faithfulness.get(key)
+            # The headline ratios are clipped to [0, 1]. The unclipped ones show a circuit that pushes further than the
+            # full model (Bengali's ablation ratio is 1.06) instead of a bland 1.00.
+            raw = faithfulness.get('metadata') or {}
+            for name, key in (('PATCH', 'patching'), ('ABL', 'ablation')):
+                score = raw.get(f'{key}_raw_ratio', faithfulness.get(f'{key}_score'))
                 values[f'CIRC_{name}_{letter}_{code}'] = None if score is None else f'{score:.2f}'
             baselines = faithfulness.get('baseline_comparison') or {}
             score, best = baselines.get('circuit_score'), baselines.get('best_baseline_score')

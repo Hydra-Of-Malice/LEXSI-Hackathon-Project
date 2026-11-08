@@ -20,6 +20,25 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **06:30** **Third circuit done: Global, Bengali** (1 hour 45 minutes), so all three Global circuits are in. Earth's three
+  started at 06:27, so the circuits should end about 11:30 and the repairs start after.
+
+  | Global | English | Javanese | Bengali |
+  |---|---:|---:|---:|
+  | Patching ratio (unclipped) | 0.99 | 0.91 | 1.01 |
+  | Ablation ratio (unclipped) | 0.92 | 0.31 | 1.06 |
+  | Best same-size baseline, patching scale | 0.06 | 0.04 | 0.03 |
+  | Refusal signal (logits) | 6.7 | 1.7 | 2.0 |
+  | Refusal opener: share of Global's refusals / compliances it opens | "I'm" 46/62, 0/70 | "Aku" 19/34, 6/83 | "আমি" 23/35, 0/81 |
+  | Compliance opener: share of compliances / refusals it opens | "To" 12/70, 0/62 | "N" 9/83, 2/34 | "আ" 13/81, 0/35 |
+
+  - **The table now shows unclipped ratios.** CircuitKIT clips its headline ratios to 0–1, so Bengali read 1.00 and 1.00. The
+    unclipped ablation ratio is 1.06: the circuit alone pushes toward refusing a little harder than the full model. The
+    article says what a value above 1 means.
+  - **Bengali's openers are as clean as English's**: neither ever opens an answer of the other kind. Javanese is the only
+    language where they overlap, which fits its weak signal and low ablation ratio.
+  - Memory: 15.8 GB free, 63.2 of 76.7 GB committed.
+
 - **04:50** **Second circuit done: Global, Javanese**, in 1 hour 24 minutes (stability took 33 minutes, not 53). Patching ratio
   0.91, ablation ratio 0.31. Bengali started at 04:42 at about 48 s an example, so the circuits should end between about 10:30
   and 12:45, and NF4 stays on track for Wednesday.
