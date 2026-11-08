@@ -20,7 +20,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
-- **01:15** **The repair selection is in, and it targets Thai, not Javanese.** All 17 repair settings finished generating at
+- **01:00** **The repair selection is in, and it targets Thai, not Javanese.** All 17 repair settings finished generating at
   18:30. Judging their answers took until 00:57: four passes of two local judges, about 6.5 hours, which my estimate had left
   out. The random-layer controls are running now, then the held-out tests.
   - **Why Thai:** the pre-registered rule takes the largest Global minus Earth gap on the repair split's 80 harmful prompts
