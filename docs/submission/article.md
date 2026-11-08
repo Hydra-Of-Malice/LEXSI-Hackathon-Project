@@ -9,7 +9,7 @@
 > - **[ALT-A1]** (an arm passes) and **[ALT-A2]** (no arm passes) sit inside ALT-A. Keep one.
 > - All text outside the markers is written to be true under either story. Reread it once the results are in.
 > - The rule for choosing is fixed by `SPEC.md` Amendments 13 and 17, and `report.json` applies it under `gap_confirmation`. Keep ALT-A if at least one language passes in at least one preamble condition: Global above Earth on the content-safe rate, full-precision weights, held-out items, a paired 95% CI above zero, and McNemar p below 0.05 divided by all the tests. Earth's seven languages in two conditions make 14 tests, so the bar is about 0.0036. Otherwise keep ALT-B.
-> - A repair claim applies only to a condition with a confirmed gap for the target language. Elsewhere the repair is exploratory. If the target language has no confirmed gap in either condition, every arm is exploratory: keep ALT-A2 and say so.
+> - A repair claim applies only to a condition with a confirmed gap for the target language. Elsewhere the repair is exploratory. If the target language has no confirmed gap in either condition, every arm is exploratory: keep ALT-A2. `TARGET_CONFIRMATION_SENTENCE` and `TARGET_CONFIRMATION_PARAGRAPH` say so.
 > - `report.json` names the conditions with a confirmed gap for the target language under `confirmed_conditions`, and `empirical_repair_success` looks only at those. Each `thresholds` entry says whether it is `exploratory`.
 > - The target language comes from the repair split, and confirmed languages come from held-out items, so they can differ. `TARGET_LANGUAGE` and `CONFIRMED_CELLS` keep them apart.
 > - Section 7.3 is the only place with pilot numbers. They come from 4-bit weights, repair-split items and local 8B judges, so they are planning signals, not results. Keep that label, and never move one into sections 7.4 to 7.8.
@@ -19,7 +19,7 @@
 **Summary**
 
 **[ALT-A]**
-Tiny Aya Earth gives fewer safe answers to harmful requests than Tiny Aya Global in {{CONFIRMED_CELLS}}, on held-out prompts with full-precision weights. In {{TARGET_LANGUAGE}}, the language the repairs target, the content-safe rate {{TARGET_CONDITION}} was {{TARGET_SAFE_EARTH}}% for Earth and {{TARGET_SAFE_GLOBAL}}% for Global. {{GAP_FAILURE_TYPE_SENTENCE}}
+Tiny Aya Earth gives fewer safe answers to harmful requests than Tiny Aya Global in {{CONFIRMED_CELLS}}, on held-out prompts with full-precision weights. In {{TARGET_LANGUAGE}}, the language the repairs target, the content-safe rate {{TARGET_CONDITION}} was {{TARGET_SAFE_EARTH}}% for Earth and {{TARGET_SAFE_GLOBAL}}% for Global. {{TARGET_CONFIRMATION_SENTENCE}} {{GAP_FAILURE_TYPE_SENTENCE}}
 **[ALT-A1]**
 {{BEST_ARM}} closed {{GAP_CLOSED_PCT}}% of that gap. Benign over-refusal rose by at most {{MAX_OVER_REFUSAL_RISE}} points and capability fell by at most {{MAX_CAPABILITY_DROP}} points in any language we could measure. The repair {{HOLDS_AT_4BIT_SENTENCE}} at 4-bit.
 **[END ALT-A1]**
@@ -490,6 +490,10 @@ The weight arms use arithmetic on checkpoints. No gradient training is involved.
 
 The highest score wins. Ties go to the smallest knob. The same score picks the arm that goes on to 4-bit testing.
 
+**[ALT-A]**
+{{TARGET_CONFIRMATION_PARAGRAPH}}
+**[END ALT-A]**
+
 **[ALT-B]**
 With no confirmed gap, we claim no repair, and every arm below is exploratory. Knobs were still chosen with the score above, which uses the gap seen on the repair split, and that gap did not hold up on held-out items. "Gap closed" means little when the gap cannot be told from zero, so we do not report it. The tables below show what each arm did to safety, refusal, over-refusal and capability, measured against original Earth.
 **[END ALT-B]**
@@ -713,6 +717,8 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{TARGET_CONDITION}}` | The condition the headline uses, in words, such as 'without the preamble'. It must have a confirmed gap for the target language under ALT-A | `report.json`, `confirmed_conditions` |
 | `{{TARGET_SAFE_EARTH}}` | Earth content-safe rate in the target language, held out, % | `report.json` |
 | `{{TARGET_SAFE_GLOBAL}}` | Global content-safe rate in the target language, held out, % | `report.json` |
+| `{{TARGET_CONFIRMATION_SENTENCE}}` | Whether the target language's held-out gap passed the test. If it did not, says that every repair result is exploratory | `report.json`, `gap_confirmation` |
+| `{{TARGET_CONFIRMATION_PARAGRAPH}}` | The same for the repair section, with the repair-split gap that picked the target and why a confirmed language elsewhere was not the target | `report.json`, `selection.json` |
 | `{{GAP_FAILURE_TYPE_SENTENCE}}` | How much of the gap is unsafe content, and how much is invalid or disputed answers | `report.json` |
 | `{{BEST_ARM}}` | Name of the arm selected for 4-bit testing | `selection.json` |
 | `{{GAP_CLOSED_PCT}}` | Share of the target-language gap closed, % | `report.json` |

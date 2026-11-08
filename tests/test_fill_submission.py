@@ -147,6 +147,54 @@ def test_a_confirmed_gap_outside_the_target_language_means_no_arm_passed():
     assert fill_submission.kept_blocks(data, SELECTION)['ALT-A2'] is True
 
 
+def thai_target(jv_reference: float = 0.8125, jv_drifted: float = 0.825) -> dict:
+    rates = lambda th, jv: {'th': {'harmful': th, 'benign': 0.1}, 'jv': {'harmful': jv, 'benign': 0.1}}
+    return {**SELECTION, 'worst_language': 'th', 'reference_rates': rates(0.95, jv_reference),
+            'drifted_rates': rates(0.9, jv_drifted)}
+
+
+def test_a_target_without_a_confirmed_gap_makes_every_repair_exploratory(tmp_path):
+    data = report()
+    data['confirmed_conditions'] = []
+    values = fill_submission.measured(write_run(tmp_path, data, thai_target()))
+    assert values['TARGET_LANGUAGE'] == 'Thai'
+    assert values['TARGET_CONFIRMATION_SENTENCE'] == ('That gap did not pass our test (p = 0.5000 against a bar of '
+                                                      '0.0036), so every repair result here is exploratory.')
+    assert values['TARGET_CONFIRMATION_PARAGRAPH'] == (
+        'The repair split picked Thai, where Global led Earth by 5.0 points. Held-out items did not confirm the gap in '
+        'Thai in either preamble condition, so we claim no repair, and every arm below is exploratory. Javanese, where '
+        'held-out items did confirm a gap (with the preamble and without the preamble), was not the target: on the '
+        'repair split Earth was not below Global there (82.5% against 81.2%).')
+
+
+def test_a_confirmed_language_with_a_smaller_repair_split_gap_says_so(tmp_path):
+    data = report()
+    data['confirmed_conditions'] = []
+    values = fill_submission.measured(write_run(tmp_path, data, thai_target(0.85, 0.825)))
+    assert values['TARGET_CONFIRMATION_PARAGRAPH'].endswith('on the repair split Global led Earth there by only 2.5 points.')
+
+
+def test_a_confirmed_target_says_where_it_passed(tmp_path):
+    values = fill_submission.measured(write_run(tmp_path, report()))
+    assert values['TARGET_CONFIRMATION_SENTENCE'] == 'That gap passed our test with the preamble and without the preamble.'
+    assert values['TARGET_CONFIRMATION_PARAGRAPH'].startswith('Held-out items confirmed the gap in Javanese with the preamble')
+
+
+def test_the_exploratory_paragraph_reaches_the_repair_section_only_under_alt_a(tmp_path):
+    data = report()
+    data['confirmed_conditions'] = []
+    values = fill_submission.measured(write_run(tmp_path, data, thai_target()))
+    text = (ROOT / 'docs' / 'submission' / 'article.md').read_text(encoding='utf-8')
+    body, _ = fill_submission.fill(text, values, fill_submission.kept_blocks(data, thai_target()))
+    assert body.count('so we claim no repair, and every arm below is exploratory') == 1
+    assert 'With no confirmed gap, we claim no repair' not in body
+    assert '{{TARGET_CONFIRMATION' not in body
+    unconfirmed = report(confirmed=False)
+    body, _ = fill_submission.fill(text, fill_submission.measured(write_run(tmp_path / 'b', unconfirmed, thai_target())),
+                                   fill_submission.kept_blocks(unconfirmed, thai_target()))
+    assert '{{TARGET_CONFIRMATION' not in body and 'With no confirmed gap, we claim no repair' in body
+
+
 def test_numbers_that_pass_unvalidated_leave_the_wording_to_a_person():
     data = report()
     data['thresholds']['earth-resta-0p25/none'] = gate(numbers=True)

@@ -219,6 +219,56 @@ def target_values(results: Results) -> dict:
     return values
 
 
+def target_confirmation_values(results: Results) -> dict:
+    """Whether the gap the repairs aim at passed the held-out test. The target comes from the repair split and confirmed
+    gaps from held-out items, so a run can confirm a gap in one language and aim the repairs at another. Both values sit
+    inside ALT-A, so they only need to cover a run where some gap was confirmed."""
+    target, alpha = results.target, dig(results.report, 'gap_confirmation', 'alpha')
+    cells = {condition: results.gaps(condition).get(target) for condition in CONDITIONS} if target else {}
+    if alpha is None or not cells or not all(cells.values()):
+        return {}
+    name = LANGUAGE_NAMES[target]
+    passed = [CONDITIONS[condition] for condition, cell in cells.items() if cell.get('confirmed')]
+    if passed:
+        where = ' and '.join(passed)
+        return {'TARGET_CONFIRMATION_SENTENCE': f'That gap passed our test {where}.',
+                'TARGET_CONFIRMATION_PARAGRAPH': f'Held-out items confirmed the gap in {name} {where}, so the repair '
+                                                 'results there are claims. In any other condition they are exploratory.'}
+    gap = cells[results.condition]
+    sentence = (f"That gap did not pass our test (p = {p_value(gap.get('p_mcnemar'))} against a bar of {alpha:.4f}), "
+                'so every repair result here is exploratory.')
+    parts = []
+    split = repair_split_rates(results.selection, target)
+    if split and split[0] > split[1]:
+        parts.append(f'The repair split picked {name}, where Global led Earth by {100 * (split[0] - split[1]):.1f} points.')
+    parts.append(f'Held-out items did not confirm the gap in {name} in either preamble condition, so we claim no repair, '
+                 'and every arm below is exploratory.')
+    others = {}
+    for condition in CONDITIONS:
+        for lang, cell in results.gaps(condition).items():
+            if lang != target and cell.get('confirmed'):
+                others.setdefault(lang, []).append(CONDITIONS[condition])
+    for lang, conditions in others.items():
+        rates = repair_split_rates(results.selection, lang)
+        if not rates:
+            continue
+        intro = (f"{LANGUAGE_NAMES[lang]}, where held-out items did confirm a gap ({' and '.join(conditions)}), "
+                 'was not the target:')
+        if rates[1] >= rates[0]:
+            parts.append(f'{intro} on the repair split Earth was not below Global there ({percent(rates[1])}% against '
+                         f'{percent(rates[0])}%).')
+        else:
+            parts.append(f'{intro} on the repair split Global led Earth there by only '
+                         f'{100 * (rates[0] - rates[1]):.1f} points.')
+    return {'TARGET_CONFIRMATION_SENTENCE': sentence, 'TARGET_CONFIRMATION_PARAGRAPH': ' '.join(parts)}
+
+
+def repair_split_rates(selection: dict, lang: str) -> tuple[float, float] | None:
+    """Global's and the drifted model's primary safety rate for one language on the repair split, from selection.json."""
+    reference, drifted = (dig(selection, key, lang, 'harmful') for key in ('reference_rates', 'drifted_rates'))
+    return None if reference is None or drifted is None else (reference, drifted)
+
+
 def repair_values(results: Results) -> dict:
     values = {}
     target = results.target
@@ -503,8 +553,8 @@ def measured(run: Path) -> dict[str, str]:
     results = Results(run, _read(run / 'report.json'), _read(run / 'selection.json'), _read(run / 'localisation.json'),
                       _read(run / 'data' / 'manifest.json'))
     values = {}
-    for part in (gap_values, target_values, repair_values, selected_arm_values, language_values, circuit_values,
-                 localisation_values, data_values, fertility_values, run_values):
+    for part in (gap_values, target_values, target_confirmation_values, repair_values, selected_arm_values,
+                 language_values, circuit_values, localisation_values, data_values, fertility_values, run_values):
         values.update(part(results))
     return {name: value for name, value in values.items() if value is not None}
 
