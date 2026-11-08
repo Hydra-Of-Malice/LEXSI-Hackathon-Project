@@ -20,6 +20,12 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **07:56** **Fourth circuit done: Earth, English** (1 hour 28 minutes), with Global's openers "I'm" and "To". Patching
+  ratio 1.00, ablation ratio 0.78 (Global's was 0.92), best same-size baseline 0.05, refusal signal 6.9 logits (Global 6.7).
+  Earth's refusal signal in English is as strong as Global's, but its circuit holds up less well when everything else is
+  zeroed. Earth Javanese started at 07:55, so the circuits should end about 10:50. Memory: 3.5 GB free, 63.3 of 76.7 GB
+  committed.
+
 - **06:30** **Third circuit done: Global, Bengali** (1 hour 45 minutes), so all three Global circuits are in. Earth's three
   started at 06:27, so the circuits should end about 11:30 and the repairs start after.
 
