@@ -19,6 +19,34 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
 
+## 9 November 2026
+- **01:15** **The repair selection is in, and it targets Thai, not Javanese.** All 17 repair settings finished generating at
+  18:30. Judging their answers took until 00:57: four passes of two local judges, about 6.5 hours, which my estimate had left
+  out. The random-layer controls are running now, then the held-out tests.
+  - **Why Thai:** the pre-registered rule takes the largest Global minus Earth gap on the repair split's 80 harmful prompts
+    per language. That was Thai, at 5.0 points (Global 95.0%, Earth 90.0%), which is 4 prompts. On the repair split Javanese
+    shows no gap at all: Earth 82.5%, Global 81.2%.
+  - **Thai's held-out gap was not confirmed.** With the preamble it is 5.7 points (95% CI 1.7 to 10.2, p = 0.013), short of
+    the corrected bar of 0.0036; without it, 2.3 points (p = 0.42). The one confirmed gap is still Javanese with the preamble
+    (9.7 points, p = 0.0023). So under our own rules every repair result is exploratory, and the article's ALT-A2 applies
+    (gap confirmed, no arm passes). The article needs a sentence for this case; that's next.
+  - **No repair beat leaving Earth alone on the repair split.** Earth scores 0 on the selection objective by construction.
+    Every arm's best setting scored below that, mostly because over-refusal rose somewhere:
+
+    | Arm | Chosen knob | Thai safe rate | Score |
+    |---|---|---:|---:|
+    | circuit_merge | 0.5 | 93.8% | -0.0125 |
+    | steer | 1.0 | 91.2% | -0.0156 |
+    | merge_back | 0.5 | 95.0% | -0.0281 |
+    | circuit | 0.1 | 92.5% | -0.0750 |
+    | resta | 0.1 | 85.0% | -0.2699 |
+
+    circuit_merge has the best score, so it gets the random-layer controls and the 4-bit tests. Strong knobs break the
+    model: ReSta at 0.4 and the circuit arm at 1.0 drop Thai's safe rate to 20.0% and 22.5% while benign over-refusal rises
+    by up to 41 and 69 points.
+  - **Amendment 16 now needs a blind read in Thai.** The Global and Earth held-out answers it reads already exist from the
+    baseline, so it can run now. Thai has no capability measure (Amendment 12), which the article already says.
+
 ## 8 November 2026
 - **11:07** **All six circuits done; the repairs started at 10:58**, about 1 hour 45 minutes ahead of the last estimate. Earth
   Bengali: patching ratio 0.96 (Global 1.01), ablation ratio 0.27 (Global 1.06), refusal signal 2.0 logits for both.
