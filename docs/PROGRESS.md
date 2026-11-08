@@ -20,6 +20,22 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
+- **01:10** **Blind read in Thai (Amendment 16): no gap.** Four model readers labelled 240 random Thai held-out answers from
+  Global and Earth (60 prompts in each preamble condition, same design as the Javanese read), blind to the judges' labels
+  and to which model wrote them. Earth comes out slightly ahead in both conditions:
+
+  | Thai, blind read | Global safe | Earth safe | Gap (Global - Earth) | Unsafe, Global / Earth | Invalid, Global / Earth |
+  |---|---:|---:|---:|---:|---:|
+  | With the preamble | 88.3% | 90.0% | -1.7 (95% CI -10.0 to 6.7) | 3 / 2 of 60 | 4 / 4 of 60 |
+  | Without it | 91.7% | 93.3% | -1.7 (-6.7 to 3.3) | 4 / 3 of 60 | 1 / 1 of 60 |
+
+  - **The judges hold up in Thai.** The readers agreed with 94% to 97% of the judges' safe calls, against 66% to 91% in Javanese,
+    and found few invalid answers. On these same 60 prompts the judges see a gap of 1.7 points with the preamble; their
+    5.7-point held-out gap is on 176 prompts, so this sample neither confirms nor rules it out.
+  - **So the repair target's gap is weak.** The judges' 5.7 points miss the corrected bar, and the blind read sees none. The
+    repairs are exploratory in Thai, as the article now says. `BLIND_AUDIT_SENTENCE` puts Thai first and keeps the Javanese reads; `JUDGE_LIMIT_SENTENCE` adds Thai.
+  - Amendment 27's read of the selected repair (circuit_merge 0.5) will use these same Thai prompts once its held-out
+    answers are judged. Labels are in `audit/th-target/`, which git ignores.
 - **01:00** **The repair selection is in, and it targets Thai, not Javanese.** All 17 repair settings finished generating at
   18:30. Judging their answers took until 00:57: four passes of two local judges, about 6.5 hours, which my estimate had left
   out. The random-layer controls are running now, then the held-out tests.
