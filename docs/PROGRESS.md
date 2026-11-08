@@ -20,6 +20,17 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **09:26** **Fifth circuit done: Earth, Javanese** (1 hour 30 minutes). Patching ratio 0.90 (Global 0.91), best
+  same-size baseline 0.03, refusal signal 1.5 logits (Global 1.7). The unclipped ablation ratio is -0.06 (Global 0.31):
+  with everything outside the circuit zeroed, Earth's push toward "Aku" falls slightly below the harmless twin's.
+  - **A pattern to check against Bengali:** Earth's circuits swap in as well as Global's under patching, but hold up worse
+    when the rest of the model is zeroed: 0.78 against 0.92 in English, -0.06 against 0.31 in Javanese. Earth's refusal seems
+    to lean more on components outside its top 30%. Javanese is the weak case (leaky openers, 1.5-logit signal), so the
+    write-up should lean on English and Bengali.
+  - The article now also says what a ratio below 0 means.
+  - Earth Bengali started at 09:25, so the circuits should end about 10:55, then the repairs start. Memory: 7.2 GB free,
+    59.1 of 76.7 GB committed.
+
 - **07:56** **Fourth circuit done: Earth, English** (1 hour 28 minutes), with Global's openers "I'm" and "To". Patching
   ratio 1.00, ablation ratio 0.78 (Global's was 0.92), best same-size baseline 0.05, refusal signal 6.9 logits (Global 6.7).
   Earth's refusal signal in English is as strong as Global's, but its circuit holds up less well when everything else is

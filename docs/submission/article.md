@@ -462,7 +462,7 @@ We ran discovery without the preamble, because with it the run needs 54 GB of co
 - The editing mask comes from Global's circuit, because the repairs move Earth toward Global. Node scores are averaged across the three languages. Layers selected: {{CIRCUIT_LAYERS}}.
 - Top-50 node overlap across languages (Jaccard) in Global: {{CIRC_JACCARD_LANGS}}.
 - Top-50 node overlap between Global and Earth in the same language: {{CIRC_JACCARD_MODELS}}.
-- On the patching and ablation scales, 0 is no better than the harmless twin and 1 matches the full model. We give the unclipped ratios, so a value above 1 means the circuit alone pushes toward refusing harder than the full model does.
+- On the patching and ablation scales, 0 is no better than the harmless twin and 1 matches the full model. We give the unclipped ratios, so a value above 1 means the circuit alone pushes toward refusing harder than the full model does, and one below 0 means it pushes less than the harmless twin.
 - The baseline row runs the patching test on the better of a random and a magnitude-ranked node set of the same size.
 - The signal row is how far the harmful prompt raises the refusal opener's logit over the compliance opener's, compared with its harmless twin. The ratios above divide by it, so the smaller it is, the less they can be trusted.
 - {{CIRC_STABILITY_SENTENCE}}
