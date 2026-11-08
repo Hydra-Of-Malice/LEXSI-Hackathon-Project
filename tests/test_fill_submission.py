@@ -295,6 +295,26 @@ def test_stability_that_varies_reports_its_range(tmp_path):
     assert 'same pairs' not in values['CIRC_STABILITY_SENTENCE']
 
 
+def write_fair(run: Path, mean: float = 0.4, skip: str | None = None) -> Path:
+    for folder in sorted((run / 'circuits').glob('*__*')):
+        if folder.name != skip:
+            row = {'kept_heads': 392, 'patching_ratios': [mean] * 3, 'mean': mean, 'circuit_patching_ratio': 0.99}
+            (folder / 'fair_baseline.json').write_text(json.dumps(row), encoding='utf-8')
+    return run
+
+
+def test_the_fair_baseline_sentence_gives_both_ranges(tmp_path):
+    run = write_fair(write_circuits(write_run(tmp_path, report())))
+    sentence = fill_submission.measured(run)['CIRC_FAIR_BASELINE_SENTENCE']
+    assert '392 random heads' in sentence and 'mean of 3 draws' in sentence
+    assert '0.40 to 0.40 on the patching scale' in sentence and '0.99 to 0.99 for the circuits' in sentence
+
+
+def test_the_fair_baseline_sentence_waits_for_all_six(tmp_path):
+    run = write_fair(write_circuits(write_run(tmp_path, report())), skip='earth-circuit__bn')
+    assert 'CIRC_FAIR_BASELINE_SENTENCE' not in fill_submission.measured(run)
+
+
 def test_stability_waits_for_all_six_circuits(tmp_path):
     run = write_circuits(write_run(tmp_path, report()))
     (run / 'circuits' / 'earth-circuit__bn' / 'summary.json').unlink()

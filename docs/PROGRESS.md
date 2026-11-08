@@ -20,12 +20,36 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 8 November 2026
+- **11:07** **All six circuits done; the repairs started at 10:58**, about 1 hour 45 minutes ahead of the last estimate. Earth
+  Bengali: patching ratio 0.96 (Global 1.01), ablation ratio 0.27 (Global 1.06), refusal signal 2.0 logits for both.
+
+  | | Global en | Global jv | Global bn | Earth en | Earth jv | Earth bn |
+  |---|---:|---:|---:|---:|---:|---:|
+  | Patching ratio | 0.99 | 0.91 | 1.01 | 1.00 | 0.90 | 0.96 |
+  | Ablation ratio | 0.92 | 0.31 | 1.06 | 0.78 | -0.06 | 0.27 |
+  | Best same-size baseline (CircuitKIT's) | 0.06 | 0.04 | 0.03 | 0.05 | 0.03 | 0.01 |
+  | Refusal signal (logits) | 6.7 | 1.7 | 2.0 | 6.9 | 1.5 | 2.0 |
+
+  - **Earth's circuits do less on their own in all three languages.** Under patching they match Global's, but with the rest of
+    the model zeroed they keep 0.78, -0.06 and 0.27 against Global's 0.92, 0.31 and 1.06. Point estimates on 16 pairs.
+  - **Overlap:** in Global the top 50 nodes of two languages share 0.30 to 0.41, while Global and Earth in the same language
+    share 0.92 (en), 0.75 (jv) and 0.72 (bn).
+  - **Correction: the circuits are big, not "the top 30%".** CircuitKIT's sparsity 0.3 means it prunes 30%: each circuit keeps
+    the 428 highest-scoring of 612 heads and MLP blocks, which came to all 36 MLP blocks and 392 of 576 heads in every
+    circuit (the weakest MLP block outscores the 392nd head two to one). The 09:26 note is fixed and the article says so.
+  - **CircuitKIT's baseline flatters the circuits.** Its random set draws 428 nodes from heads and MLP blocks alike, so it
+    usually loses about a third of the MLP blocks, which the circuit always keeps. The article now says so.
+    `scripts/fair_circuit_baseline.py` does the fair version: random heads, every MLP block kept, scored by the kit's own
+    patching pillar. A first draw with the real scores must reproduce each circuit's logged ratio before any baseline is
+    written. It needs about 30 GB of RAM and 12 minutes an evaluation, so it runs after the chain: 6 circuits x (1 check + 3
+    draws) is about 5 hours. `fill_submission.py` turns its output into the sentence for the circuit section.
+
 - **09:26** **Fifth circuit done: Earth, Javanese** (1 hour 30 minutes). Patching ratio 0.90 (Global 0.91), best
   same-size baseline 0.03, refusal signal 1.5 logits (Global 1.7). The unclipped ablation ratio is -0.06 (Global 0.31):
   with everything outside the circuit zeroed, Earth's push toward "Aku" falls slightly below the harmless twin's.
   - **A pattern to check against Bengali:** Earth's circuits swap in as well as Global's under patching, but hold up worse
     when the rest of the model is zeroed: 0.78 against 0.92 in English, -0.06 against 0.31 in Javanese. Earth's refusal seems
-    to lean more on components outside its top 30%. Javanese is the weak case (leaky openers, 1.5-logit signal), so the
+    to lean more on components outside its circuit. Javanese is the weak case (leaky openers, 1.5-logit signal), so the
     write-up should lean on English and Bengali.
   - The article now also says what a ratio below 0 means.
   - Earth Bengali started at 09:25, so the circuits should end about 10:55, then the repairs start. Memory: 7.2 GB free,

@@ -323,11 +323,13 @@ def language_values(results: Results) -> dict:
 
 def circuit_values(results: Results) -> dict:
     values = {}
-    examples, summaries = [], []
+    examples, summaries, fair = [], [], []
     for letter, model in (('G', 'global'), ('E', results.drifted)):
         for code in ('EN', 'JV', 'BN'):
-            summary = _read(results.run / 'circuits' / f'{model}-circuit__{code.lower()}' / 'summary.json')
+            folder = results.run / 'circuits' / f'{model}-circuit__{code.lower()}'
+            summary = _read(folder / 'summary.json')
             summaries.append(summary)
+            fair.append(_read(folder / 'fair_baseline.json'))
             faithfulness = summary.get('faithfulness', {})
             # The headline ratios are clipped to [0, 1]. The unclipped ones show a circuit that pushes further than the
             # full model (Bengali's ablation ratio is 1.06) instead of a bland 1.00.
@@ -346,6 +348,7 @@ def circuit_values(results: Results) -> dict:
             if summary.get('task_examples') is not None:
                 examples.append(summary['task_examples'])
     values['CIRC_STABILITY_SENTENCE'] = stability_sentence(summaries)
+    values['CIRC_FAIR_BASELINE_SENTENCE'] = fair_baseline_sentence(fair)
     if examples:
         low, high = min(examples), max(examples)
         values['CIRCUIT_N_PAIRS'] = str(low) if low == high else f'{low} to {high}'
@@ -380,6 +383,21 @@ def clean_and_corrupt(log: Path, circuit_score: float | None) -> tuple[float, fl
     if abs(raw - circuit_score) > 1e-3 or clean <= corrupt:
         return None
     return clean, corrupt
+
+
+def fair_baseline_sentence(cells: list[dict]) -> str | None:
+    """Random heads with every MLP block kept, from scripts/fair_circuit_baseline.py, once all six circuits have it."""
+    if not cells or any(cell.get('mean') is None or cell.get('circuit_patching_ratio') is None for cell in cells):
+        return None
+    heads = {cell.get('kept_heads') for cell in cells}
+    draws = {len(cell.get('patching_ratios') or []) for cell in cells}
+    means = [cell['mean'] for cell in cells]
+    circuits = [cell['circuit_patching_ratio'] for cell in cells]
+    size = f'{heads.pop()} random heads' if len(heads) == 1 else 'random heads of the same number'
+    each = f'the mean of {draws.pop()} draws for each circuit' if len(draws) == 1 else 'averaged over several draws'
+    return (f'A fairer baseline keeps every MLP block and the input, as the circuits do, and adds {size}. It reaches '
+            f'{min(means):.2f} to {max(means):.2f} on the patching scale ({each}), against {min(circuits):.2f} to '
+            f'{max(circuits):.2f} for the circuits.')
 
 
 def stability_sentence(summaries: list[dict]) -> str | None:

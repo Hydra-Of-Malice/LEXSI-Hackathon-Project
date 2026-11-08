@@ -448,7 +448,7 @@ Across languages, Global ranges from {{GLOBAL_RANGE_LOW}}% to {{GLOBAL_RANGE_HIG
 
 ### 7.5 Where refusal lives
 
-We ran EAP-IG [19] on Global and Earth in English, Javanese and Bengali, on {{CIRCUIT_N_PAIRS}} minimal pairs per language after the token-length filter. EAP-IG scores each component by how much it affects the difference between refusing and complying. We checked each circuit with four faithfulness pillars, after confirming that the Hugging Face and TransformerLens versions of each model agree.
+We ran EAP-IG [19] on Global and Earth in English, Javanese and Bengali, on {{CIRCUIT_N_PAIRS}} minimal pairs per language after the token-length filter. EAP-IG scores each component by how much it affects the difference between refusing and complying. Each circuit keeps the 428 highest-scoring of the model's 612 attention heads and MLP blocks, about 70%. In all six circuits that meant every one of the 36 MLP blocks and 392 of the 576 heads. We checked each circuit with four faithfulness pillars, after confirming that the Hugging Face and TransformerLens versions of each model agree.
 
 We ran discovery without the preamble, because with it the run needs 54 GB of commit on the available CPU. The repairs are still evaluated in both preamble conditions.
 
@@ -463,7 +463,7 @@ We ran discovery without the preamble, because with it the run needs 54 GB of co
 - Top-50 node overlap across languages (Jaccard) in Global: {{CIRC_JACCARD_LANGS}}.
 - Top-50 node overlap between Global and Earth in the same language: {{CIRC_JACCARD_MODELS}}.
 - On the patching and ablation scales, 0 is no better than the harmless twin and 1 matches the full model. We give the unclipped ratios, so a value above 1 means the circuit alone pushes toward refusing harder than the full model does, and one below 0 means it pushes less than the harmless twin.
-- The baseline row runs the patching test on the better of a random and a magnitude-ranked node set of the same size.
+- The baseline row runs the patching test on the better of a random and a magnitude-ranked node set of the same size. That comparison flatters the circuit: the circuit keeps every MLP block, while a random set of the same size usually loses about a third of them. {{CIRC_FAIR_BASELINE_SENTENCE}}
 - The signal row is how far the harmful prompt raises the refusal opener's logit over the compliance opener's, compared with its harmless twin. The ratios above divide by it, so the smaller it is, the less they can be trusted.
 - {{CIRC_STABILITY_SENTENCE}}
 
@@ -918,6 +918,7 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{CIRC_SIGNAL_E_JV}}` | Earth, Javanese: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
 | `{{CIRC_SIGNAL_E_BN}}` | Earth, Bengali: full model's logit difference minus the harmless twin's | `logs/*-circuit-*.log` |
 | `{{CIRC_STABILITY_SENTENCE}}` | What the stability pillar can and cannot show | `circuits/*/summary.json` |
+| `{{CIRC_FAIR_BASELINE_SENTENCE}}` | Patching ratio of random head sets that keep every MLP block, like the circuit | `circuits/*/fair_baseline.json` |
 | `{{CIRCUIT_LAYERS}}` | Layer numbers in the mask | Checkpoint `lexsi_provenance.json` |
 | `{{CIRC_JACCARD_LANGS}}` | Overlap across en, jv, bn in Global | `circuits/overlap.json` |
 | `{{CIRC_JACCARD_MODELS}}` | Overlap of Global and Earth per language | `circuits/overlap.json` |
