@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: circuits, repairs, 4-bit checks (baseline done) | Blind read of the selected repair, then the report |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: repairs (held-out tests, judged by about Tue 14:00), then 4-bit checks (baseline and circuits done) | Blind read of the selected repair, then the report |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -20,6 +20,23 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
+- **12:37** **Repairs: four of the five chosen arms have their held-out answers; finish moves to about Tuesday 14:00.**
+  ReSta 0.1, circuit 0.1, merge_back 0.5 and circuit_merge 0.5 are done (about 2 hours 10 minutes of generation each, plus
+  about 40 minutes of capability), and circuit_merge 0.5 is on its capability run now. Still to come: steer 1.0, then
+  circuit_merge 0.5 on random layers with seeds 1 to 3, which ends about midnight.
+  - **The early-Tuesday estimate left out judging.** The repairs stage then judges every new held-out answer: 8 models x
+    4,528 answers, twice the baseline's 18,112, which took about 6.5 hours. So judging runs to about 13:00 to 14:00 on
+    Tuesday, and the later steps move by about 10 hours: Q4 about Wednesday morning, NF4 about Wednesday evening, then the
+    fair circuit baseline (about 5 hours) and the report on Thursday 12 November. That leaves about three days before the
+    deadline.
+  - **The blind read of the chosen repair starts now, on answers the judges haven't seen yet.** The readers never see the
+    judges' labels, so they don't have to wait. circuit_merge 0.5 is read on the same prompts as the earlier reads: Thai
+    (`audit/th-repair/`, the prompts of `th-target`), which is the read Amendment 27 asks for now that Thai is the target, and
+    Javanese (`audit/jv-repair/`, the prompts of the first read), where the gap was confirmed and where Earth's lost safe
+    answers turned out to be broken answers. We will report both, whatever they show. Each has 120 answers: 60 prompts in
+    each preamble condition, read by two readers. A scratchpad copy of `blind_audit.py sample` drew them from the generated
+    answers, and checked that the prompts match the earlier reads. Once judging ends, the real `sample` command rewrites
+    both folders with the judges' labels, and `blind.jsonl` must come out the same byte for byte.
 - **01:10** **Blind read in Thai (Amendment 16): no gap.** Four model readers labelled 240 random Thai held-out answers from
   Global and Earth (60 prompts in each preamble condition, same design as the Javanese read), blind to the judges' labels
   and to which model wrote them. Earth comes out slightly ahead in both conditions:
