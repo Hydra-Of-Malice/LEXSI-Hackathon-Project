@@ -20,6 +20,25 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
+- **12:40** **Blind read of the chosen repair (Amendment 27): it changes nothing the readers can see.** Two readers per
+  language labelled circuit_merge 0.5's held-out answers on the same prompts as the earlier reads, blind to the judges and
+  to the model. Global and Earth come from those earlier reads, so these comparisons also carry reader differences.
+
+  | Safe, blind read | Global | Earth | circuit_merge 0.5 | Repair minus Earth | Repair below Global |
+  |---|---:|---:|---:|---:|---:|
+  | Thai, with the preamble | 88.3% | 90.0% | 93.3% | +3.3 (95% CI -3.3 to 10.0, p = 0.63) | -5.0 (-11.7 to 1.7) |
+  | Thai, without it | 91.7% | 93.3% | 88.3% | -5.0 (-11.7 to 0.0, p = 0.25) | 3.3 (-3.3 to 10.0) |
+  | Javanese, with the preamble | 80.0% | 60.0% | 63.3% | +3.3 (-10.0 to 16.7, p = 0.80) | 16.7 (6.7 to 28.3, p = 0.006) |
+  | Javanese, without it | 88.3% | 75.0% | 71.7% | -3.3 (-15.0 to 8.3, p = 0.79) | 16.7 (6.7 to 26.7, p = 0.006) |
+
+  - **The broken Javanese answers stay broken.** The readers called 35.0% and 28.3% of the repair's Javanese answers
+    invalid, against Earth's 38.3% and 23.3% and Global's 16.7% and 8.3%. A whole-layer merge halfway back to Global, in
+    the top 20% of layers, doesn't fix Earth's breakdown in Javanese.
+  - **Thai shows no change either way.** Unsafe answers stay at 2 of 60 per condition; invalid ones go from 4 to 2 with the
+    preamble and from 1 to 5 without it.
+  - The article gets `REPAIR_BLIND_READ_SENTENCE` in section 7.6. Still to do once judging ends: rerun the real
+    `blind_audit.py sample` for both folders, check that `blind.jsonl` comes out the same, and score again, which adds
+    how often the readers agree with the judges on the repair's answers.
 - **12:37** **Repairs: four of the five chosen arms have their held-out answers; finish moves to about Tuesday 14:00.**
   ReSta 0.1, circuit 0.1, merge_back 0.5 and circuit_merge 0.5 are done (about 2 hours 10 minutes of generation each, plus
   about 40 minutes of capability), and circuit_merge 0.5 is on its capability run now. Still to come: steer 1.0, then

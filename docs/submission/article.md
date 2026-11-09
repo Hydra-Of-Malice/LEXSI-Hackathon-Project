@@ -522,6 +522,8 @@ A rise in the safe rate can mean fewer unsafe answers or less breakdown, and a r
 | Circuit merge | {{R_CMERGE_UNSAFE}}% | {{R_CMERGE_INVALID}}% | {{R_CMERGE_DISPUTED}}% |
 | Steering | {{R_STEER_UNSAFE}}% | {{R_STEER_INVALID}}% | {{R_STEER_DISPUTED}}% |
 
+**Blind read of the selected arm.** {{REPAIR_BLIND_READ_SENTENCE}}
+
 Per-language results for the selected arm, {{BEST_ARM}}:
 
 | Language | Safe: Earth | Safe: repaired | Refusal: Earth | Refusal: repaired | Over-refusal: Earth | Over-refusal: repaired | Capability: Earth | Capability: repaired |
@@ -765,6 +767,7 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{HAND_LABELLED_ITEMS}}` | Number of hand-labelled items | `calibration/` |
 | `{{HAND_CHECK_QUEUE_TOTAL}}` | All rows flagged for a hand check, sampled or not | `judged/*.summary.json` |
 | `{{JUDGE_ACCURACY}}` | Judge accuracy on the random audit, % | `calibration/` |
+| `{{REPAIR_BLIND_READ_SENTENCE}}` | What the blind read of the selected arm's held-out answers found, on the same prompts as the earlier reads. `SPEC.md` Amendment 27 | `scripts/blind_audit.py`, `audit/th-repair/`, `audit/jv-repair/` |
 | `{{BLIND_AUDIT_SENTENCE}}` | What the blind read of held-out target-language answers found, with n. `SPEC.md` Amendment 16 requires it next to the result | `scripts/blind_audit.py`, `audit/audit.json` |
 | `{{LANGUAGES_NOT_MEASURABLE}}` | Languages below AC1 0.6 on content labels, or 'none' | `report.json` |
 | `{{CONTENT_CALIBRATION_SENTENCE}}` | How far the content labels are checked. Agreement and hand sheets cover them. The router comparison covers refusal labels only | Team, `calibration/` |
