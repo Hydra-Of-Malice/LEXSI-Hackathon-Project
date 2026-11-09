@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: repairs (held-out tests, judged by about Tue 14:00), then 4-bit checks (baseline and circuits done) | Blind read of the selected repair, then the report |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: repairs (all generated; judging ends about Tue 10:00), then 4-bit checks (baseline and circuits done) | Blind read of the selected repair, then the report |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -18,6 +18,32 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
+
+## 10 November 2026
+- **02:56** **All repair answers are generated; judging is under way. Early result: on capability, the selected repair
+  misses the 1-point gate by one question.** Generation for the repairs stage ended at 21:10 on 9 November, as the three
+  random-layer controls ran faster than planned, and the two judges started straight after. Aya took 4 h 45 min for its first pass
+  over 30,705 answers and is on its second (16,158). Qwen3 follows, and the stage should end around 09:30–10:00 today.
+  - **Capability needs no judge, so it is final now.** It is Global-MMLU-Lite's held-out test, 400 questions per language,
+    and Indonesian stands in for Javanese. The gate (SPEC, threshold 3) allows a fall of at most 1 point in any language,
+    which is 4 questions of 400, under each preamble condition. Items lost against Earth, in the worst language:
+
+    | Arm | Default preamble | No preamble | Clears the gate |
+    |---|---|---|---|
+    | RESTA 0.1 | ko 12, ar 11, id 8 | id 12, ar 8 | no |
+    | Circuit 0.1 | ar 3 | id 8, sw 5 | default only |
+    | Merge-back 0.5 | ar 6, id 6 | id 7, ar 6, sw 6 | no |
+    | **Circuit + merge 0.5 (selected)** | **sw 5** | sw 2 | **no preamble only** |
+    | Steering 1.0 | ar 1 | ar 1 | both |
+    | Random layers, seeds 1 / 2 / 3 | ar 3 / bn 3 / bn 4 | sw 5 / sw 4 / sw 4 | seed 1 misses with no preamble |
+
+  - **What it means.** The selected arm's Swahili drop under the default preamble is 1.25 points, 95% CI −2.8 to 0.0, so
+    it fails the gate as written, by a single question. The random-layer controls lose 3 to 5 questions too, so a 1-point
+    gate on 400 items sits at the noise floor of the measure. The gate was fixed before the run and stays as written; the
+    article will say both things. Steering is the only arm that clears it everywhere, and it is also the arm that changes
+    the model least. Its safety numbers come after judging.
+  - Global is 1.3 points below Earth on the pooled capability score (95% CI −2.6 to −0.1), mostly in Swahili, Korean and
+    Indonesian: the regional model is better at its own languages, as expected.
 
 ## 9 November 2026
 - **17:59** **A clean public copy is ready for the team to review. Nothing is published.** It sits next to this repo, in
