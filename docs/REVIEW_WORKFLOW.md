@@ -10,13 +10,19 @@ packets contain harmful prompts and completions, so keep them under the private 
 publish the CSVs, source references, or hand-check sheets.
 
 Your team supplies the human evidence. Agents, local judges, and router models
-do not count as human reviewers. Assign Hindi and Hinglish, Bengali, and Tamil
-rows to reviewers who can read those languages and understand the safety
-meaning; use a second human for `unclear` or rejected rows when needed. The
-current full-data packet is
-`runs/experiments/full/earth/review/translation_review.with-source.csv` with
-1,766 source-backed rows and no labels. Its private source reference is
-`runs/experiments/full/earth/review/multijail-source-reference.jsonl`. The
+do not count as human reviewers. Assign Javanese first, because the main result
+depends on it, then Bengali, Arabic, Swahili, Thai and Korean, to reviewers who
+can read those languages and understand the safety meaning; use a second human
+for `unclear` or rejected rows when needed. The current full-data packet is
+`runs/experiments/full/earth/review/translation_review.with-source.csv`, exported
+on 9 November 2026 on Aditya's laptop: 2,994 rows, every one with its English
+source, and no labels. That is 1,573 MultiJail translations of harmful prompts and
+1,421 translations of XSTest's benign prompts: Javanese 538, Bengali 541, Korean
+535, Swahili 529, Thai 525 and Arabic 326 (Arabic's harmful prompts are mostly
+native, so few need review). Share it privately, never through the repo. Its
+private source reference is
+`runs/experiments/full/earth/review/multijail-source-reference.jsonl`: MultiJail's
+English text at the revision pinned in the data manifest. The
 development packet is
 `runs/experiments/development/earth/review/translation_review.with-source.csv`
 with 50 rows and no labels.
@@ -181,7 +187,8 @@ The summary reports these per language under `by_lang`:
 Quote the `audit_` figures. The same fields without that prefix also include the sampled disagreements, which
 over-represent hard rows. No accuracy value is inferred for missing labels.
 
-The report gate requires two independent judges, measurable per-language kappa at the configured floor, a complete
+The report gate requires two independent judges, measurable per-language agreement at the configured floor (Gwet's
+AC1 for content labels, kappa for refusal labels, `SPEC.md` Amendment 16), a complete
 verified human sample, and (for local judges) a verified shared-sample router comparison. When
 `experiment.primary_safety_axis` is `content`, the human sample also needs a `hand_safety_label` on every selected
 harmful row. When it is `refusal`, content hand labels are reported but not required. Human accuracy has no invented

@@ -743,7 +743,7 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{PR_CURATORKIT_SPLIT}}` | Link to the curatorkit split pull request, or 'planned'. None opened yet | GitHub |
 | `{{TRANSLATION_QUALITY_STATUS}}` | `human_reviewed`, `human_reviewed_with_rejections` or `unreviewed` | `translation_review.checked.json` |
 | `{{TRANSLATION_REVIEWED_ROWS}}` | Rows reviewed by a person | `translation_review.checked.json` |
-| `{{TRANSLATION_TOTAL_ROWS}}` | Rows in the review packet, which counts every row with origin `translated`, MultiJail's own included. The Mac figure of 1,766 was for Fire's languages | `data/manifest.json`, `scripts/review_data.py` |
+| `{{TRANSLATION_TOTAL_ROWS}}` | Rows in the review packet, which counts every row with origin `translated`, MultiJail's own included. Filled only from a packet built on this run's data manifest | `review/translation_review.with-source.summary.json`, from `scripts/review_data.py export` |
 | `{{TRANSLATION_REJECTED_ROWS}}` | Rows rejected by reviewers | `translation_review.checked.json` |
 | `{{N_PROMPTS_TOTAL}}` | Total prompts in the Earth build | `data/manifest.json` |
 | `{{N_PROMPTS_HELDOUT}}` | Held-out prompts in the Earth build | `data/manifest.json` |

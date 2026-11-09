@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import re
 import sys
@@ -63,6 +64,21 @@ def write_run(run: Path, report_json: dict, selection: dict = SELECTION) -> Path
     (run / 'report.json').write_text(json.dumps(report_json), encoding='utf-8')
     (run / 'selection.json').write_text(json.dumps(selection), encoding='utf-8')
     return run
+
+
+def test_the_translation_row_count_comes_from_a_packet_built_on_this_runs_data(tmp_path):
+    run = write_run(tmp_path, report())
+    (run / 'data').mkdir()
+    manifest = run / 'data' / 'manifest.json'
+    manifest.write_text(json.dumps({'translation': {'quality_status': 'unreviewed'}}), encoding='utf-8')
+    (run / 'review').mkdir()
+    summary = run / 'review' / 'translation_review.with-source.summary.json'
+    digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    summary.write_text(json.dumps({'rows': 2994, 'manifest_sha256': digest}), encoding='utf-8')
+    values = fill_submission.measured(run)
+    assert values['TRANSLATION_TOTAL_ROWS'] == '2,994' and values['TRANSLATION_REVIEWED_ROWS'] == '0'
+    summary.write_text(json.dumps({'rows': 1766, 'manifest_sha256': '0' * 64}), encoding='utf-8')
+    assert 'TRANSLATION_TOTAL_ROWS' not in fill_submission.measured(run)
 
 
 def test_gap_cells_come_straight_from_the_report(tmp_path):

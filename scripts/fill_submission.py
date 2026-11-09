@@ -512,6 +512,10 @@ def data_values(results: Results) -> dict:
                    'DATA_MANIFEST_SHA256': hashlib.sha256((results.run / 'data' / 'manifest.json').read_bytes()).hexdigest()})
     if translation.get('quality_status') == 'unreviewed':
         values.update({'TRANSLATION_REVIEWED_ROWS': '0', 'TRANSLATION_REJECTED_ROWS': '0', 'TRANSLATION_REVIEWERS': 'none yet'})
+    # The packet `scripts/review_data.py export` wrote. One built from other data counts other rows, so it must match.
+    packet = _read(results.run / 'review' / 'translation_review.with-source.summary.json')
+    if packet.get('rows') and packet.get('manifest_sha256') == values['DATA_MANIFEST_SHA256']:
+        values['TRANSLATION_TOTAL_ROWS'] = f"{packet['rows']:,}"
     return values
 
 

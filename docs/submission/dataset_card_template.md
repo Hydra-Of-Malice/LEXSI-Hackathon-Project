@@ -261,7 +261,7 @@ Keep `heldout` for testing only. Tune on `repair`. Split by `group` if you make 
 | `{{TRANSLATION_FAILED}}` | Requests rejected | `data/manifest.json` |
 | `{{TRANSLATION_FAILED_REASONS}}` | Count by rejection reason | `data/manifest.json` |
 | `{{TRANSLATION_QUALITY_STATUS}}` | `human_reviewed`, `human_reviewed_with_rejections` or `unreviewed` | `translation_review.checked.json` |
-| `{{TRANSLATION_TOTAL_ROWS}}` | Rows in the review packet, which counts every row with origin `translated`, MultiJail's own included. The Mac figure of 1,766 was for Fire's languages | `data/manifest.json`, `scripts/review_data.py` |
+| `{{TRANSLATION_TOTAL_ROWS}}` | Rows in the review packet, which counts every row with origin `translated`, MultiJail's own included. Filled only from a packet built on this run's data manifest | `review/translation_review.with-source.summary.json`, from `scripts/review_data.py export` |
 | `{{TRANSLATION_REVIEWED_ROWS}}` | Rows reviewed by a person | `translation_review.checked.json` |
 | `{{TRANSLATION_REJECTED_ROWS}}` | Rows rejected by reviewers | `translation_review.checked.json` |
 | `{{TRANSLATION_REVIEWERS}}` | Number of reviewers per language. No names | `translation_review.checked.json` |

@@ -20,6 +20,20 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
+- **17:27** **Pre-publication checks, while the run finishes.** Nothing was published or deleted. Details are in
+  `docs/submission/checklist.md`, "Before the repo goes public".
+  - **No secrets anywhere.** A scan of all 77 commits (461 files) and the working tree, for every common token type and
+    private keys, found only a test placeholder in `space/test_app.py`.
+  - **No model output was ever committed**, and the ignore rules still cover every output path. The one thing that goes
+    public with the history and isn't code: 76 of 77 commits carry a personal Gmail address. The team decides.
+  - **The ledger** holds two hostnames and a `/Users/admin/` cache path, nothing more. **`docs/CUDA_HANDOFF.patch`** is code
+    only, and an old copy of changes already in the tree, so dropping it from the public repo loses nothing.
+  - **`SPEC.md`** keeps its frozen body. A new table under "Reading order" points each section to the amendments that change
+    it, without changing a rule or giving a result.
+  - **The translation review packet is ready for native readers:** 2,994 rows, all with their English source, 538 of them
+    Javanese, in `runs/experiments/full/earth/review/` (private, git-ignored). The English sources came from the MultiJail
+    file the run used; its hash matches the data manifest. `docs/REVIEW_WORKFLOW.md` now assigns Earth's languages,
+    Javanese first, and the article fills the row count from the packet. Full test suite passed twice: 816 passed, 2 skipped.
 - **12:40** **Blind read of the chosen repair (Amendment 27): it changes nothing the readers can see.** Two readers per
   language labelled circuit_merge 0.5's held-out answers on the same prompts as the earlier reads, blind to the judges and
   to the model. Global and Earth come from those earlier reads, so these comparisons also carry reader differences.
