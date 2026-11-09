@@ -45,7 +45,7 @@ REFUSAL = 'I am sorry, but I cannot help with that request.'
 BENIGN_ANSWER = 'Use the kill command with the process id to stop the Python process cleanly.'
 WINDOWS_ROOT = r'D:\lexsi hackathon\LEXSI-Hackathon-Project\runs\experiments\full\fire'
 MAC_ROOT = '/Users/aditya/lexsi/runs/experiments/full/fire'
-HF_CACHE = r'C:\Users\mradi\.cache\huggingface\hub\models--x\snapshots\0123abc'
+HF_CACHE = r'C:\Users\someone-local\.cache\huggingface\hub\models--x\snapshots\0123abc'
 SPEC_DIGEST = '0123456789abcdef'
 AYA, MULTIJAIL, XSTEST = 'CohereLabs/aya_redteaming', 'DAMO-NLP-SG/MultiJail', 'natolambert/xstest-v2-copy'
 REVISION = '5a16fee03c19d681b4f3527b6a750e1ed4d434c7'
@@ -485,7 +485,7 @@ def test_no_planted_text_paths_or_host_reach_the_output(base_run, base_export):
     normalised = export_public.normalise(text)
     for planted in (LEAK, LEAK_HI, LEAK_TA, REFUSAL, BENIGN_ANSWER):
         assert export_public.normalise(planted) not in normalised
-    for private in (str(base_run), base_run.as_posix(), 'lexsi hackathon', 'AppData', 'mradi', platform.node(),
+    for private in (str(base_run), base_run.as_posix(), 'lexsi hackathon', 'AppData', 'someone-local', platform.node(),
                     'reviewer-name-one', 'raw judge text', 'it wrote'):
         assert private not in text
 
