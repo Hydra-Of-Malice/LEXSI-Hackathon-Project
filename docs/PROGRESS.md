@@ -20,6 +20,17 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 9 November 2026
+- **17:59** **A clean public copy is ready for the team to review. Nothing is published.** It sits next to this repo, in
+  `D:\lexsi hackathon\LEXSI-Hackathon-Public` on Aditya's laptop: 128 files, one commit under Aditya's GitHub noreply address,
+  and no remote. `scripts/make_public_copy.py` builds it from the committed tree, so no uncommitted edit or model output can
+  get in, and it rebuilds the same way after the final results (`--replace`).
+  - **Left out:** the notes on other teams (`docs/research/07_*`), the notes on the team's earlier project (`08_*`), and the
+    organisers' site text, slides and poster (`docs/research/raw/`), which `01_official_brief.md` already summarises. The four
+    lines that named them are reworded in the copy only. The builder and its test stay out too.
+  - **Checked in the copy:** no secrets (`scripts/secret_scan.py`, which now also scans the working repo: 0 found), no links
+    to left-out files, and the full test suite passes twice there, on the copy's own source: 816 passed, 2 skipped.
+  - **Still the team's call:** keep the ledger (it names the two machines), keep `space/` and `docs/upstream_patches/`, and
+    whether to publish at all. Once agreed, publishing is: create the GitHub repo, add it as the copy's remote, push.
 - **17:27** **Pre-publication checks, while the run finishes.** Nothing was published or deleted. Details are in
   `docs/submission/checklist.md`, "Before the repo goes public".
   - **No secrets anywhere.** A scan of all 77 commits (461 files) and the working tree, for every common token type and
