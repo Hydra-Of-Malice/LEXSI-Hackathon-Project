@@ -20,6 +20,30 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 10 November 2026
+- **14:31** **The 32B router judges agree closely with the local 8B judges, so their calibration is done for Global, Earth
+  and the selected repair.** The spec names the router pair as the main judges and asks for agreement with the local pair
+  on a shared sample before a headline number. The team's Hugging Face credit paid for it, about $1.
+  - **The sample** (`scripts/router_sample.py`): 1,680 held-out answers, 560 per model, 20 from every language x
+    harmful/benign x preamble cell, in a seeded order.
+  - **Refusal labels:** Cohen's kappa 0.79 to 1.00 per language, median 0.93; raw agreement 92% to 100%. Bengali,
+    Javanese and Swahili were lowest. Every language clears the 0.6 floor.
+  - **Content labels:** on the 780 harmful-prompt answers that both pairs could call, the same label in 94% to 100%,
+    per language.
+  - **Into the report:**
+    - `calibration/<tag>.router-comparison.json` now exists for those three models, built from every local verdict
+      plus the sampled router verdicts. Its local digest matches each judge summary.
+    - The report's eligibility check no longer lists "missing router calibration" for them. What's left is the human
+      calibration, the native-reader sheets.
+    - Their provenance is in the sample folder's own ledger. The run's ledger is a hash chain the full run is still
+      writing, so a second writer could fork it.
+  - **Cost:** the first full-sample usage counter over-counted, because threads stacked its wrappers. The judge cache
+    holds 5,000 rows, one per billed call, which comes to about $1.00. The counter is now thread-safe and tested.
+  - **Written:** `KAPPA_LOCAL_VS_ROUTER`.
+  - **NF4 on rented GPUs:**
+    - **HF job:** the first attempt stopped at its own input check. A Q4 file was still being written while it was
+      bundled. Fixed: the bundle snapshots the files first and leaves out unfinished Q4 files. The relaunch is building
+      llama.cpp now (10-hour cap).
+    - **Kaggle:** the T4 notebook is set up and waits for its `HF_TOKEN` secret.
 - **12:16** **NF4 moves off the laptop, to rented GPUs, so it runs at the same time as Q4.** It took 12 to 15 hours at
   the end of the chain. Now it runs on a Hugging Face Jobs A10G (about $1 an hour from the team's Hugging Face credit,
   Aditya's call) and, as a second run on different hardware, on a free Kaggle T4. Q4 stays on the laptop, and once it

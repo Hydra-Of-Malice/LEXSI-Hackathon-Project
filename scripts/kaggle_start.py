@@ -17,7 +17,8 @@ WORK = '/tmp/lexsi'
 if not os.environ.get('HF_TOKEN'):
     raise SystemExit('Add a Kaggle secret named HF_TOKEN first (Add-ons > Secrets)')
 # Kaggle stops a session at 12 hours; stop cleanly at 11.5, sync, and let the next session resume.
-os.environ.update(BUNDLE_REPO=REPO, PLATFORM='kaggle-t4', WORK=WORK, DEADLINE_MINUTES='690', CUDA_VISIBLE_DEVICES='0')
+os.environ.update(BUNDLE_REPO=REPO, PLATFORM='kaggle-t4', WORK=WORK, DEADLINE_MINUTES='690', CUDA_VISIBLE_DEVICES='0',
+                  PATH=os.environ.get('PATH', '') + ':/usr/local/cuda/bin')  # nvcc, for the llama.cpp build
 os.makedirs(WORK, exist_ok=True)
 with tarfile.open(hf_hub_download(REPO, 'code.tar', repo_type='dataset', local_dir=WORK)) as archive:
     archive.extractall(os.path.join(WORK, 'code'), filter='data')

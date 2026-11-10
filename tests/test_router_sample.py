@@ -5,6 +5,8 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts' / 'router_sample.py'
 
@@ -39,30 +41,77 @@ def test_small_cells_give_what_they_have():
     assert sum(1 for r in sample if (r['lang'], r['kind'], r['preamble']) == ('jv', 'benign', 'none')) == 5
 
 
-def test_usage_counts_billed_calls_but_not_cache_hits(monkeypatch, tmp_path):
+def test_usage_counts_each_billed_call_once_even_from_many_threads(monkeypatch, tmp_path):
+    """The judge sends requests from 8 threads; the first full sample's counter stacked wrappers and counted calls
+    about five times over. Every billed call must count exactly once, and cache hits not at all."""
+    import time
+
     module = _module()
     from langsafe import llm_client
+    import openai
 
-    class Cache:
-        def __init__(self): self.store = {}
-        def key(self, messages, params): return str(messages)
-        def get(self, key): return self.store.get(key)
-        def put(self, key, value): self.store[key] = value
+    billed = []
 
-    def create(**kwargs):
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='{"label": "full_refusal"}'))],
-                               usage=SimpleNamespace(prompt_tokens=600, completion_tokens=12))
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            def create(**request):
+                time.sleep(0.002)  # let threads overlap
+                billed.append(request['messages'][0]['content'])
+                return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='{"label": "safe"}'))],
+                                       usage=SimpleNamespace(prompt_tokens=600, completion_tokens=12))
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
 
-    client = object.__new__(llm_client.ChatClient)
-    client.model, client.max_retries, client._cache = 'judge-32b', 1, Cache()
-    client.client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
-    monkeypatch.setattr(llm_client.ChatClient, 'chat', llm_client.ChatClient.chat)
+        def close(self):
+            pass
+
+    monkeypatch.setattr(openai, 'OpenAI', FakeOpenAI)
+    monkeypatch.setenv('HF_TOKEN', 'not-a-real-token')
+    monkeypatch.setattr(llm_client.ChatClient, '__init__', llm_client.ChatClient.__init__)
     module.record_usage()
-    module.record_usage()  # once per tag in main(): must not count each call twice
-    client.chat([{'role': 'user', 'content': 'a'}])
-    client.chat([{'role': 'user', 'content': 'a'}])  # cached: not billed
-    client.chat([{'role': 'user', 'content': 'b'}])
-    assert dict(module.USAGE['judge-32b']) == {'calls': 2, 'prompt_tokens': 1200, 'completion_tokens': 24}
+    module.record_usage()  # main() calls it once per tag; it must not wrap twice
+    client = llm_client.ChatClient('https://router.example/v1', 'judge-32b', cache_path=tmp_path / 'cache.sqlite')
+    batch = [[{'role': 'user', 'content': f'item {i % 40}'}] for i in range(120)]  # 40 distinct, 80 repeats
+    client.chat_many(batch)
+    client.chat_many(batch)  # all cached now
+    client.close()
+    assert dict(module.USAGE['judge-32b']) == {'calls': len(billed), 'prompt_tokens': 600 * len(billed),
+                                               'completion_tokens': 12 * len(billed)}
+    assert 40 <= len(billed) < 120
+
+
+def _judged(judge_set, n, label=lambda i: 'full_refusal' if i % 3 else 'full_compliance'):
+    return [{'id': f'p{i}', 'lang': 'th' if i % 2 else 'jv', 'kind': 'harmful', 'preamble': 'default',
+             'prompt': f'prompt {i}', 'response': f'answer {i}', 'judge_set': judge_set,
+             'judges': {'a': {}, 'b': {}}, 'rubric_hash': 'rubric', 'label': label(i),
+             'safety_label': 'safe' if i % 4 else 'unsafe'} for i in range(n)]
+
+
+def test_calibration_file_covers_the_whole_local_evaluation(tmp_path):
+    import json as _json
+    from langsafe.eval.judge_run import evaluation_digest
+    from langsafe.provenance import Ledger
+
+    module = _module()
+    run, out = tmp_path / 'earth', tmp_path / 'earth-router-sample'
+    local = _judged('local', 40)
+    (run / 'judged').mkdir(parents=True)
+    (out / 'judged').mkdir(parents=True)
+    (run / 'judged' / 'earth.local.jsonl').write_text(''.join(_json.dumps(r) + '\n' for r in local))
+    summary = run / 'judged' / 'earth.local.summary.json'
+    summary.write_text(_json.dumps({'evaluation_digest': evaluation_digest(local)}))
+    router = _judged('router', 40)[::4]  # the sample: every fourth answer
+    (out / 'judged' / 'earth.router-sample.jsonl').write_text(''.join(_json.dumps(r) + '\n' for r in router))
+    path = Path(module.write_calibration(run, out, 'earth', 20, replace=False))
+    result = _json.loads(path.read_text())
+    assert path == run / 'calibration' / 'earth.router-comparison.json'
+    assert result['verified'] and result['shared_rows'] == 10 and result['sample']['answers'] == 10
+    assert result['local_evaluation_digest'] == evaluation_digest(local)
+    assert Ledger(out / 'ledger.jsonl').verify()[0]
+    with pytest.raises(SystemExit, match='replace'):
+        module.write_calibration(run, out, 'earth', 20, replace=False)
+    summary.write_text(_json.dumps({'evaluation_digest': 'another evaluation'}))
+    with pytest.raises(SystemExit, match='no longer match'):
+        module.write_calibration(run, out, 'earth', 20, replace=True)
 
 
 def test_content_agreement_skips_disputed_rows():

@@ -8,6 +8,7 @@ measured on a shared sample before either is used for a headline number". This i
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20             # plan only
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --pilot 4 --execute
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --execute
+    python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --write-calibration
 
 The sample takes `--per-cell` answers from every language x harmful/benign x preamble cell, in a seeded order, so the
 same command always picks the same answers. `--pilot N` judges only the first N per tag and reports the tokens the
@@ -22,12 +23,14 @@ import hashlib
 import json
 import os
 import sys
+import threading
 from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 USAGE = defaultdict(lambda: {'calls': 0, 'prompt_tokens': 0, 'completion_tokens': 0})
+LOCK = threading.Lock()
 
 
 def read_rows(path: Path) -> list[dict]:
@@ -48,37 +51,35 @@ def stratified_sample(rows: list[dict], per_cell: int, seed: int, key) -> list[d
 
 
 def record_usage() -> None:
-    """Wrap the router client so each billed call's reported tokens are counted. Cache hits cost nothing.
-    Wrapping twice would count every call twice, so a second call does nothing."""
+    """Count each billed router call's reported tokens. Cache hits never reach the provider, so they are not counted.
+
+    Each client's request function is wrapped once, when the client is made, and counts under a lock: the judge sends
+    requests from several threads at once, and swapping the function per request let wrappers stack and count one call
+    several times (the first full sample reported about five times its real calls). Calling this twice does nothing."""
     from langsafe import llm_client
 
-    original = llm_client.ChatClient.chat
+    original = llm_client.ChatClient.__init__
     if getattr(original, 'counts_usage', False):
         return
 
-    def chat(self, messages, **params):
-        params = {'temperature': 0, 'max_tokens': 512, **params}
-        if self._cache.get(self._cache.key(messages, params)) is not None:
-            return original(self, messages, **params)
+    def __init__(self, *args, **kwargs):
+        original(self, *args, **kwargs)
         create = self.client.chat.completions.create
 
-        def counted(**kwargs):
-            response = create(**kwargs)
+        def counted(**request):
+            response = create(**request)
             usage = getattr(response, 'usage', None)
-            entry = USAGE[self.model]
-            entry['calls'] += 1
-            entry['prompt_tokens'] += getattr(usage, 'prompt_tokens', 0) or 0
-            entry['completion_tokens'] += getattr(usage, 'completion_tokens', 0) or 0
+            with LOCK:
+                entry = USAGE[self.model]
+                entry['calls'] += 1
+                entry['prompt_tokens'] += getattr(usage, 'prompt_tokens', 0) or 0
+                entry['completion_tokens'] += getattr(usage, 'completion_tokens', 0) or 0
             return response
 
         self.client.chat.completions.create = counted
-        try:
-            return original(self, messages, **params)
-        finally:
-            self.client.chat.completions.create = create
 
-    chat.counts_usage = True
-    llm_client.ChatClient.chat = chat
+    __init__.counts_usage = True
+    llm_client.ChatClient.__init__ = __init__
 
 
 def content_agreement(local: list[dict], router: list[dict]) -> dict:
@@ -103,6 +104,43 @@ def content_agreement(local: list[dict], router: list[dict]) -> dict:
     return {'shared_rows': len(shared), 'by_lang': result}
 
 
+def write_calibration(run: Path, out: Path, tag: str, per_cell: int, replace: bool) -> str:
+    """Write the run's calibration/<tag>.router-comparison.json from the judged sample, without new router calls.
+
+    The report reads this file to decide whether a locally judged language has its shared-sample router calibration.
+    It must describe the tag's whole local evaluation, so the comparison takes every local verdict and the sampled
+    router verdicts (they overlap on the sample), and its local digest must equal the one in the tag's judge summary.
+    Provenance goes in the sample folder's own ledger: the run's ledger is a hash chain the full run is still extending,
+    and a second writer could fork it."""
+    from langsafe.eval.judge_run import compare_judge_sets
+    from langsafe.provenance import Ledger
+
+    router_path = out / 'judged' / f'{tag}.router-sample.jsonl'
+    router = read_rows(router_path)
+    local = read_rows(run / 'judged' / f'{tag}.local.jsonl')
+    summary = json.loads((run / 'judged' / f'{tag}.local.summary.json').read_text(encoding='utf-8'))
+    result = compare_judge_sets(local, router)
+    if result['local_evaluation_digest'] != summary.get('evaluation_digest'):
+        raise SystemExit(f'{tag}: the local verdicts no longer match their judge summary')
+    if not result['verified'] or result['shared_rows'] != len(router):
+        raise SystemExit(f'{tag}: comparison is not verified, or not every sampled answer is shared')
+    result['sample'] = {'design': 'stratified by language x harmful/benign x preamble, seeded order',
+                        'per_cell': per_cell, 'answers': len(router), 'script': 'scripts/router_sample.py',
+                        'router_verdicts_sha256': hashlib.sha256(router_path.read_bytes()).hexdigest()}
+    result['content_axis'] = content_agreement(local, router)
+    target = run / 'calibration' / f'{tag}.router-comparison.json'
+    if target.exists() and not replace:
+        raise SystemExit(f'{target} exists; pass --replace to overwrite it')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix('.tmp')
+    temporary.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
+    temporary.replace(target)
+    Ledger(out / 'ledger.jsonl').append('calibrate', {
+        'tag': tag, 'artifact': str(target), 'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),
+        'compare_router': True, 'sample': result['sample']})
+    return str(target)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--run', type=Path, default=ROOT / 'runs' / 'experiments' / 'full' / 'earth')
@@ -110,6 +148,9 @@ def main(argv=None) -> int:
     parser.add_argument('--per-cell', type=int, default=20)
     parser.add_argument('--pilot', type=int, default=0, help='judge only the first N sampled answers per tag')
     parser.add_argument('--execute', action='store_true', help='make the billed router calls')
+    parser.add_argument('--write-calibration', action='store_true',
+                        help="write the run's calibration/<tag>.router-comparison.json from the judged sample (no calls)")
+    parser.add_argument('--replace', action='store_true', help='with --write-calibration: overwrite an existing file')
     args = parser.parse_args(argv)
     run = args.run.resolve()
     out = run.parent / (run.name + '-router-sample')
@@ -153,6 +194,11 @@ def main(argv=None) -> int:
                       'refusal_axis': compare_judge_sets(local, router), 'content_axis': content_agreement(local, router)}
         (out / f'{tag}.router-sample-comparison.json').write_text(json.dumps(comparison, indent=2), encoding='utf-8')
         plan[tag]['comparison'] = str(out / f'{tag}.router-sample-comparison.json')
+    if args.write_calibration:
+        if args.pilot:
+            raise SystemExit('A pilot is too small to calibrate with; run the full sample first')
+        for tag in args.tags.split(','):
+            plan.setdefault(tag, {})['calibration'] = write_calibration(run, out, tag, args.per_cell, args.replace)
     if args.execute:
         usage_path = out / 'usage.json'
         earlier = json.loads(usage_path.read_text(encoding='utf-8')) if usage_path.is_file() else []
