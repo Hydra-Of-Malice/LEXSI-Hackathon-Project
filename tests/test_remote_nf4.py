@@ -39,6 +39,45 @@ def test_half_written_generation_line_is_dropped(remote, tmp_path):
     assert remote.trim_partial_lines(path) == 0
 
 
+def test_unfinished_q4_evidence_is_left_out_but_finished_q4_stays(remote):
+    names = ['gens\\global.jsonl', 'capability\\global.json',
+             'gens\\global-q4.jsonl', 'capability\\global-q4.json', 'capability\\global-q4.none.json',
+             'gens\\earth-q4.jsonl', 'capability\\earth-q4.json', 'judged\\earth-q4.local.jsonl',
+             'judged\\earth-q4.local.summary.json', 'calibration\\earth-circuit_merge-0p5-q4.local.json']
+    assert remote.unfinished_q4(names) == {'gens/global-q4.jsonl', 'capability/global-q4.json',
+                                           'capability/global-q4.none.json',
+                                           'calibration/earth-circuit_merge-0p5-q4.local.json'}
+    assert remote.unfinished_q4(['gens/global.jsonl', 'judged/earth.local.jsonl']) == set()
+
+
+def test_build_cache_round_trip(remote, monkeypatch, tmp_path):
+    stored = {}
+
+    class Hub:
+        def repo_info(self, *a, **k): return SimpleNamespace(private=True)
+        def list_repo_files(self, *a, **k): return list(stored)
+        def upload_file(self, path_or_fileobj, path_in_repo, **k): stored[path_in_repo] = Path(path_or_fileobj).read_bytes()
+
+    monkeypatch.setattr(remote, 'api', lambda: Hub())
+    import huggingface_hub
+
+    def download(repo, name, repo_type=None, local_dir=None):
+        target = Path(local_dir) / 'blob'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(stored[name])
+        return str(target)
+
+    monkeypatch.setattr(huggingface_hub, 'hf_hub_download', download)
+    args = SimpleNamespace(repo='r', work=str(tmp_path), name='cache/llama-sm86.tar.gz', to=str(tmp_path / 'out'))
+    with pytest.raises(SystemExit):
+        remote.cache_get(args)
+    (tmp_path / 'bin').mkdir()
+    (tmp_path / 'bin' / 'llama-server').write_bytes(b'binary')
+    remote.cache_put(SimpleNamespace(repo='r', work=str(tmp_path), name=args.name, source=str(tmp_path / 'bin')))
+    remote.cache_get(args)
+    assert (tmp_path / 'out' / 'llama-server').read_bytes() == b'binary'
+
+
 def test_judge_cache_snapshot_is_a_readable_copy(remote, tmp_path):
     output = tmp_path / 'out'
     output.mkdir()

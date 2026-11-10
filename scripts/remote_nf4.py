@@ -21,10 +21,12 @@ import importlib.metadata
 import importlib.util
 import json
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
 import sys
+import tarfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -103,26 +105,49 @@ def pins() -> tuple[str, list[str], dict]:
     return torch, lines, kits
 
 
+def unfinished_q4(names: list[str]) -> set[str]:
+    """Q4 evidence the chain is still writing: any file of a `<tag>-q4` variant whose judging summary is not there yet.
+    The NF4 run does not need Q4 files, and one that changes mid-bundle would fail the remote hash check."""
+    names = [norm(name) for name in names]
+    variants = {match.group(1) for name in names if (match := re.search(r'([A-Za-z0-9_.-]+?-q4)(?=[./])', name.split('/')[-1]))}
+    finished = {variant for variant in variants if f'judged/{variant}.local.summary.json' in names}
+    return {name for name in names for variant in variants - finished
+            if re.match(re.escape(variant) + r'[./]', name.split('/')[-1])}
+
+
 def bundle(args) -> None:
-    """Stage the code (git HEAD), source evidence, manifest and pins, check the Hub copies, and upload privately."""
+    """Stage the code (git HEAD), source evidence, manifest and pins, check the Hub copies, and upload privately.
+
+    The evidence is copied first and the laptop plan is made from those copies, so the manifest describes exactly the
+    files uploaded even while the chain keeps writing its run directory."""
     nf4 = nf4_module()
     dirty = git('status', '--porcelain', '--', 'src', 'scripts', 'configs', 'pyproject.toml')
     if dirty:
         raise SystemExit(f'Commit the code first; the bundle ships git HEAD and these differ:\n{dirty}')
     private_repo(args.repo)
     commit = git('rev-parse', 'HEAD')
-    log('laptop dry run (hashes the source run, both base models, the repair checkpoint and both judges)')
-    plan = dry_run_plan(SOURCE, ROOT / 'configs' / 'spec.yaml', STAGING / 'unused-output')
-    if plan['code']['git_commit'] != commit:
-        raise SystemExit('Dry-run code identity does not come from HEAD')
     shutil.rmtree(STAGING, ignore_errors=True)
     (STAGING / 'requirements').mkdir(parents=True)
-    (STAGING / 'laptop-plan.json').write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding='utf-8')
-    subprocess.run(['git', 'archive', '--format=tar', '-o', str(STAGING / 'code.tar'), 'HEAD'], cwd=ROOT, check=True)
-    for name in normalised(plan['source_evidence']['files']):
+    log('listing the source evidence')
+    live = dry_run_plan(SOURCE, ROOT / 'configs' / 'spec.yaml', STAGING / 'unused-output')
+    names = list(normalised(live['source_evidence']['files']))
+    skipped = unfinished_q4(names)
+    if skipped:
+        log(f'leaving out {len(skipped)} Q4 files still being written: {sorted(skipped)}')
+    for name in names:
+        if name in skipped:
+            continue
         target = STAGING / 'source' / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SOURCE / name, target)
+    log('laptop dry run on the copies (hashes them, both base models, the repair checkpoint and both judges)')
+    plan = dry_run_plan(STAGING / 'source', ROOT / 'configs' / 'spec.yaml', STAGING / 'unused-output')
+    if plan['code']['git_commit'] != commit:
+        raise SystemExit('Dry-run code identity does not come from HEAD')
+    if set(normalised(plan['source_evidence']['files'])) != set(names) - skipped:
+        raise SystemExit('The plan made from the copies lists different evidence from what was copied')
+    (STAGING / 'laptop-plan.json').write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding='utf-8')
+    subprocess.run(['git', 'archive', '--format=tar', '-o', str(STAGING / 'code.tar'), 'HEAD'], cwd=ROOT, check=True)
     torch, lines, kits = pins()
     local = torch.split('+')[1] if '+' in torch else None
     if not local or not local.startswith('cu'):
@@ -178,7 +203,7 @@ def bundle(args) -> None:
         return
     log(f'uploading the bundle to {args.repo} (private)')
     hub.upload_folder(repo_id=args.repo, repo_type='dataset', folder_path=str(STAGING), path_in_repo='',
-                      ignore_patterns=['unused-output/**'], delete_patterns=EVIDENCE_PATTERNS,
+                      ignore_patterns=['unused-output/**', 'source/checkpoints/**'], delete_patterns=EVIDENCE_PATTERNS,
                       commit_message=f'NF4 bundle for {commit[:7]}')
     log(f'bundle uploaded: {len(manifest["evidence"])} evidence files, code {commit[:7]}')
 
@@ -378,6 +403,30 @@ def launch_hf(args) -> None:
     print(json.dumps({'id': job.id, 'url': getattr(job, 'url', None), 'flavor': args.flavor, 'timeout': args.timeout}))
 
 
+def cache_get(args) -> None:
+    """Unpack a cached build from the private repo into --to; exit 1 if there is none."""
+    from huggingface_hub import hf_hub_download
+
+    private_repo(args.repo)
+    if args.name not in api().list_repo_files(args.repo, repo_type='dataset'):
+        raise SystemExit(1)
+    path = hf_hub_download(args.repo, args.name, repo_type='dataset', local_dir=str(Path(args.work) / 'cache-download'))
+    target = Path(args.to)
+    target.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(path) as archive:
+        archive.extractall(target, filter='data')
+
+
+def cache_put(args) -> None:
+    """Pack --from into a tarball and keep it in the private repo, so a retry on the same GPU type skips the build."""
+    private_repo(args.repo)
+    archive = Path(args.work) / 'cache-upload.tar.gz'
+    with tarfile.open(archive, 'w:gz') as stream:
+        stream.add(args.source, arcname='.')
+    api().upload_file(path_or_fileobj=str(archive), path_in_repo=args.name, repo_id=args.repo, repo_type='dataset',
+                      commit_message=f'Build cache {args.name}')
+
+
 def fetch(args) -> None:
     """Download a platform's synced output into runs/experiments/full/earth-nf4-<platform> (git-ignored)."""
     from huggingface_hub import snapshot_download
@@ -414,6 +463,11 @@ def main(argv=None) -> int:
     command.add_argument('--platform', default='hf-a10g')
     command.add_argument('--image', default='nvidia/cuda:12.8.1-devel-ubuntu24.04')
     command.add_argument('--dry-run', action='store_true')
+    for name, fn in (('cache-get', cache_get), ('cache-put', cache_put)):
+        command = sub.add_parser(name); command.set_defaults(fn=fn)
+        command.add_argument('--work', required=True); command.add_argument('--name', required=True)
+        command.add_argument('--to' if name == 'cache-get' else '--from', dest='to' if name == 'cache-get' else 'source',
+                             required=True)
     command = sub.add_parser('fetch'); command.set_defaults(fn=fetch)
     command.add_argument('--platform', required=True)
     for command in sub.choices.values():
