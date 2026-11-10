@@ -22,7 +22,8 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 ## 10 November 2026
 - **16:41** **Fair circuit baseline done: the circuits' heads beat the same number of random heads by a wide margin.**
   It ran on an HF L40S in fp32 with TF32 off, in 11 minutes for about $0.55 in all. On the laptop CPU it would have
-  taken 5 hours after Q4. It replaces a fixed per-circuit baseline, which is in the article already.
+  taken 5 hours after Q4. It sits beside CircuitKIT's own random baseline, which also drops about a third of the MLP
+  blocks and so mostly measures what losing them costs.
   - **Getting there took three tries:**
     - The first stopped before loading a model: a Windows path in each circuit's summary reads as one file name on
       Linux. Fixed and tested.
