@@ -20,6 +20,34 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 10 November 2026
+- **16:41** **Fair circuit baseline done: the circuits' heads beat the same number of random heads by a wide margin.**
+  It ran on an HF L40S in fp32 with TF32 off, in 11 minutes for about $0.55 in all. On the laptop CPU it would have
+  taken 5 hours after Q4. It replaces a fixed per-circuit baseline, which is in the article already.
+  - **Getting there took three tries:**
+    - The first stopped before loading a model: a Windows path in each circuit's summary reads as one file name on
+      Linux. Fixed and tested.
+    - The second ran out of host RAM. The fp32 model needs about 30 GB, and an a10g-small has 15.
+    - The L40S has 62 GB. The job now uploads each circuit as it finishes.
+  - **The check holds:** each circuit's first draw rebuilds the circuit itself, and on the GPU it reproduced the ratio
+    logged on the laptop CPU within 2.3e-6 (the bar is 1e-3).
+
+    | Circuit | Circuit's patching ratio | Random heads, mean of 3 (each draw) |
+    |---|---:|---|
+    | Earth, Bengali | 0.963 | 0.21 |
+    | Earth, English | 0.995 | 0.69 |
+    | Earth, Javanese | 0.901 | 0.34 (0.27, 0.16, 0.58) |
+    | Global, Bengali | 1.009 | 0.29 (0.42, 0.26, 0.20) |
+    | Global, English | 0.994 | 0.63 (0.45, 0.75, 0.69) |
+    | Global, Javanese | 0.907 | 0.52 (0.57, 0.58, 0.42) |
+
+  - **Read with the repair result:** the map does find the heads that carry refusal, since random heads with every MLP
+    block kept recover far less. But confining an edit to those layers did not make the model safer than the same edit
+    on random layers. The map locates the mechanism; it did not help to repair it.
+  - `fill_submission.py` builds `CIRC_FAIR_BASELINE_SENTENCE` from these files. It now also says that the baseline ran
+    on a GPU, and how closely it matched the CPU.
+  - **Kaggle:** the first T4 run stopped in the llama.cpp build. Its log stays inside Kaggle, and the likely cause is
+    the CUDA compiler's location. The start script now finds nvcc anywhere on the disk and prints the build log if it
+    fails. Version 2 is running.
 - **14:53** **NF4 is running on the Hugging Face A10G, and the fair circuit baseline moved there too. The finish moves to
   about Wednesday morning.**
   - **NF4 (job `6af2d920`):**

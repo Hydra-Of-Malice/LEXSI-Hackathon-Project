@@ -374,6 +374,17 @@ def test_the_fair_baseline_sentence_gives_both_ranges(tmp_path):
     assert '0.40 to 0.40 on the patching scale' in sentence and '0.99 to 0.99 for the circuits' in sentence
 
 
+def test_the_fair_baseline_sentence_says_when_it_ran_on_a_gpu(tmp_path):
+    run = write_fair(write_circuits(write_run(tmp_path, report())))
+    assert 'GPU' not in fill_submission.measured(run)['CIRC_FAIR_BASELINE_SENTENCE']
+    for path in (run / 'circuits').glob('*/fair_baseline.json'):
+        row = json.loads(path.read_text(encoding='utf-8'))
+        row.update(check_ratio=0.99 + 2.3e-6, hardware={'device': 'cuda', 'gpu': 'NVIDIA L40S'})
+        path.write_text(json.dumps(row), encoding='utf-8')
+    sentence = fill_submission.measured(run)['CIRC_FAIR_BASELINE_SENTENCE']
+    assert 'in full fp32 on an NVIDIA L40S rather than the CPU' in sentence and 'within 2e-06' in sentence
+
+
 def test_the_fair_baseline_sentence_waits_for_all_six(tmp_path):
     run = write_fair(write_circuits(write_run(tmp_path, report())), skip='earth-circuit__bn')
     assert 'CIRC_FAIR_BASELINE_SENTENCE' not in fill_submission.measured(run)

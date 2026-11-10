@@ -445,9 +445,18 @@ def fair_baseline_sentence(cells: list[dict]) -> str | None:
     circuits = [cell['circuit_patching_ratio'] for cell in cells]
     size = f'{heads.pop()} random heads' if len(heads) == 1 else 'random heads of the same number'
     each = f'the mean of {draws.pop()} draws for each circuit' if len(draws) == 1 else 'averaged over several draws'
-    return (f'A fairer baseline keeps every MLP block and the input, as the circuits do, and adds {size}. It reaches '
-            f'{min(means):.2f} to {max(means):.2f} on the patching scale ({each}), against {min(circuits):.2f} to '
-            f'{max(circuits):.2f} for the circuits.')
+    sentence = (f'A fairer baseline keeps every MLP block and the input, as the circuits do, and adds {size}. It '
+                f'reaches {min(means):.2f} to {max(means):.2f} on the patching scale ({each}), against '
+                f'{min(circuits):.2f} to {max(circuits):.2f} for the circuits.')
+    gpus = {(cell.get('hardware') or {}).get('gpu') for cell in cells if (cell.get('hardware') or {}).get('device') == 'cuda'}
+    if gpus:
+        # The circuits were found on a CPU; say where the baseline ran and how closely it reproduced them.
+        gaps = [abs(cell['check_ratio'] - cell['circuit_patching_ratio']) for cell in cells
+                if cell.get('check_ratio') is not None]
+        where = gpus.pop() if len(gpus) == 1 else 'GPUs'
+        match = f', and each circuit’s check draw matched the ratio logged on the CPU within {max(gaps):.0e}' if gaps else ''
+        sentence += f' The baseline ran in full fp32 on an {where} rather than the CPU{match}.'
+    return sentence
 
 
 def stability_sentence(summaries: list[dict]) -> str | None:
