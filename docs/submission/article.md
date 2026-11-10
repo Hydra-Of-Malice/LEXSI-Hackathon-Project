@@ -24,7 +24,7 @@ Tiny Aya Earth gives fewer safe answers to harmful requests than Tiny Aya Global
 {{BEST_ARM}} closed {{GAP_CLOSED_PCT}}% of that gap. Benign over-refusal rose by at most {{MAX_OVER_REFUSAL_RISE}} points and capability fell by at most {{MAX_CAPABILITY_DROP}} points in any language we could measure. The repair {{HOLDS_AT_4BIT_SENTENCE}} at 4-bit.
 **[END ALT-A1]**
 **[ALT-A2]**
-We tried five repairs. None met all our pre-set conditions. The closest was {{BEST_ARM}}, which failed on {{FAILED_CONDITION}}.
+We tried five repairs. None met all our pre-set conditions. The arm chosen on the repair split, {{BEST_ARM}}, failed on {{FAILED_CONDITION}}.
 **[END ALT-A2]**
 **[END ALT-A]**
 **[ALT-B]**
@@ -727,7 +727,7 @@ We estimate these steps at {{SCALE_GPU_HOURS}} GPU hours and {{SCALE_JUDGE_COST}
 | `{{MAX_OVER_REFUSAL_RISE}}` | Largest over-refusal rise in any language, points | `report.json` |
 | `{{MAX_CAPABILITY_DROP}}` | Largest capability drop in any language, points | `report.json` |
 | `{{HOLDS_AT_4BIT_SENTENCE}}` | Words such as 'held' or 'did not hold', with which format | `report.json` |
-| `{{FAILED_CONDITION}}` | Which threshold the closest arm missed | `report.json` |
+| `{{FAILED_CONDITION}}` | Which thresholds the selected arm missed, and how near the nearest arm came | `report.json` |
 | `{{HELDOUT_MEAN_EARTH_DEFAULT}}` | Mean safe rate over seven languages, Earth, preamble on, % | `report.json` |
 | `{{HELDOUT_MEAN_GLOBAL_DEFAULT}}` | Mean safe rate over seven languages, Global, preamble on, % | `report.json` |
 | `{{GAP_UPPER_BOUND}}` | Largest Earth deficit the data allow: highest upper CI bound across languages and conditions, points | `report.json`, `gap_confirmation` |

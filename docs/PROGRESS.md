@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: repairs (all generated; judging ends about Tue 10:00), then 4-bit checks (baseline and circuits done) | Blind read of the selected repair, then the report |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks (baseline, circuits and repairs done), then NF4, about Wed evening | Fair circuit baseline, then the report and the last sentences |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
 
@@ -20,6 +20,39 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 10 November 2026
+- **09:28** **Repairs are judged. No arm passes at full precision, and the circuit map did no better than random
+  layers.** The repairs stage ended at 09:15 and the 4-bit Q4 stage has started. These numbers come from a report built
+  in a scratch folder on the full-precision tags; the run's own report at the end will add Q4 and NF4 but can't change
+  them. Local judges, so still provisional until the human and router checks.
+  - **Why nothing could pass.** Thai, the target, has a 5.7-point gap with the preamble (95% CI 1.7 to 10.2) that misses
+    the corrected bar, so under Amendment 17 every repair result is exploratory. On the numbers alone, with the
+    preamble (Thai safe rate: Global 94.9%, Earth 89.2%):
+
+    | Arm | Thai safe | Gap closed | Largest over-refusal rise | Largest capability drop |
+    |---|---:|---:|---|---|
+    | ReSta 0.1 | 90.9% | 30% | Thai +7.0 | Korean 3.0 |
+    | Circuit 0.1 | 88.6% | −10% | Javanese +3.4 | Arabic 0.75 (passes) |
+    | Merge-back 0.5 | 94.3% | **90% (passes)** | Arabic +2.6 | Arabic, Indonesian 1.5 |
+    | Circuit merge 0.5 (selected) | 89.8% | 10% | Thai +2.1 | Swahili 1.25 |
+    | Steering 1.0 | 90.9% | 30% | Thai +3.5 | Arabic 0.25 (passes) |
+
+    The bars are a 50% gap closed, a 2-point over-refusal rise (3 of about 145 benign prompts) and a 1-point capability
+    drop (4 of 400 questions). The random-layer controls cross the last two as well, so those sit near the noise.
+    Without the preamble the Thai gap is 4 prompts of 176 and not measurable.
+  - **Does the circuit map help? No, on this evidence.** Circuit merge gave 4.5 points fewer safe Thai answers than
+    whole-model Merge-back (95% CI −9.1 to 0.0), for an edit a third the size. Against the same edit on random layers,
+    three seeds by two conditions, it differed by −2.8 to +2.8 points and every interval spans zero. The circuit's layers
+    did give 2.8 to 5.1 points more Thai full refusals in all six comparisons, which didn't turn into safer answers.
+  - **Blind read of the selected arm, now scored against the judges.** The official sampler drew the same 240 answers,
+    byte for byte, as the early read. Thai: no change from Earth, and readers agreed with 96% to 98% of the judges'
+    safe calls. Javanese: still 16.7 points below Global, and readers agreed with only 71% to 79% of the judges' safe
+    calls, the same judge weakness on broken Javanese text as in the baseline read.
+  - **Written into `sentences.json`:** the failed conditions, the no-arm-passed finding, the other-preamble finding, the
+    localisation finding and the repair half of the thesis verdict. The judges' numbers are added to the repair-read
+    sentence. The summary no longer calls the selected arm "the closest", because Merge-back came nearer. A trial fill
+    renders all of it.
+  - **Fixed:** yesterday's public-copy entry named a left-out folder by its path, which the public-copy test caught. It's
+    reworded.
 - **02:56** **All repair answers are generated; judging is under way. Early result: on capability, the selected repair
   misses the 1-point gate by one question.** Generation for the repairs stage ended at 21:10 on 9 November, as the three
   random-layer controls ran faster than planned, and the two judges started straight after. Aya took 4 h 45 min for its first pass
@@ -50,8 +83,8 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   `D:\lexsi hackathon\LEXSI-Hackathon-Public` on Aditya's laptop: 128 files, one commit under Aditya's GitHub noreply address,
   and no remote. `scripts/make_public_copy.py` builds it from the committed tree, so no uncommitted edit or model output can
   get in, and it rebuilds the same way after the final results (`--replace`).
-  - **Left out:** the notes on other teams (`docs/research/07_*`), the notes on the team's earlier project (`08_*`), and the
-    organisers' site text, slides and poster (`docs/research/raw/`), which `01_official_brief.md` already summarises. The four
+  - **Left out:** two research notes, on other teams and on the team's earlier project, and the organisers' own site
+    text, slides and poster, which `01_official_brief.md` already summarises. The four
     lines that named them are reworded in the copy only. The builder and its test stay out too.
   - **Checked in the copy:** no secrets (`scripts/secret_scan.py`, which now also scans the working repo: 0 found), no links
     to left-out files, and the full test suite passes twice there, on the copy's own source: 816 passed, 2 skipped.
