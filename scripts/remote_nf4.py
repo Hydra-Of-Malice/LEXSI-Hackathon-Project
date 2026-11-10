@@ -43,7 +43,7 @@ KITS = ('auditkit', 'curatorkit', 'safetune')
 UNPINNED = {'torch', 'triton', 'langsafe', 'circuitkit', 'pywin32', 'pywin32-ctypes', *KITS}
 EVIDENCE_PATTERNS = ['source/data/**', 'source/gens/**', 'source/judged/**', 'source/capability/**',
                      'source/calibration/**', 'source/selection.json', 'code.tar', 'manifest.json', 'laptop-plan.json',
-                     'requirements/**', 'gguf/**']
+                     'requirements/**', 'gguf/**', 'kaggle_start.py']
 
 
 def nf4_module():
@@ -125,6 +125,12 @@ def bundle(args) -> None:
     if dirty:
         raise SystemExit(f'Commit the code first; the bundle ships git HEAD and these differ:\n{dirty}')
     private_repo(args.repo)
+    # A run resumes only into the bundle it started from, so the bundle stays frozen while any run has results.
+    started = sorted({name.split('/')[1] for name in api().list_repo_files(args.repo, repo_type='dataset')
+                      if name.startswith('results/') and name.endswith('/nf4-environment.json')})
+    if started and not args.replace_with_runs:
+        raise SystemExit(f'Runs {started} started from the current bundle; replacing it would stop them resuming. '
+                         'Pass --replace-with-runs only once they are finished or abandoned.')
     commit = git('rev-parse', 'HEAD')
     shutil.rmtree(STAGING, ignore_errors=True)
     (STAGING / 'requirements').mkdir(parents=True)
@@ -148,6 +154,7 @@ def bundle(args) -> None:
         raise SystemExit('The plan made from the copies lists different evidence from what was copied')
     (STAGING / 'laptop-plan.json').write_text(json.dumps(plan, indent=2, ensure_ascii=False), encoding='utf-8')
     subprocess.run(['git', 'archive', '--format=tar', '-o', str(STAGING / 'code.tar'), 'HEAD'], cwd=ROOT, check=True)
+    shutil.copy2(ROOT / 'scripts' / 'kaggle_start.py', STAGING / 'kaggle_start.py')
     torch, lines, kits = pins()
     local = torch.split('+')[1] if '+' in torch else None
     if not local or not local.startswith('cu'):
@@ -448,6 +455,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
     command = sub.add_parser('bundle'); command.add_argument('--no-upload', action='store_true')
+    command.add_argument('--replace-with-runs', action='store_true',
+                         help='replace the bundle even though runs started from it (they can no longer resume)')
     command.set_defaults(fn=bundle)
     for name, fn in (('prepare', prepare), ('verify', verify), ('restore', restore), ('sync', sync)):
         command = sub.add_parser(name); command.set_defaults(fn=fn)

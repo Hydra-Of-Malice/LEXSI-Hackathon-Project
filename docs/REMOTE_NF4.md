@@ -97,6 +97,13 @@ subprocess.run(['bash', '-c', remote_nf4.BOOTSTRAP], check=True)
 
 A T4 run may need a second session. Run the same notebook again and it resumes from `results/kaggle-t4/`.
 
+The cell above is the long form. `scripts/kaggle_start.py`, which `bundle` puts at the repo root, does the same thing,
+so the notebook can instead run the one line in its docstring. A one-line cell is easier to paste into Kaggle's editor.
+
+**Keep the bundle frozen while runs use it.** A run resumes only into the plan it started from. Rebuilding the bundle
+changes that plan, and the run then refuses to resume. `bundle` refuses while any run has results. Pass
+`--replace-with-runs` only once those runs are finished or given up.
+
 ## Stopping the laptop's own NF4 step
 
 The chain runs `earth-nf4` on the laptop right after Q4. Once a remote run is under way, put any file in

@@ -31,6 +31,21 @@ def test_public_repo_is_refused(remote, monkeypatch):
     remote.private_repo('someone/private')
 
 
+def test_bundle_will_not_replace_one_that_runs_started_from(remote, monkeypatch):
+    hub = SimpleNamespace(repo_info=lambda *a, **k: SimpleNamespace(private=True),
+                          list_repo_files=lambda *a, **k: ['code.tar', 'results/hf-a10g/nf4-environment.json'])
+    monkeypatch.setattr(remote, 'api', lambda: hub)
+    monkeypatch.setattr(remote, 'git', lambda *args: '')
+    with pytest.raises(SystemExit, match='hf-a10g'):
+        remote.bundle(SimpleNamespace(repo='r', no_upload=True, replace_with_runs=False))
+
+
+def test_kaggle_start_needs_no_project_imports():
+    text = (ROOT / 'scripts' / 'kaggle_start.py').read_text(encoding='utf-8')
+    assert "get_secret('HF_TOKEN')" in text and 'DEADLINE_MINUTES' in text and 'kaggle-t4' in text
+    compile(text, 'kaggle_start.py', 'exec')
+
+
 def test_half_written_generation_line_is_dropped(remote, tmp_path):
     path = tmp_path / 'tag-fp.jsonl'
     path.write_text('{"key": "a"}\n{"key": "b"}\n{"key": "c", "respo', encoding='utf-8')
