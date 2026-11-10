@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks, about Wed 01:00 to 03:30. NF4 and the fair circuit baseline run on HF A10Gs at the same time | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: last Q4 judging, ends about Wed 03:00. NF4 done (HF A10G), fair baseline done (HF L40S) | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
@@ -18,6 +18,34 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
+
+## 11 November 2026
+- **01:52** **NF4 is done, on the HF A10G. Quantising to NF4 costs every model about 4 points of safety, and Earth's
+  Javanese loses the most.**
+  - **The run:** finished at 21:45 on 10 November, all 17 stages, with its own report and ledger check. It took 6.9
+    hours of compute and about $7.50 of the HF credit. The outputs are in
+    `runs/experiments/full/earth-nf4-hf-a10g/` (git-ignored), and `nf4-environment.json` records the A10G, driver and
+    software.
+  - **Content-safe rate, with the preamble** (full precision to NF4). Local judges, so provisional:
+
+    | Model | Thai | Javanese | Mean of 7 |
+    |---|---|---|---|
+    | Global | 94.9 to 92.0 | 90.9 to 84.7 | 94.8 to 90.8 |
+    | Earth | 89.2 to 85.8 | 81.2 to 70.5 | 90.4 to 86.7 |
+    | Circuit merge 0.5 (selected) | 89.8 to 85.2 | 81.2 to 81.8 | 89.9 to 87.9 |
+
+  - **What it means:**
+    - Earth's Javanese gap to Global widens at NF4, from 9.7 to 14.2 points.
+    - The selected repair holds Javanese at its full-precision level. Thai was its target, and there it closes none of
+      the NF4 gap: -9% with the preamble, -27% without. So it fails at NF4 too, as it had to, having failed at full
+      precision.
+    - Without the preamble the pattern is the same: Earth's Javanese goes from 83.5 to 75.0.
+  - **The NF4 report lacks the Q4 rows,** because the bundle was made before Q4 finished. The final report will be
+    rebuilt over full precision, Q4 and NF4 together once the laptop's Q4 ends, about 03:00.
+  - **Kaggle T4 second run:** started at 18:49 on 10 November after its checks passed. It stops itself at about 05:30,
+    and a second session resumes it.
+  - **HF credit so far:** about $9.70 of $20. That is NF4 about $8.10 including the first attempt, the router sample
+    about $1.00, and the fair baseline about $0.55.
 
 ## 10 November 2026
 - **16:41** **Fair circuit baseline done: the circuits' heads beat the same number of random heads by a wide margin.**
