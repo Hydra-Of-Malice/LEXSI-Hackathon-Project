@@ -827,6 +827,7 @@ def _verdict_row(run, change):
 
 
 DROPPED_BY_ALLOWLIST = {
+    'prompt category': lambda run, text: _prompt_row(run, lambda row: row.update(category=text)),
     'report unknown top-level key': lambda run, text: _report(run, lambda d: d.update(debug={'sample': text})),
     'report string in a numeric cell': lambda run, text: _report(run, lambda d: d['models']['fire']['conditions'][
         'default']['en']['harmful_refusal'].update(rate=text)),
@@ -881,7 +882,6 @@ def test_allowlist_drops_planted_text(run, tmp_path, place, text):
 # ---- planted text that survives the allowlist is caught by the scan -----------------------------------------------
 
 SURVIVES_ALLOWLIST = {
-    'prompt category': lambda run, text: _prompt_row(run, lambda row: row.update(category=text)),
     'prompt source id': lambda run, text: _prompt_row(run, lambda row: row.update(source_id=text)),
     'prompt upstream source': lambda run, text: _prompt_row(run, lambda row: row['meta'].update(upstream_source=text)),
     'text of a different prompt': lambda run, text: edit_rows(run / 'data' / 'heldout.jsonl', lambda rows: rows[
@@ -908,10 +908,10 @@ def test_scan_blocks_text_in_a_generated_style_markdown_table(run, tmp_path, cap
 
 def test_failure_is_located_without_quoting(run, tmp_path, capsys):
     whole_response = _response('fire', HELDOUT[0])
-    SURVIVES_ALLOWLIST['prompt category'](run, whole_response)
+    SURVIVES_ALLOWLIST['prompt source id'](run, whole_response)
     problem = assert_blocked(run, tmp_path / 'public', capsys, whole_response)['problems'][0]
     assert problem['check'] == 'response_text' and problem['match'] == 'exact'
-    assert problem['file'] == 'data/heldout.jsonl' and problem['where'] == 'line 1.category'
+    assert problem['file'] == 'data/heldout.jsonl' and problem['where'] == 'line 1.source_id'
     assert problem['private_source'] in ('gens/fire.jsonl', 'generations/fire-abcd.jsonl')
     assert problem['private_line'] >= 1
     assert problem['row_id'] == 'aya-en-00001::en'
@@ -920,7 +920,7 @@ def test_failure_is_located_without_quoting(run, tmp_path, capsys):
 def test_a_later_clean_export_removes_the_old_failure_note(run, tmp_path, capsys):
     target = tmp_path / 'public'
     original = (run / 'data' / 'heldout.jsonl').read_bytes()
-    SURVIVES_ALLOWLIST['prompt category'](run, LEAK)
+    SURVIVES_ALLOWLIST['prompt source id'](run, LEAK)
     assert_blocked(run, target, capsys, LEAK)
     (run / 'data' / 'heldout.jsonl').write_bytes(original)
     refresh_data_hashes(run)
@@ -1170,7 +1170,7 @@ def test_allow_prompt_echo_does_not_excuse_text_from_another_group(run, tmp_path
 
 def test_allow_prompt_echo_does_not_excuse_new_text_after_the_echo(run, tmp_path, capsys):
     response = f'{HELDOUT[0].text} {LEAK}'
-    edit_rows(run / 'data' / 'repair.jsonl', lambda rows: rows[0].update(category=LEAK))
+    edit_rows(run / 'data' / 'repair.jsonl', lambda rows: rows[0].update(source_id=LEAK))
     refresh_data_hashes(run)
     _add_echo(run, HELDOUT[0], response)
     assert_blocked(run, tmp_path / 'public', capsys, LEAK, '--allow-prompt-echo')
@@ -1328,7 +1328,7 @@ def test_command_line_succeeds_under_a_legacy_windows_console_encoding(run, tmp_
 
 
 def test_command_line_exits_non_zero_and_stays_quiet_about_the_text(run, tmp_path):
-    SURVIVES_ALLOWLIST['prompt category'](run, LEAK)
+    SURVIVES_ALLOWLIST['prompt source id'](run, LEAK)
     before = snapshot(run)
     result = _cli(str(run), str(tmp_path / 'public'))
     assert result.returncode == 1

@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: last Q4 judging, ends about Wed 03:00. NF4 done (HF A10G), fair baseline done (HF L40S) | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run finished (FP16, Q4, NF4); final report built. Kaggle T4 NF4 cross-check running | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
@@ -20,6 +20,47 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 11 November 2026
+- **03:13** **The full run is finished, and the final report covers full precision, Q4 and NF4 with no validation
+  gaps. No repair held at 4-bit, and 4-bit itself breaks Earth's Javanese.**
+  - **The chain:** it ended at 02:59. Q4 was evaluated for all three models. The NF4 step then stopped at the file
+    that switched it off, as planned.
+  - **NF4 brought in:** `scripts/import_nf4.py` checked that the HF run was complete, used this spec and was given this
+    run's evidence (all 39 source files matched). It then copied 24 NF4 files with their SHA-256 into
+    `nf4-import.json` and the ledger, and rebuilt `report.json` over all 16 tags. The chain's own report is kept as
+    `report.chain.json`. The ledger verifies.
+  - **Content-safe rate with the preamble, FP16 / Q4_K_M / NF4.** Local judges, so provisional:
+
+    | Model | Thai (target) | Javanese | Mean of 7 |
+    |---|---|---|---|
+    | Global | 94.9 / 92.0 / 92.0 | 90.9 / 89.2 / 84.7 | 94.8 / 92.8 / 90.8 |
+    | Earth | 89.2 / 86.9 / 85.8 | 81.2 / 71.0 / 70.5 | 90.4 / 87.5 / 86.7 |
+    | Circuit merge 0.5 | 89.8 / 86.4 / 85.2 | 81.2 / 79.5 / 81.8 | 89.9 / 89.0 / 87.9 |
+
+  - **What it shows:**
+    - The repair closed none of the Thai gap at either 4-bit format (-11% and -9% with the preamble). It missed the
+      over-refusal and capability conditions too.
+    - Earth's Javanese loss at 4-bit is breakdown, not harm. Broken answers went from 9.1% to 18.8% (Q4) and 15.9%
+      (NF4); unsafe answers stayed at or below 1.7%.
+    - The repaired model broke down less there: +8.5 points (95% CI 2.8 to 14.8, Q4) and +11.4 (4.0 to 18.8, NF4)
+      against Earth at the same precision. This is exploratory: not the target language, not past the corrected bar,
+      and each 4-bit format also changes the runtime. It is now `QUANT_FINDING_SENTENCE`.
+  - **The router calibration is in the run's ledger** now that the chain has stopped. The localisation analysis is in
+    the run, identical to the scratch copy.
+  - **Public results:** `runs/experiments/public/earth-full/` (git-ignored, ready for the team to publish), 152 files
+    and 94 MB. The final scan passed against 191,984 private answers.
+    - The first try was blocked: some prompts' `category` labels share fragments with answers from exploratory repair
+      variants.
+    - The export now leaves `category` out, since anyone can get it from the source datasets. The dataset card says so,
+      and the export tests now plant text in `source_id`.
+  - **Fill from the final report:** 554 values. The article has 29 placeholders left: 22 URLs, usernames and PR links
+    for the team; 3 that need the native-reader hand labels; generation speed, being measured now; and two team
+    decisions (`CIRCUIT_RELEASE_DECISION_SENTENCE`, `PRIOR_WORK_STATEMENT`).
+  - **Generation speed** (`scripts/bench_generation.py`, laptop GPU idle): 159 output tokens a second with llama.cpp
+    serving the full-precision model to 12 requests at once. Transformers reached 127 at batch 16.
+    - At 16 requests llama.cpp fell to 38. On 6 November it did 169 there, so the 8 GB card likely ran out of
+      memory and spilled. The 12-request figure is the one used.
+    - The 6 November file is kept as `runs/pilot/bench-generation.2026-11-06.json`.
+    - `TPS_BATCHED_GPU` and `TPS_GPU_NAME` are written.
 - **01:52** **NF4 is done, on the HF A10G. Quantising to NF4 costs every model about 4 points of safety, and Earth's
   Javanese loses the most.**
   - **The run:** finished at 21:45 on 10 November, all 17 stages, with its own report and ledger check. It took 6.9

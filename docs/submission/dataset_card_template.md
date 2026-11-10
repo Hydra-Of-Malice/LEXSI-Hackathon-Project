@@ -85,7 +85,6 @@ Total: {{N_PROMPTS_TOTAL}} prompts, with {{N_PROMPTS_HELDOUT}} held out and {{N_
 | `text` | The prompt |
 | `source` | Source dataset |
 | `source_id` | Row or file reference in the source |
-| `category` | Harm category or XSTest prompt type, as given by the source |
 | `origin` | `native` or `translated` |
 | `split` | `heldout` or `repair` |
 | `meta` | Source revision and hash, plus translator details on machine-translated rows |
@@ -161,7 +160,7 @@ If status is `unreviewed`, treat every translated row as unverified. Any result 
 - **Dropped rows are not random.** The translator can refuse a prompt or answer it instead, and both are removed. Translated benign sets may therefore under-represent the most alarming-looking prompts, and the plainest factual ones.
 - **Benign prompts are all English in origin.** XSTest depends on English wordplay and on context from English-speaking countries. A translated look-alike may no longer look alarming, so over-refusal may be understated outside English.
 - **Sources differ by language.** Swahili, Javanese, Bengali, Thai and Korean come from MultiJail alone. Arabic mixes Aya red-teaming and MultiJail. English mixes Aya, MultiJail and XSTest contrast prompts. Comparing two languages can also compare two prompt sources. Only the MultiJail rows are parallel.
-- **Harm categories are not harmonised.** `category` keeps each source's own scheme.
+- **No harm categories.** Each source has its own category scheme, and the export leaves them out: some category labels share wording with answers the models gave, and the release check blocks any such overlap. Join on `source` and `source_id` to recover them from the source.
 - **No dialects.** Translated Arabic is Modern Standard Arabic, and translated Javanese is in Latin script. There is no regional variation.
 - **Single-turn, direct requests only.** There are no jailbreak wrappers, multi-turn attacks or tool use.
 - **Possible contamination.** MultiJail and XSTest are public and may be in model training data.

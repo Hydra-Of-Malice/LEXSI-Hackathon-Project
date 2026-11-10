@@ -315,9 +315,11 @@ EXPERIMENT = {
 LEXSI_PROVENANCE = {
     'schema': _name, 'library': _name, 'version': _name, 'git_sha': _name, 'created_at': _timestamp,
     'base_model': PATH, 'method': _name, 'inputs': [{'kind': _name, 'ref': PATH, 'config': _name}], 'params': SCALARS}
+# `category` is left out: it is upstream metadata anyone can get from the source datasets, and in the full Earth run
+# some category labels share fragments with answers the models gave, which the final scan rightly blocks.
 PROMPT_ROW = {
     'id': _name, 'group': _name, 'lang': _name, 'kind': _name, 'text': lambda value: value, 'source': _name,
-    'source_id': _source_text, 'category': _source_text, 'origin': _name, 'split': _name,
+    'source_id': _source_text, 'origin': _name, 'split': _name,
     'licence': _source_text, 'license': _source_text,
     'meta': {'global_or_local': _source_text, 'upstream_source': _source_text, 'source_revision': _hash,
              'source_sha256': _hash, 'translated_from': _name, 'translator': _name, 'translation_quality': _name,
