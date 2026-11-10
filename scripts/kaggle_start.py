@@ -7,6 +7,8 @@ It needs a T4 accelerator, internet on, and a Kaggle secret HF_TOKEN that can re
 """
 import os
 import subprocess
+import glob
+import shutil
 import sys
 import tarfile
 
@@ -16,9 +18,24 @@ REPO = 'HydraOfMalice/lexsi-nf4-private'
 WORK = '/tmp/lexsi'
 if not os.environ.get('HF_TOKEN'):
     raise SystemExit('Add a Kaggle secret named HF_TOKEN first (Add-ons > Secrets)')
+
+
+def sh(command: str) -> str:
+    return subprocess.run(['bash', '-c', command], capture_output=True, text=True).stdout.strip()
+
+
+# The llama.cpp build needs nvcc. Kaggle images keep it in a versioned CUDA folder, not always on PATH.
+nvcc = shutil.which('nvcc') or next(iter(sorted(glob.glob('/usr/local/cuda*/bin/nvcc'), reverse=True)), None) \
+    or (sh('find / -xdev -name nvcc -type f -perm -u+x 2>/dev/null | head -n 1') or None)
+print('nvcc:', nvcc, '|', sh(f'"{nvcc}" --version | tail -n 1') if nvcc else 'not found')
+print('cmake:', sh('cmake --version | head -n 1') or 'not found', '| g++:', sh('g++ --version | head -n 1') or 'not found')
+path = os.environ.get('PATH', '')
+if nvcc:
+    path = os.path.dirname(nvcc) + ':' + path
+    os.environ['CUDACXX'] = nvcc  # CMake's CUDA compiler
 # Kaggle stops a session at 12 hours; stop cleanly at 11.5, sync, and let the next session resume.
 os.environ.update(BUNDLE_REPO=REPO, PLATFORM='kaggle-t4', WORK=WORK, DEADLINE_MINUTES='690', CUDA_VISIBLE_DEVICES='0',
-                  PATH=os.environ.get('PATH', '') + ':/usr/local/cuda/bin')  # nvcc, for the llama.cpp build
+                  PATH=path)
 os.makedirs(WORK, exist_ok=True)
 with tarfile.open(hf_hub_download(REPO, 'code.tar', repo_type='dataset', local_dir=WORK)) as archive:
     archive.extractall(os.path.join(WORK, 'code'), filter='data')
@@ -27,3 +44,9 @@ import remote_nf4  # noqa: E402
 
 result = subprocess.run(['bash', '-c', remote_nf4.BOOTSTRAP])
 print('NF4 run exit code', result.returncode)
+if result.returncode:
+    for name in ('llama-cmake.log', 'llama-build.log'):
+        log = os.path.join(WORK, name)
+        if os.path.isfile(log):
+            print(f'--- last lines of {name} ---')
+            print(sh(f'tail -n 25 "{log}"'))
