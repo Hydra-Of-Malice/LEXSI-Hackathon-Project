@@ -58,6 +58,7 @@ def test_usage_counts_billed_calls_but_not_cache_hits(monkeypatch, tmp_path):
     client.client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     monkeypatch.setattr(llm_client.ChatClient, 'chat', llm_client.ChatClient.chat)
     module.record_usage()
+    module.record_usage()  # once per tag in main(): must not count each call twice
     client.chat([{'role': 'user', 'content': 'a'}])
     client.chat([{'role': 'user', 'content': 'a'}])  # cached: not billed
     client.chat([{'role': 'user', 'content': 'b'}])

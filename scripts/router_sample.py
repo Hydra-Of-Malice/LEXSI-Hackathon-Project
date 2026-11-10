@@ -24,7 +24,6 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
@@ -49,10 +48,13 @@ def stratified_sample(rows: list[dict], per_cell: int, seed: int, key) -> list[d
 
 
 def record_usage() -> None:
-    """Wrap the router client so each billed call's reported tokens are counted. Cache hits cost nothing."""
+    """Wrap the router client so each billed call's reported tokens are counted. Cache hits cost nothing.
+    Wrapping twice would count every call twice, so a second call does nothing."""
     from langsafe import llm_client
 
     original = llm_client.ChatClient.chat
+    if getattr(original, 'counts_usage', False):
+        return
 
     def chat(self, messages, **params):
         params = {'temperature': 0, 'max_tokens': 512, **params}
@@ -75,6 +77,7 @@ def record_usage() -> None:
         finally:
             self.client.chat.completions.create = create
 
+    chat.counts_usage = True
     llm_client.ChatClient.chat = chat
 
 
@@ -113,10 +116,11 @@ def main(argv=None) -> int:
     os.environ['LANGSAFE_RUNS_DIR'] = str(out)  # the router cache lives with the sample, not in the run
     os.environ.setdefault('LANGSAFE_SPEC', str(ROOT / 'configs' / 'spec.yaml'))
     from langsafe.config import load_spec
+    from langsafe.data.records import read_prompts
     from langsafe.eval.judge_run import compare_judge_sets, generation_key, judge_generations
 
     spec = load_spec()
-    prompts = {row['id']: SimpleNamespace(text=row['text']) for row in read_rows(run / 'data' / 'heldout.jsonl')}
+    prompts = {prompt.id: prompt for prompt in read_prompts(run / 'data' / 'heldout.jsonl')}
     plan = {}
     for tag in args.tags.split(','):
         sample = stratified_sample(read_rows(run / 'gens' / f'{tag}.jsonl'), args.per_cell, spec['data']['seed'],
