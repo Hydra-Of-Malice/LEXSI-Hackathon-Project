@@ -387,10 +387,110 @@ fi
 command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p "$WORK" && cd "$WORK"
-uv run -q --no-project --python 3.12 --with huggingface_hub==1.33.0 python -c "import os; from huggingface_hub import snapshot_download; snapshot_download(os.environ['BUNDLE_REPO'], repo_type='dataset', local_dir='.', allow_patterns=['code.tar', 'manifest.json', 'requirements/*'])"
-rm -rf code && mkdir code && tar -xf code.tar -C code
-exec bash code/scripts/remote_nf4.sh
+CODE_TAR=${CODE_TAR:-code.tar}
+uv run -q --no-project --python 3.12 --with huggingface_hub==1.33.0 python -c "import os; from huggingface_hub import snapshot_download; snapshot_download(os.environ['BUNDLE_REPO'], repo_type='dataset', local_dir='.', allow_patterns=[os.environ.get('CODE_TAR', 'code.tar'), 'manifest.json', 'requirements/*', 'fair/manifest.json'])"
+rm -rf code && mkdir code && tar -xf "$CODE_TAR" -C code
+exec bash "code/scripts/${ENTRY:-remote_nf4.sh}"
 '''
+FAIR = ROOT / 'runs' / 'experiments' / 'remote-fair-bundle'
+
+
+def fair_bundle(args) -> None:
+    """Stage the fair circuit baseline's inputs (the circuits and their task files), the code at HEAD and a manifest,
+    and upload them to fair/ in the private repo. The task files hold harmful prompts, so this too stays private."""
+    dirty = git('status', '--porcelain', '--', 'src', 'scripts', 'configs', 'pyproject.toml')
+    if dirty:
+        raise SystemExit(f'Commit the code first; the job runs git HEAD and these differ:\n{dirty}')
+    private_repo(args.repo)
+    nf4_manifest = json.loads((STAGING / 'manifest.json').read_text(encoding='utf-8'))
+    shutil.rmtree(FAIR, ignore_errors=True)
+    files = {}
+    for folder in ('circuits', 'circuit_tasks'):
+        for path in sorted((SOURCE / folder).rglob('*')):
+            relative = norm(path.relative_to(SOURCE))
+            if not path.is_file() or 'fair-baseline' in relative.split('/') or path.name == 'fair_baseline.json':
+                continue
+            target = FAIR / 'run' / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+            files[relative] = {'sha256': nf4_module().sha256(target), 'bytes': target.stat().st_size}
+    models = {json.loads((SOURCE / name).read_text(encoding='utf-8'))['resolved_model']
+              for name in files if name.endswith('/summary.json')}
+    by_repo = {model['repo']: model for model in nf4_manifest['base_models'].values()}
+    if not models <= set(by_repo):
+        raise SystemExit(f'Circuits use models outside the pinned set: {sorted(models - set(by_repo))}')
+    circuitkit = json.loads(importlib.metadata.distribution('circuitkit').read_text('direct_url.json'))
+    manifest = {'schema_version': 1, 'created_at': datetime.now(timezone.utc).isoformat(), 'git_commit': git('rev-parse', 'HEAD'),
+                'files': files, 'models': [by_repo[model] for model in sorted(models)],
+                'circuitkit': {'url': circuitkit['url'], 'commit': circuitkit['vcs_info']['commit_id']}}
+    (FAIR / 'manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+    subprocess.run(['git', 'archive', '--format=tar', '-o', str(FAIR / 'code.tar'), 'HEAD'], cwd=ROOT, check=True)
+    api().upload_folder(repo_id=args.repo, repo_type='dataset', folder_path=str(FAIR), path_in_repo='fair',
+                        delete_patterns=['run/**', 'code.tar', 'manifest.json'],
+                        commit_message=f'Fair baseline inputs for {manifest["git_commit"][:7]}')
+    log(f'fair bundle uploaded: {len(files)} files, models {sorted(models)}')
+
+
+def fair_prepare(args) -> None:
+    """On the GPU host: fetch the circuits and task files, and the models at the laptop's revisions, all by SHA-256."""
+    from huggingface_hub import snapshot_download
+
+    private_repo(args.repo)
+    work = Path(args.work)
+    manifest = json.loads((work / 'fair' / 'manifest.json').read_text(encoding='utf-8'))
+    snapshot_download(args.repo, repo_type='dataset', local_dir=str(work), allow_patterns=['fair/run/**'])
+    for name, identity in manifest['files'].items():
+        verify_sha(work / 'fair' / 'run' / name, identity, 'Fair baseline input')
+    hub = Path(os.environ['HF_HOME']) / 'hub'
+    for model in manifest['models']:
+        log(f'{model["repo"]} at {model["revision"][:10]}')
+        folder = Path(snapshot_download(model['repo'], revision=model['revision'], allow_patterns=list(model['files'])))
+        for name, identity in model['files'].items():
+            verify_sha(folder / name, identity, f'{model["repo"]} checkpoint')
+        # CircuitKIT loads the model by name, so point the cache's main ref at the laptop's revision.
+        refs = hub / ('models--' + model['repo'].replace('/', '--')) / 'refs'
+        refs.mkdir(parents=True, exist_ok=True)
+        (refs / 'main').write_text(model['revision'])
+    log('fair baseline inputs match the laptop by SHA-256')
+
+
+def fair_upload(args) -> None:
+    """On the GPU host: put each circuit's fair_baseline.json, the log and the exit status in fair/results/."""
+    private_repo(args.repo)
+    work = Path(args.work)
+    results = work / 'fair-results'
+    shutil.rmtree(results, ignore_errors=True)
+    results.mkdir(parents=True)
+    for path in (work / 'fair' / 'run' / 'circuits').glob('*/fair_baseline.json'):
+        (results / path.parent.name).mkdir()
+        shutil.copy2(path, results / path.parent.name / path.name)
+    if (work / 'fair-baseline.log').is_file():
+        shutil.copy2(work / 'fair-baseline.log', results / 'fair-baseline.log')
+    (results / 'job-status.json').write_text(json.dumps({'exit_code': int(args.status),
+                                                         'finished_at': datetime.now(timezone.utc).isoformat()}))
+    api().upload_folder(repo_id=args.repo, repo_type='dataset', folder_path=str(results), path_in_repo='fair/results',
+                        commit_message='Fair baseline results')
+
+
+def fair_fetch(args) -> None:
+    """On the laptop: copy each circuit's fair_baseline.json from fair/results/ into the run's circuit folder."""
+    from huggingface_hub import snapshot_download
+
+    private_repo(args.repo)
+    staging = STAGING.parent / 'remote-fair-fetch'
+    snapshot_download(args.repo, repo_type='dataset', local_dir=str(staging), allow_patterns=['fair/results/**'])
+    copied = {}
+    for path in sorted((staging / 'fair' / 'results').glob('*/fair_baseline.json')):
+        target = SOURCE / 'circuits' / path.parent.name / 'fair_baseline.json'
+        if not target.parent.is_dir():
+            raise SystemExit(f'No circuit folder for {path.parent.name}')
+        if target.exists() and not args.replace:
+            raise SystemExit(f'{target} exists; pass --replace to overwrite it')
+        shutil.copy2(path, target)
+        result = json.loads(path.read_text(encoding='utf-8'))
+        copied[path.parent.name] = {'random_mean': round(result['mean'], 4), 'circuit': result['circuit_patching_ratio'],
+                                    'check': result['check_ratio'], 'device': result.get('hardware', {}).get('gpu')}
+    print(json.dumps(copied, indent=2))
 
 
 def launch_hf(args) -> None:
@@ -398,6 +498,8 @@ def launch_hf(args) -> None:
 
     private_repo(args.repo)
     env = {'BUNDLE_REPO': args.repo, 'PLATFORM': args.platform, 'WORK': '/tmp/lexsi'}
+    if args.job == 'fair':
+        env.update(CODE_TAR='fair/code.tar', ENTRY='remote_fair_baseline.sh')
     if args.dry_run:
         print(json.dumps({'image': args.image, 'flavor': args.flavor, 'timeout': args.timeout, 'env': env,
                           'command': ['bash', '-c', BOOTSTRAP]}, indent=2))
@@ -406,7 +508,7 @@ def launch_hf(args) -> None:
     if not token:
         raise SystemExit('No Hugging Face login on this machine; run `hf auth login` yourself first')
     job = run_job(image=args.image, command=['bash', '-c', BOOTSTRAP], env=env, secrets={'HF_TOKEN': token},
-                  flavor=args.flavor, timeout=args.timeout, name='lexsi-nf4', labels={'project': 'lexsi'})
+                  flavor=args.flavor, timeout=args.timeout, name=f'lexsi-{args.job}', labels={'project': 'lexsi'})
     print(json.dumps({'id': job.id, 'url': getattr(job, 'url', None), 'flavor': args.flavor, 'timeout': args.timeout}))
 
 
@@ -472,6 +574,15 @@ def main(argv=None) -> int:
     command.add_argument('--platform', default='hf-a10g')
     command.add_argument('--image', default='nvidia/cuda:12.8.1-devel-ubuntu24.04')
     command.add_argument('--dry-run', action='store_true')
+    command.add_argument('--job', choices=('nf4', 'fair'), default='nf4',
+                         help='nf4: the NF4 check; fair: the fair circuit baseline (inputs from fair-bundle)')
+    command = sub.add_parser('fair-bundle'); command.set_defaults(fn=fair_bundle)
+    command = sub.add_parser('fair-prepare'); command.set_defaults(fn=fair_prepare)
+    command.add_argument('--work', required=True)
+    command = sub.add_parser('fair-upload'); command.set_defaults(fn=fair_upload)
+    command.add_argument('--work', required=True); command.add_argument('--status', required=True)
+    command = sub.add_parser('fair-fetch'); command.set_defaults(fn=fair_fetch)
+    command.add_argument('--replace', action='store_true')
     for name, fn in (('cache-get', cache_get), ('cache-put', cache_put)):
         command = sub.add_parser(name); command.set_defaults(fn=fn)
         command.add_argument('--work', required=True); command.add_argument('--name', required=True)

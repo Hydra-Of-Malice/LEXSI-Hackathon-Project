@@ -28,6 +28,27 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 PINNED_MLP_SCORE = 1e6
+# The circuits were found on the CPU. `--device cuda` runs the same fp32 evaluation on a GPU with TF32 off; the check
+# draw must still reproduce each circuit's logged ratio within 1e-3, so a GPU that disagrees writes nothing.
+DEVICE = 'cpu'
+
+
+def use_device(device: str) -> dict:
+    """Select the evaluation device and return what the result should record about it."""
+    global DEVICE
+    import torch
+
+    DEVICE = device
+    if device == 'cpu':
+        return {'device': 'cpu', 'torch': torch.__version__}
+    if not torch.cuda.is_available():
+        raise RuntimeError('--device cuda needs a CUDA GPU')
+    torch.set_float32_matmul_precision('highest')  # no TF32 in float32 matrix multiplies
+    for backend in (torch.backends.cuda.matmul, torch.backends.cudnn):
+        if hasattr(backend, 'fp32_precision'):  # torch >= 2.9 names it this way
+            backend.fp32_precision = 'ieee'
+    return {'device': 'cuda', 'gpu': torch.cuda.get_device_name(0), 'torch': torch.__version__,
+            'cuda': torch.version.cuda, 'tf32': False, 'float32_matmul_precision': torch.get_float32_matmul_precision()}
 
 
 def is_head(name: str) -> bool:
@@ -95,7 +116,7 @@ def patching_ratio(summary: dict, task_csv: Path, artifact: Path, scores: dict, 
         pipe = Pipeline.from_custom_data(
             summary['resolved_model'], str(task_csv), clean_prompt='{harmful}', clean_answer='{refuse}',
             corrupt_prompt='{harmless}', corrupt_answer='{comply}', task_name=summary['task'],
-            precision=settings['precision'], output_dir=str(workdir), device='cpu')
+            precision=settings['precision'], output_dir=str(workdir), device=DEVICE)
         pipe._custom_data_cfg['max_records'] = settings['data_max_records']
     config = {'model': pipe._model_cfg(),
               'discovery': {'algorithm': 'eap-ig', 'task': summary['task'], 'level': 'node', 'batch_size': 1,
@@ -159,7 +180,12 @@ def main() -> int:
     parser.add_argument('--draws', type=int, default=3)
     parser.add_argument('--only', help='one circuit folder, e.g. global-circuit__en')
     parser.add_argument('--no-check', action='store_true', help='skip the draw that reproduces the circuit')
+    parser.add_argument('--device', choices=('cpu', 'cuda'), default='cpu',
+                        help='cuda runs the same fp32 evaluation on a GPU, TF32 off; the check draw still applies')
     args = parser.parse_args()
+    if args.device == 'cuda' and args.no_check:
+        parser.error('--device cuda needs the check draw: it is what shows the GPU reproduces the CPU circuit')
+    hardware = use_device(args.device)
     folders = sorted(path.parent for path in (args.run / 'circuits').glob('*__*/summary.json'))
     if args.only:
         folders = [folder for folder in folders if folder.name == args.only]
@@ -171,7 +197,7 @@ def main() -> int:
         if out.exists():
             print(f'{folder.name}: done already')
             continue
-        result = run_circuit(args.run, folder, args.draws, not args.no_check)
+        result = {**run_circuit(args.run, folder, args.draws, not args.no_check), 'hardware': hardware}
         out.write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
         print(f"{folder.name}: random heads {result['mean']:.3f} against the circuit's "
               f"{result['circuit_patching_ratio']:.3f}", flush=True)

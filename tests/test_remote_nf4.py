@@ -164,17 +164,23 @@ def test_remote_plan_must_match_the_laptop_field_by_field(remote, monkeypatch, t
 
 def test_launch_dry_run_names_no_secret(remote, monkeypatch, capsys):
     monkeypatch.setattr(remote, 'private_repo', lambda repo: None)
-    remote.launch_hf(SimpleNamespace(repo='HydraOfMalice/lexsi-nf4-private', platform='hf-a10g', flavor='a10g-small',
-                                     timeout='11h', image='nvidia/cuda:12.8.1-devel-ubuntu24.04', dry_run=True))
+    common = dict(repo='HydraOfMalice/lexsi-nf4-private', platform='hf-a10g', flavor='a10g-small', timeout='11h',
+                  image='nvidia/cuda:12.8.1-devel-ubuntu24.04', dry_run=True)
+    remote.launch_hf(SimpleNamespace(**common, job='nf4'))
     job = json.loads(capsys.readouterr().out)
     assert set(job['env']) == {'BUNDLE_REPO', 'PLATFORM', 'WORK'}
     assert 'HF_TOKEN' not in json.dumps(job['env']) and 'hf_' not in remote.BOOTSTRAP
+    remote.launch_hf(SimpleNamespace(**common, job='fair'))
+    fair = json.loads(capsys.readouterr().out)
+    assert fair['env']['CODE_TAR'] == 'fair/code.tar' and fair['env']['ENTRY'] == 'remote_fair_baseline.sh'
+    assert (ROOT / 'scripts' / fair['env']['ENTRY']).is_file()
 
 
 @pytest.mark.skipif(shutil.which('bash') is None, reason='needs bash')
 def test_remote_shell_script_parses():
     # Through stdin, so a bash that cannot see Windows paths (WSL's) still checks it.
-    for text in ((ROOT / 'scripts' / 'remote_nf4.sh').read_text(encoding='utf-8'), _bootstrap()):
+    for text in ((ROOT / 'scripts' / 'remote_nf4.sh').read_text(encoding='utf-8'),
+                 (ROOT / 'scripts' / 'remote_fair_baseline.sh').read_text(encoding='utf-8'), _bootstrap()):
         assert '\r' not in text
         # Bytes, not text: a Windows text pipe would turn every newline into CRLF.
         result = subprocess.run(['bash', '-n'], input=text.encode(), capture_output=True)

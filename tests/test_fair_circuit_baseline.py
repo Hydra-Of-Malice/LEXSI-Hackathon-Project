@@ -78,3 +78,27 @@ def test_a_moved_run_still_finds_its_artifact(tmp_path):
     row['scores_json'] = 'runs/somewhere-else/x_scores.json'
     artifact, _ = fair.artifact_files(tmp_path, row)
     assert artifact.read_bytes() == b'artifact'
+
+
+def test_the_device_defaults_to_cpu_and_a_gpu_run_keeps_full_fp32(monkeypatch):
+    import torch
+
+    assert fair.use_device('cpu')['device'] == 'cpu' and fair.DEVICE == 'cpu'
+    monkeypatch.setattr(torch.cuda, 'is_available', lambda: False)
+    with pytest.raises(RuntimeError, match='CUDA'):
+        fair.use_device('cuda')
+    monkeypatch.setattr(torch.cuda, 'is_available', lambda: True)
+    monkeypatch.setattr(torch.cuda, 'get_device_name', lambda index: 'Fixture GPU')
+    asked = []
+    monkeypatch.setattr(torch, 'set_float32_matmul_precision', asked.append)
+    monkeypatch.setattr(torch, 'get_float32_matmul_precision', lambda: 'highest')
+    recorded = fair.use_device('cuda')
+    assert asked == ['highest'] and recorded['float32_matmul_precision'] == 'highest'
+    assert recorded['tf32'] is False and recorded['gpu'] == 'Fixture GPU' and fair.DEVICE == 'cuda'
+    fair.use_device('cpu')
+
+
+def test_a_gpu_run_cannot_skip_the_check_draw(monkeypatch, tmp_path):
+    monkeypatch.setattr('sys.argv', ['fair_circuit_baseline.py', str(tmp_path), '--device', 'cuda', '--no-check'])
+    with pytest.raises(SystemExit):
+        fair.main()
