@@ -27,13 +27,21 @@ cd "$CODE"
 log "inputs and models, checked against the laptop by SHA-256"
 "$PY" scripts/remote_nf4.py fair-prepare --work "$WORK" --repo "$BUNDLE_REPO"
 
-log "fair baseline, 6 circuits"
-set +e
-# Offline for the evaluation only, so CircuitKIT loads the pinned snapshots; the upload afterwards needs the Hub.
-HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 "$PY" -u scripts/fair_circuit_baseline.py "$WORK/fair/run" --draws 3 --device cuda \
-  2>&1 | tee "$WORK/fair-baseline.log"
-STATUS=${PIPESTATUS[0]}
-set -e
+# One circuit at a time, uploading after each, so a timeout loses at most the circuit in progress. Loading the fp32 model
+# for CircuitKIT peaks near 30 GB of host RAM: use a flavour with more than that (l40sx1: 62 GB; a10g-small has 15).
+STATUS=0
+for SUMMARY in "$WORK"/fair/run/circuits/*__*/summary.json; do
+  CIRCUIT=$(basename "$(dirname "$SUMMARY")")
+  log "circuit $CIRCUIT"
+  set +e
+  # Offline for the evaluation only, so CircuitKIT loads the pinned snapshots; the upload needs the Hub.
+  HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 "$PY" -u scripts/fair_circuit_baseline.py "$WORK/fair/run" --draws 3 \
+    --device cuda --only "$CIRCUIT" 2>&1 | tee -a "$WORK/fair-baseline.log"
+  CODE_EXIT=${PIPESTATUS[0]}
+  set -e
+  [ "$CODE_EXIT" = 0 ] || STATUS=$CODE_EXIT
+  log "circuit $CIRCUIT ended with exit code $CODE_EXIT"
+  "$PY" scripts/remote_nf4.py fair-upload --work "$WORK" --repo "$BUNDLE_REPO" --status "$STATUS"
+done
 log "fair baseline ended with exit code $STATUS"
-"$PY" scripts/remote_nf4.py fair-upload --work "$WORK" --repo "$BUNDLE_REPO" --status "$STATUS"
 exit "$STATUS"
