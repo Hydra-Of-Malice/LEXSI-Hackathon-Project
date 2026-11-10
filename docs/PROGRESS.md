@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks (about Wed 01:00 to 03:30). NF4 runs on rented GPUs at the same time (HF Jobs A10G, Kaggle T4) | Fair circuit baseline straight after Q4, then the report and the last sentences, about Wed midday |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks, about Wed 01:00 to 03:30. NF4 and the fair circuit baseline run on HF A10Gs at the same time | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
@@ -20,6 +20,27 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 10 November 2026
+- **14:53** **NF4 is running on the Hugging Face A10G, and the fair circuit baseline moved there too. The finish moves to
+  about Wednesday morning.**
+  - **NF4 (job `6af2d920`):**
+    - Started at 14:50. Every input matched the laptop by SHA-256: source evidence, repair checkpoint, both base models
+      at the laptop's snapshot, and both judge GGUFs.
+    - The job's NF4 plan matched the laptop's field by field.
+    - About 6 to 8 hours, so it should end tonight. Capped at 10 hours, at most $10.
+  - **Fair circuit baseline (job `6af2e283`):**
+    - Runs on a second A10G in fp32 with TF32 off (`fair_circuit_baseline.py --device cuda`), capped at 2 hours, at
+      most $2.
+    - Each circuit's first draw must reproduce the ratio the laptop logged on its CPU within 1e-3, or nothing is
+      written for that circuit.
+    - It took 5 hours of laptop CPU and could only start after Q4. Now it should take under an hour.
+  - **The laptop's own NF4 step is off.** `runs/experiments/full/earth-nf4/NF4-RUNS-REMOTELY.md` makes its preflight
+    refuse, so the chain stops after Q4. Delete the file to bring the step back if the remote runs fail.
+  - **Kaggle's TPU queue was about 1,460 deep,** so no TPU. The Kaggle T4 notebook for a second NF4 run waits for its
+    `HF_TOKEN` secret.
+  - **New critical path:** laptop Q4, about Wed 01:00 to 03:30. Then the report with Q4 and NF4, the last sentences and
+    tests, about Wed 05:00 to 07:00.
+  - **Hugging Face spending so far:** about $0.60 (first NF4 attempt) + about $1 (router sample). Committed: at most $10
+    (NF4) + $2 (fair baseline).
 - **14:31** **The 32B router judges agree closely with the local 8B judges, so their calibration is done for Global, Earth
   and the selected repair.** The spec names the router pair as the main judges and asks for agreement with the local pair
   on a shared sample before a headline number. The team's Hugging Face credit paid for it, about $1.
