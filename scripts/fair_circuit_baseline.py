@@ -93,7 +93,9 @@ def artifact_files(run: Path, summary: dict) -> tuple[Path, Path]:
     scores_json = Path(summary['scores_json'])
     scores_json = scores_json if scores_json.is_absolute() else ROOT / scores_json
     folder = scores_json.parent
-    if not folder.is_dir():   # the run directory moved since the summary was written
+    # The run moved since the summary was written, or another OS wrote the path: a Windows path read on Linux is one
+    # long file name, so its "folder" is the code directory, which exists but holds no circuit.
+    if not folder.is_dir() or not any(folder.glob('*_node.pt')):
         folder = next((run / 'circuits' / f"{summary['model_tag']}__{summary['lang']}").glob('*-*/'))
     artifact = next(folder.glob('*_node.pt'))
     return artifact, artifact.with_name(artifact.stem + '_scores.pt')

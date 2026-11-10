@@ -26,11 +26,12 @@ uv pip install -q --python "$PY" -c "$WORK/requirements/constraints.txt" -e "$CO
 cd "$CODE"
 log "inputs and models, checked against the laptop by SHA-256"
 "$PY" scripts/remote_nf4.py fair-prepare --work "$WORK" --repo "$BUNDLE_REPO"
-export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
 
 log "fair baseline, 6 circuits"
 set +e
-"$PY" -u scripts/fair_circuit_baseline.py "$WORK/fair/run" --draws 3 --device cuda 2>&1 | tee "$WORK/fair-baseline.log"
+# Offline for the evaluation only, so CircuitKIT loads the pinned snapshots; the upload afterwards needs the Hub.
+HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 "$PY" -u scripts/fair_circuit_baseline.py "$WORK/fair/run" --draws 3 --device cuda \
+  2>&1 | tee "$WORK/fair-baseline.log"
 STATUS=${PIPESTATUS[0]}
 set -e
 log "fair baseline ended with exit code $STATUS"

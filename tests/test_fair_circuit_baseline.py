@@ -80,6 +80,18 @@ def test_a_moved_run_still_finds_its_artifact(tmp_path):
     assert artifact.read_bytes() == b'artifact'
 
 
+def test_a_path_whose_folder_exists_but_holds_no_circuit_falls_back(tmp_path, monkeypatch):
+    """On Linux a Windows path is one long file name, so its parent is the code directory: it exists, but holds no
+    circuit. The first remote run stopped there."""
+    row = summary(tmp_path, '4ad239e5')
+    code = tmp_path / 'code'
+    code.mkdir()
+    monkeypatch.setattr(fair, 'ROOT', code)
+    row['scores_json'] = 'x_scores.json'  # parent: ROOT itself, an existing folder without a *_node.pt
+    artifact, _ = fair.artifact_files(tmp_path, row)
+    assert artifact.read_bytes() == b'artifact'
+
+
 def test_the_device_defaults_to_cpu_and_a_gpu_run_keeps_full_fp32(monkeypatch):
     import torch
 
