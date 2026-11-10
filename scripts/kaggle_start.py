@@ -33,6 +33,18 @@ path = os.environ.get('PATH', '')
 if nvcc:
     path = os.path.dirname(nvcc) + ':' + path
     os.environ['CUDACXX'] = nvcc  # CMake's CUDA compiler
+# Kaggle's CUDA toolkit has no libcuda stub, so CMake cannot make its CUDA::cuda_driver target and ggml-cuda fails to
+# configure. The GPU machine has the driver's own libcuda.so.1; a libcuda.so link to it on CMAKE_LIBRARY_PATH fills in.
+libcuda = (sh("ldconfig -p | grep -m 1 'libcuda.so.1 ' | awk '{print $NF}'")
+           or next(iter(sorted(glob.glob('/usr/lib/x86_64-linux-gnu/libcuda.so*') + glob.glob('/usr/local/nvidia/lib64/libcuda.so*')
+                               + glob.glob('/usr/local/cuda*/**/stubs/libcuda.so', recursive=True))), None))
+print('libcuda:', libcuda or 'not found')
+if libcuda:
+    stub = '/tmp/lexsi-cuda-driver'
+    os.makedirs(stub, exist_ok=True)
+    if not os.path.lexists(os.path.join(stub, 'libcuda.so')):
+        os.symlink(libcuda, os.path.join(stub, 'libcuda.so'))
+    os.environ['CMAKE_LIBRARY_PATH'] = ':'.join(filter(None, [stub, os.environ.get('CMAKE_LIBRARY_PATH')]))
 # Kaggle stops a session at 12 hours; stop cleanly at 11.5, sync, and let the next session resume.
 os.environ.update(BUNDLE_REPO=REPO, PLATFORM='kaggle-t4', WORK=WORK, DEADLINE_MINUTES='690', CUDA_VISIBLE_DEVICES='0',
                   PATH=path)
