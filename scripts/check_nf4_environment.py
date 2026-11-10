@@ -54,6 +54,25 @@ def safe_tag(tag: str) -> str:
     return tag
 
 
+def checkpoint_name(model: str) -> str:
+    """The checkpoint folder's name, whichever OS wrote the path (selection.json keeps the source machine's path)."""
+    return re.split(r'[\\/]', str(model).rstrip('\\/'))[-1]
+
+
+# What must be identical for a run to continue in an existing output directory. Paths to cached models and the
+# software versions may differ between sessions; the inputs, the code, the stages and the output location may not.
+RESUME_KEYS = ('profile', 'family', 'judge_set', 'source_run', 'output', 'spec_digest', 'spec_sha256', 'source_evidence',
+               'model_refs', 'judge_models', 'stages', 'report_tags', 'selected_checkpoint_source',
+               'selected_checkpoint_target', 'preamble_conditions')
+
+
+def resume_identity(plan: dict) -> str:
+    fields = {key: plan.get(key) for key in RESUME_KEYS}
+    fields['checkpoints'] = {tag: checkpoint_content(identity) for tag, identity in plan.get('checkpoints', {}).items()}
+    fields['code'] = plan.get('code', {}).get('content_sha256')
+    return digest(fields)
+
+
 def capability_file(tag: str, preamble: str) -> Path:
     return Path('capability') / (tag + ('.none' if preamble == 'none' else '') + '.json')
 
@@ -241,7 +260,8 @@ def build_plan(args) -> dict:
     source, output, spec_path = args.source_run.resolve(), args.output.resolve(), args.spec.resolve()
     if source == output or source in output.parents or output in source.parents:
         raise ValueError('Source and output directories overlap; use a separate CUDA artifact directory')
-    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+    resuming = getattr(args, 'resume', False) and (output / 'nf4-environment.json').is_file()
+    if output.exists() and (not output.is_dir() or any(output.iterdir())) and not resuming:
         raise ValueError('NF4 output must be a new or empty directory; source artifacts are never overwritten')
     spec = load_spec(spec_path)
     if set(spec.get('preamble_conditions', [])) != {'default', 'none'} or len(spec['preamble_conditions']) != 2:
@@ -264,7 +284,7 @@ def build_plan(args) -> dict:
     selected_path = Path(selected['model']).expanduser()
     # Relocate a copied source-run without rewriting its repair-only selection evidence.
     if not selected_path.is_dir():
-        selected_path = source / 'checkpoints' / selected_path.name
+        selected_path = source / 'checkpoints' / checkpoint_name(selected['model'])
     if not selected_path.is_dir():
         raise ValueError(f'Selected repair checkpoint missing; copy source checkpoints/{selected_path.name}')
     # Keep baseline references portable in the CLI plan. On the CUDA host the
@@ -444,18 +464,30 @@ def validate_nf4_outputs(plan: dict) -> None:
             raise ValueError('Report omitted same-precision NF4 repair comparison')
 
 
-def execute(plan: dict, hardware: dict) -> None:
+def execute(plan: dict, hardware: dict, resume: bool = False) -> None:
     from langsafe.experiment import atomic_json
 
     output, source = Path(plan['output']), Path(plan['source_run'])
-    if output.exists() and any(output.iterdir()):
+    previous = None
+    now = datetime.now(timezone.utc).isoformat()
+    if resume and (output / 'nf4-environment.json').is_file():
+        previous = read_json(output / 'nf4-environment.json')
+        if previous.get('status') == 'complete':
+            raise ValueError('NF4 output is already complete; there is nothing to resume')
+        if previous.get('resume_identity') != resume_identity(plan):
+            raise ValueError('NF4 output belongs to a different plan; refusing to resume into it')
+    elif output.exists() and any(output.iterdir()):
         raise ValueError('NF4 output became occupied after preflight; refusing to overwrite it')
     output.mkdir(parents=True, exist_ok=True)
+    completed = list(previous.get('completed_stages', [])) if previous else []
     metadata = {**plan, 'status': 'running', 'hardware_checked': True, 'hardware': hardware,
                 'software': hardware.get('software', plan.get('software')),
                 'remote_code': hardware.get('code'),
-                'started_at': datetime.now(timezone.utc).isoformat(), 'software_run_complete': False,
-                'nf4_cuda': 'not_complete'}
+                'started_at': previous.get('started_at', now) if previous else now,
+                'resumed_at': [*previous.get('resumed_at', []), now] if previous else [],
+                'earlier_hardware': [*previous.get('earlier_hardware', []), previous.get('hardware')] if previous else [],
+                'resume_identity': resume_identity(plan), 'completed_stages': completed,
+                'software_run_complete': False, 'nf4_cuda': 'not_complete'}
     atomic_json(output / 'nf4-environment.json', metadata)
     try:
         selected_source = Path(plan['selected_checkpoint_source'])
@@ -468,7 +500,13 @@ def execute(plan: dict, hardware: dict) -> None:
             if not path.is_file() or sha256(path) != identity['sha256']:
                 raise ValueError(f'Selected repair checkpoint changed since preflight: {relative}')
         selected_target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(selected_source, selected_target, dirs_exist_ok=False)
+        if previous and selected_target.is_dir():
+            # A resumed run keeps its copy only if every file still matches the source checkpoint.
+            if any(not (selected_target / relative).is_file() or sha256(selected_target / relative) != identity['sha256']
+                   for relative, identity in selected_identity.items()):
+                shutil.rmtree(selected_target)
+        if not selected_target.is_dir():
+            shutil.copytree(selected_source, selected_target, dirs_exist_ok=False)
         for name, identity in plan['source_evidence']['files'].items():
             if sha256(source / name) != identity['sha256']:
                 raise ValueError(f'Source changed since preflight: {name}')
@@ -480,6 +518,9 @@ def execute(plan: dict, hardware: dict) -> None:
                    LANGSAFE_DATA_DIR=str(output / 'data'), LANGSAFE_SPEC=str(output / 'source-spec.yaml'),
                    HF_HUB_OFFLINE='1', HF_DATASETS_OFFLINE='1', TOKENIZERS_PARALLELISM='false')
         for stage in plan['stages']:
+            if stage['name'] in completed:
+                print(f'[NF4] {stage["name"]} (already complete)', flush=True)
+                continue
             print(f'[NF4] {stage["name"]}', flush=True)
             atomic_json(output / 'current-stage.json', {'stage': stage['name'], 'status': 'running'})
             log = output / 'logs' / (stage['name'] + '.log')
@@ -488,9 +529,13 @@ def execute(plan: dict, hardware: dict) -> None:
                        '--runs-dir', str(output), *stage['args']]
             command = [str(selected_target) if value == plan['selected_checkpoint_source'] else value
                        for value in command]
-            with log.open('w', encoding='utf-8') as stream:
+            # Every stage continues from its own caches, so an interrupted one simply runs again.
+            with log.open('a' if previous else 'w', encoding='utf-8') as stream:
                 subprocess.run(command, cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT, check=True)
             atomic_json(output / 'current-stage.json', {'stage': stage['name'], 'status': 'complete'})
+            completed.append(stage['name'])
+            metadata['completed_stages'] = completed
+            atomic_json(output / 'nf4-environment.json', metadata)
         validate_nf4_outputs(plan)
         metadata.update(status='complete', software_run_complete=True, nf4_cuda='executed',
                         finished_at=datetime.now(timezone.utc).isoformat())
@@ -524,12 +569,16 @@ def main(argv=None) -> int:
     mode.add_argument('--dry-run', action='store_true', help='Hash inputs/print plan only; never load torch or touch GPU/network')
     mode.add_argument('--check-hardware', action='store_true', help='On CUDA host: check NF4 kernel, storage, offline capability cache; no checkpoint loads')
     mode.add_argument('--execute', action='store_true', help='On authorized CUDA host: preflight then run all stages serially')
+    parser.add_argument('--resume', action='store_true',
+                        help='With --execute: continue an interrupted run of the same plan in --output, skipping finished stages')
     args = parser.parse_args(argv)
     # Model and dataset code cannot silently download replacements during the handoff.
     os.environ.update(HF_HUB_OFFLINE='1', HF_DATASETS_OFFLINE='1', LANGSAFE_DEVICE='cuda')
     try:
         if args.min_free_gib < 0:
             raise ValueError('--min-free-gib must be nonnegative')
+        if args.resume and not args.execute:
+            raise ValueError('--resume only applies to --execute')
         if args.execute and args.judges == 'router' and not args.allow_router:
             raise ValueError('Router execution requires explicit --allow-router authorization and HF_TOKEN')
         if args.execute and args.judges == 'router' and not os.environ.get('HF_TOKEN'):
@@ -542,7 +591,7 @@ def main(argv=None) -> int:
         if args.check_hardware:
             print(json.dumps({**plan, 'status': 'preflight_passed_not_executed', 'hardware_checked': True, 'hardware': hardware}, indent=2))
         else:
-            execute(plan, hardware)
+            execute(plan, hardware, resume=args.resume)
         return 0
     except (ValueError, OSError, ImportError, KeyError, RuntimeError, subprocess.CalledProcessError) as error:
         # Never log exception payloads from remote APIs or credentials.

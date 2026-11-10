@@ -7,9 +7,9 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks (baseline, circuits and repairs done), then NF4, about Wed evening | Fair circuit baseline, then the report and the last sentences |
+| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run: Q4 checks (about Wed 01:00 to 03:30). NF4 runs on rented GPUs at the same time (HF Jobs A10G, Kaggle T4) | Fair circuit baseline straight after Q4, then the report and the last sentences, about Wed midday |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
-| Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers, HF credits |
+| Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
 ## Still needs a person
 - Native readers for Javanese first, then Bengali, Arabic, Swahili, Thai and Korean, to review translations and hand-label
@@ -20,6 +20,27 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 10 November 2026
+- **12:16** **NF4 moves off the laptop, to rented GPUs, so it runs at the same time as Q4.** It took 12 to 15 hours at
+  the end of the chain. Now it runs on a Hugging Face Jobs A10G (about $1 an hour from the team's Hugging Face credit,
+  Aditya's call) and, as a second run on different hardware, on a free Kaggle T4. Q4 stays on the laptop, and once it
+  ends the laptop goes straight to the fair circuit baseline. That brings the finish forward by about half a day.
+  - **How:** `scripts/remote_nf4.py` and `scripts/remote_nf4.sh`, described in `docs/REMOTE_NF4.md`.
+    - The code shipped is `git archive HEAD`.
+    - The source evidence and the selected repair checkpoint sit in a private Hugging Face dataset repo, because they
+      include the harmful prompts and the models' answers. Every command refuses a public repo.
+    - The base models, judge GGUF files and Global-MMLU-Lite are downloaded on the host and checked against the
+      laptop's SHA-256. The base models come at the laptop's snapshot revision.
+    - The judges are the same GGUF files under llama.cpp built from the laptop's commit, so the remote judges match the
+      laptop's.
+    - Before running, the host builds the NF4 plan and compares it field by field with the laptop's.
+  - **New in `check_nf4_environment.py`:**
+    - `--resume` continues an interrupted run of the same plan without repeating finished stages, for Kaggle's 12-hour
+      cap.
+    - The selected checkpoint is now found from a Windows path on Linux. Before, the folder name came out wrong.
+  - **Tests:** 846 passed, 2 skipped, twice.
+  - **If the remote runs fail,** the laptop's own `earth-nf4` step is still there.
+  - The rest of the Hugging Face credit goes on the pre-registered router judges (the 32B pair) for a calibration
+    sample. I'll show the cost before spending it.
 - **09:28** **Repairs are judged. No arm passes at full precision, and the circuit map did no better than random
   layers.** The repairs stage ended at 09:15 and the 4-bit Q4 stage has started. These numbers come from a report built
   in a scratch folder on the full-precision tags; the run's own report at the end will add Q4 and NF4 but can't change

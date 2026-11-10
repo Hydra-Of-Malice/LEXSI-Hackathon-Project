@@ -292,6 +292,110 @@ def test_plan_commands_are_accepted_by_existing_cli(handoff, monkeypatch):
     assert len(called) == len(plan['stages'])
 
 
+def _module():
+    loader = importlib.util.spec_from_file_location('nf4_check_resume', SCRIPT)
+    module = importlib.util.module_from_spec(loader)
+    loader.loader.exec_module(module)
+    return module
+
+
+def _plan(module, handoff, monkeypatch, resume=False):
+    from types import SimpleNamespace
+
+    monkeypatch.setenv('LANGSAFE_MODELS', str(handoff['models']))
+    monkeypatch.setenv('HF_HUB_OFFLINE', '1')
+    args = SimpleNamespace(source_run=handoff['source'], output=handoff['output'], spec=handoff['spec'], family='fire',
+                           judges='local', allow_development=False, resume=resume)
+    return module.build_plan(args)
+
+
+def _fake_stages(module, plan, monkeypatch, fail_at=None):
+    """Stand in for the CLI: record each stage, write the report when asked, and fail at one stage if told to."""
+    ran = []
+    real_run = subprocess.run
+
+    def run(command, cwd=None, env=None, stdout=None, stderr=None, check=False, **kwargs):
+        if 'langsafe.cli' not in command:
+            return real_run(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, check=check, **kwargs)
+        # The runner puts eight items before the stage's own arguments and swaps in its copy of the checkpoint.
+        args = [plan['selected_checkpoint_source'] if part == plan['selected_checkpoint_target'] else part
+                for part in command[8:]]
+        name = next(stage['name'] for stage in plan['stages'] if stage['args'] == args)
+        if name == fail_at:
+            raise subprocess.CalledProcessError(1, command)
+        ran.append(name)
+        if name == 'report':
+            Path(env['LANGSAFE_RUNS_DIR'], 'report.json').write_text(json.dumps(
+                {'empirical_repair_success': False, 'validation_gaps': []}))
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(module.subprocess, 'run', run)
+    monkeypatch.setattr(module, 'validate_nf4_outputs', lambda plan: None)
+    return ran
+
+
+@pytest.mark.parametrize('model', ['D:\\lexsi\\run\\checkpoints\\fire-resta-a0.1',
+                                   '/original-machine/run/checkpoints/fire-resta-a0.1',
+                                   'D:\\lexsi\\run\\checkpoints\\fire-resta-a0.1\\'])
+def test_selected_checkpoint_name_survives_another_os_path(model):
+    assert _module().checkpoint_name(model) == 'fire-resta-a0.1'
+
+
+def test_windows_selection_path_relocates_into_the_copied_source(handoff, monkeypatch):
+    path = handoff['source'] / 'selection.json'
+    selection = json.loads(path.read_text())
+    windows = 'D:\\lexsi hackathon\\run\\checkpoints\\fire-resta-a0.1'
+    selection['selected_for_quantization']['model'] = windows
+    selection['arms']['resta']['selected']['model'] = windows
+    path.write_text(json.dumps(selection))
+    plan = _plan(_module(), handoff, monkeypatch)
+    assert plan['resolved_models']['fire-resta-0p1'] == str((handoff['source'] / 'checkpoints' / 'fire-resta-a0.1').resolve())
+
+
+def test_interrupted_run_resumes_without_repeating_finished_stages(handoff, monkeypatch):
+    module = _module()
+    plan = _plan(module, handoff, monkeypatch)
+    names = [stage['name'] for stage in plan['stages']]
+    ran = _fake_stages(module, plan, monkeypatch, fail_at='fire-nf4-heldout')
+    with pytest.raises(subprocess.CalledProcessError):
+        module.execute(plan, {'device': 'first'})
+    first = names[:names.index('fire-nf4-heldout')]
+    assert ran == first
+    saved = json.loads((handoff['output'] / 'nf4-environment.json').read_text())
+    assert saved['status'] == 'failed' and saved['completed_stages'] == first
+    # A fresh execute still refuses the occupied directory; only --resume may continue it.
+    with pytest.raises(ValueError, match='occupied'):
+        module.execute(plan, {'device': 'second'})
+    with pytest.raises(ValueError, match='empty'):
+        _plan(module, handoff, monkeypatch)
+    plan = _plan(module, handoff, monkeypatch, resume=True)
+    ran = _fake_stages(module, plan, monkeypatch)
+    module.execute(plan, {'device': 'second'}, resume=True)
+    assert ran == names[len(first):]
+    saved = json.loads((handoff['output'] / 'nf4-environment.json').read_text())
+    assert saved['status'] == 'complete' and saved['completed_stages'] == names
+    assert len(saved['resumed_at']) == 1 and saved['earlier_hardware'] == [{'device': 'first'}]
+    assert saved['hardware'] == {'device': 'second'}
+    with pytest.raises(ValueError, match='already complete'):
+        module.execute(plan, {'device': 'third'}, resume=True)
+
+
+def test_resume_refuses_an_output_from_a_different_plan(handoff, monkeypatch):
+    module = _module()
+    plan = _plan(module, handoff, monkeypatch)
+    _fake_stages(module, plan, monkeypatch, fail_at='global-nf4-capability-none')
+    with pytest.raises(subprocess.CalledProcessError):
+        module.execute(plan, {})
+    changed = dict(plan, stages=[*plan['stages'], {'name': 'extra', 'args': ['status']}])
+    with pytest.raises(ValueError, match='different plan'):
+        module.execute(changed, {}, resume=True)
+
+
+def test_resume_flag_is_only_for_execute(handoff):
+    result = run_handoff(handoff, '--dry-run', '--resume')
+    assert result.returncode != 0 and '--resume' in result.stderr
+
+
 def test_router_execution_requires_explicit_network_authorization_before_work(handoff):
     result = run_handoff(handoff, '--execute', '--judges', 'router')
     assert result.returncode != 0
