@@ -61,6 +61,11 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
       memory and spilled. The 12-request figure is the one used.
     - The 6 November file is kept as `runs/pilot/bench-generation.2026-11-06.json`.
     - `TPS_BATCHED_GPU` and `TPS_GPU_NAME` are written.
+  - **The public copy is rebuilt** at `788965c` (`D:\lexsi hackathon\LEXSI-Hackathon-Public`). It is one commit,
+    `7459ca0`, with no remote, and nothing is pushed. Its 855 tests pass twice on its own source.
+    - The builder flags the Hugging Face username in the remote-run scripts, their doc and tests, and the root
+      ledger (the private NF4 repo is `HydraOfMalice/lexsi-nf4-private`). Keeping it is the team's call, along
+      with the ledger hostnames.
 - **01:52** **NF4 is done, on the HF A10G. Quantising to NF4 costs every model about 4 points of safety, and Earth's
   Javanese loses the most.**
   - **The run:** finished at 21:45 on 10 November, all 17 stages, with its own report and ledger check. It took 6.9
