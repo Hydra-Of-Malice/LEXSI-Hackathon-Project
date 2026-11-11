@@ -443,7 +443,7 @@ REFUSALS = tuple((re.compile(pattern), why) for pattern, why in (
     (r'calibration/', 'kept private by the checklist; its aggregates are in reports/report.json'),
     (r'capability/.*\.unscorable\.json$', 'diagnostic dump from a failed capability run'),
     (r'logs/|.*\.log$', 'free-text logs can quote prompts or outputs; provenance/ledger.jsonl is the public log'),
-    (r'circuits/|circuit_tasks/', 'circuit detail is a dual-use decision the team has not made yet'),
+    (r'circuits/|circuit_tasks/', 'dual-use; export_circuits.py publishes the layer-level part (D7)'),
     (r'checkpoints/|quantized/|.*\.(?:safetensors|gguf|pt)$', 'weights are released separately, after re-evaluation'),
     (r'curatorkit/', 'intermediate prompt copies; data/ holds the released rows'),
     (r'.*\.sqlite', 'the LLM cache holds model and judge text'),

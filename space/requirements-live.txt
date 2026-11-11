@@ -1,0 +1,6 @@
+# Local use only: adds the optional side-by-side tab's model runtime. Never install this on the public Space.
+# Prebuilt CPU wheels from llama-cpp-python's own index. PyPI ships only source, which would have to compile.
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+-r requirements.txt
+# 0.3.19 cannot load Tiny Aya: its chat template uses {% break %}. 0.3.36 is the version tested with these GGUFs.
+llama-cpp-python==0.3.36

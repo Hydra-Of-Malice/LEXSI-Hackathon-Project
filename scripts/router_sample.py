@@ -9,12 +9,18 @@ measured on a shared sample before either is used for a headline number". This i
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --pilot 4 --execute
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --execute
     python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --write-calibration
+    python scripts/router_sample.py --tags global,earth,earth-circuit_merge-0p5 --per-cell 20 --judge-set command-a --execute
 
 The sample takes `--per-cell` answers from every language x harmful/benign x preamble cell, in a seeded order, so the
 same command always picks the same answers. `--pilot N` judges only the first N per tag and reports the tokens the
 providers billed, to price the rest. Router calls use this machine's Hugging Face login, which is never printed; they
 are billed to that account. Everything goes to <run>-router-sample/ next to the run, which git ignores: the judged
 sample (raw verdicts on harmful answers stay private), the comparison per tag, and usage.json.
+
+`--judge-set command-a` judges the same answers with Command A, the Tiny Aya report's own judge (decision D9), as a
+single judge on the same two rubrics. It writes to <run>-command-a-sample/ and compares Command A with the local pair
+and with the 32B router pair (read from <run>-router-sample/, never written). One judge has no pair consensus, so on
+the refusal axis its own vote is the label; these comparisons are descriptive, not a spec calibration.
 """
 from __future__ import annotations
 
@@ -31,6 +37,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 USAGE = defaultdict(lambda: {'calls': 0, 'prompt_tokens': 0, 'completion_tokens': 0})
 LOCK = threading.Lock()
+# Judge sets beside the spec's router pair. Kept here, not in the frozen spec: they are an extra comparison, not judges
+# a headline number rests on.
+JUDGE_SETS = {
+    'command-a': [{'name': 'command-a', 'base_url': 'https://router.huggingface.co/v1',
+                   'model': 'CohereLabs/c4ai-command-a-03-2025:cohere'}],
+}
 
 
 def read_rows(path: Path) -> list[dict]:
@@ -82,8 +94,10 @@ def record_usage() -> None:
     llm_client.ChatClient.__init__ = __init__
 
 
-def content_agreement(local: list[dict], router: list[dict]) -> dict:
-    """Agreement on the content-safety consensus label, the primary axis, per language (Gwet's AC1, Amendment 16)."""
+def content_agreement(local: list[dict], router: list[dict], names: tuple[str, str] = ('local', 'router')) -> dict:
+    """Agreement on the content-safety consensus label, the primary axis, per language (Gwet's AC1, Amendment 16).
+
+    `names` label the two sides' safe counts; the defaults keep the router sample's own files unchanged."""
     from langsafe.eval.judge_run import _evidence_key
     from langsafe.judge.agreement import gwet_ac1
 
@@ -100,8 +114,32 @@ def content_agreement(local: list[dict], router: list[dict]) -> dict:
         result[lang] = {'shared': len(keys), 'decided_by_both': len(decided),
                         'agreement': sum(x == y for x, y in zip(a, b)) / len(decided) if decided else None,
                         'ac1': gwet_ac1(a, b, categories) if len(categories) > 1 and decided else None,
-                        'local_safe': sum(x == 'safe' for x in a), 'router_safe': sum(y == 'safe' for y in b)}
+                        f'{names[0]}_safe': sum(x == 'safe' for x in a), f'{names[1]}_safe': sum(y == 'safe' for y in b)}
     return {'shared_rows': len(shared), 'by_lang': result}
+
+
+def single_judge_view(rows: list[dict]) -> list[dict]:
+    """A one-judge set's rows with that judge's own refusal vote as the label.
+
+    `consensus` needs two votes, so judge_generations labels every one-judge row `unclear`. The judge's vote is what a
+    single-judge method reports (a parse error is already `unclear`). The content label needs no change: one vote is
+    unanimous."""
+    view = []
+    for row in rows:
+        if len(row.get('judges', {})) != 1:
+            raise ValueError('single_judge_view takes rows from a one-judge set')
+        view.append({**row, 'label': next(iter(row['judges'].values()))})
+    return view
+
+
+def compare_single_judge(reference: list[dict], judged: list[dict], names: tuple[str, str]) -> dict:
+    """Both axes for a one-judge set against a reference pair on the same answers. `verified` stays false, because the
+    spec's calibration is between two pairs; the numbers are descriptive."""
+    from langsafe.eval.judge_run import compare_judge_sets
+
+    return {'reference': names[0], 'judge': names[1],
+            'refusal_axis': compare_judge_sets(reference, single_judge_view(judged)),
+            'content_axis': content_agreement(reference, judged, names)}
 
 
 def write_calibration(run: Path, out: Path, tag: str, per_cell: int, replace: bool) -> str:
@@ -151,9 +189,15 @@ def main(argv=None) -> int:
     parser.add_argument('--write-calibration', action='store_true',
                         help="write the run's calibration/<tag>.router-comparison.json from the judged sample (no calls)")
     parser.add_argument('--replace', action='store_true', help='with --write-calibration: overwrite an existing file')
+    parser.add_argument('--judge-set', choices=('router', *JUDGE_SETS), default='router',
+                        help="router: the spec's 32B pair (default); command-a: the Tiny Aya report's judge, alone, "
+                             'written to <run>-command-a-sample/')
     args = parser.parse_args(argv)
+    if args.judge_set != 'router' and args.write_calibration:
+        raise SystemExit("--write-calibration takes the spec's router pair, not --judge-set " + args.judge_set)
     run = args.run.resolve()
-    out = run.parent / (run.name + '-router-sample')
+    router_out = run.parent / (run.name + '-router-sample')
+    out = router_out if args.judge_set == 'router' else run.parent / f'{run.name}-{args.judge_set}-sample'
     os.environ['LANGSAFE_RUNS_DIR'] = str(out)  # the router cache lives with the sample, not in the run
     os.environ.setdefault('LANGSAFE_SPEC', str(ROOT / 'configs' / 'spec.yaml'))
     from langsafe.config import load_spec
@@ -161,6 +205,7 @@ def main(argv=None) -> int:
     from langsafe.eval.judge_run import compare_judge_sets, generation_key, judge_generations
 
     spec = load_spec()
+    judges = spec['judging']['judges'] if args.judge_set == 'router' else JUDGE_SETS[args.judge_set]
     prompts = {prompt.id: prompt for prompt in read_prompts(run / 'data' / 'heldout.jsonl')}
     plan = {}
     for tag in args.tags.split(','):
@@ -169,7 +214,11 @@ def main(argv=None) -> int:
         if args.pilot:
             sample = sample[:args.pilot]
         chars = sum(len(prompts[row['id']].text) + min(len(row['response'] or ''), 3000) for row in sample)
-        plan[tag] = {'answers': len(sample), 'calls': 4 * len(sample), 'answer_and_prompt_chars': chars}
+        if args.judge_set == 'router':
+            plan[tag] = {'answers': len(sample), 'calls': 4 * len(sample), 'answer_and_prompt_chars': chars}
+        else:  # the refusal rubric on every answer, the content rubric on harmful ones; before cache hits
+            plan[tag] = {'answers': len(sample), 'calls': len(sample) + sum(row['kind'] == 'harmful' for row in sample),
+                         'answer_and_prompt_chars': chars}
         if not args.execute:
             continue
         if not os.environ.get('HF_TOKEN'):
@@ -179,9 +228,9 @@ def main(argv=None) -> int:
                 raise SystemExit('No Hugging Face login on this machine; run `hf auth login` yourself first')
             os.environ['HF_TOKEN'] = token
         record_usage()
-        judged = out / 'judged' / f'{tag}.router-sample.jsonl'
+        judged = out / 'judged' / f'{tag}.{args.judge_set}-sample.jsonl'
         judged.parent.mkdir(parents=True, exist_ok=True)
-        judge_generations(sample, prompts, spec['judging']['judges'], judged, audit_size=0,
+        judge_generations(sample, prompts, judges, judged, audit_size=0,
                           min_kappa=spec['judging']['min_judge_kappa'], min_ac1=spec['judging']['min_judge_ac1'],
                           primary_safety_axis=spec.get('experiment', {}).get('primary_safety_axis', 'refusal'))
         router = read_rows(judged)
@@ -190,10 +239,25 @@ def main(argv=None) -> int:
         local = [row for row in read_rows(run / 'judged' / f'{tag}.local.jsonl') if (row['id'], row['preamble']) in keys]
         if len(local) != len(sample) or len(router) != len(sample):
             raise SystemExit(f'{tag}: {len(local)} local and {len(router)} router verdicts for {len(sample)} answers')
-        comparison = {'tag': tag, 'per_cell': args.per_cell, 'pilot': args.pilot or None,
-                      'refusal_axis': compare_judge_sets(local, router), 'content_axis': content_agreement(local, router)}
-        (out / f'{tag}.router-sample-comparison.json').write_text(json.dumps(comparison, indent=2), encoding='utf-8')
-        plan[tag]['comparison'] = str(out / f'{tag}.router-sample-comparison.json')
+        if args.judge_set == 'router':
+            comparison = {'tag': tag, 'per_cell': args.per_cell, 'pilot': args.pilot or None,
+                          'refusal_axis': compare_judge_sets(local, router),
+                          'content_axis': content_agreement(local, router)}
+        else:
+            comparison = {'tag': tag, 'per_cell': args.per_cell, 'pilot': args.pilot or None,
+                          'judge_set': args.judge_set, 'judges': judges,
+                          'note': 'one judge: its own refusal vote is the label; verified is false by design, '
+                                  'since the spec calibrates pair against pair',
+                          'vs_local_pair': compare_single_judge(local, router, ('local', args.judge_set))}
+            pair_path = router_out / 'judged' / f'{tag}.router-sample.jsonl'  # read only; never written here
+            pair = ([row for row in read_rows(pair_path) if (row['id'], row['preamble']) in keys]
+                    if pair_path.is_file() else [])
+            comparison['vs_router_pair'] = (compare_single_judge(pair, router, ('router', args.judge_set))
+                                            if len(pair) == len(sample) else
+                                            {'missing': f'{pair_path.name} has {len(pair)} of these {len(sample)} answers'})
+        target = out / f'{tag}.{args.judge_set}-sample-comparison.json'
+        target.write_text(json.dumps(comparison, indent=2), encoding='utf-8')
+        plan[tag]['comparison'] = str(target)
     if args.write_calibration:
         if args.pilot:
             raise SystemExit('A pilot is too small to calibrate with; run the full sample first')
@@ -202,7 +266,8 @@ def main(argv=None) -> int:
     if args.execute:
         usage_path = out / 'usage.json'
         earlier = json.loads(usage_path.read_text(encoding='utf-8')) if usage_path.is_file() else []
-        earlier.append({'tags': args.tags, 'per_cell': args.per_cell, 'pilot': args.pilot or None, 'usage': dict(USAGE)})
+        entry = {'tags': args.tags, 'per_cell': args.per_cell, 'pilot': args.pilot or None, 'usage': dict(USAGE)}
+        earlier.append(entry if args.judge_set == 'router' else {'judge_set': args.judge_set, **entry})
         usage_path.write_text(json.dumps(earlier, indent=2), encoding='utf-8')
     print(json.dumps({'output': str(out), 'plan': plan, 'usage': dict(USAGE)}, indent=2))
     return 0
