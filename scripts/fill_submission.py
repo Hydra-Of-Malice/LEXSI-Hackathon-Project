@@ -561,10 +561,12 @@ def run_values(results: Results) -> dict:
     return values
 
 
-def measured(run: Path) -> dict[str, str]:
-    """Every value the run's files settle. A value they don't hold is left out, so its placeholder stays."""
-    results = Results(run, _read(run / 'report.json'), _read(run / 'selection.json'), _read(run / 'localisation.json'),
-                      _read(run / 'data' / 'manifest.json'))
+def measured(run: Path, selection: dict | None = None) -> dict[str, str]:
+    """Every value the run's files settle. A value they don't hold is left out, so its placeholder stays.
+
+    `selection` replaces selection.json, so a model card can be filled for an arm other than the selected one."""
+    results = Results(run, _read(run / 'report.json'), selection or _read(run / 'selection.json'),
+                      _read(run / 'localisation.json'), _read(run / 'data' / 'manifest.json'))
     values = {}
     for part in (gap_values, target_values, target_confirmation_values, repair_values, selected_arm_values,
                  language_values, circuit_values, localisation_values, data_values, fertility_values, run_values):

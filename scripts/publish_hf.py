@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / 'runs' / 'experiments' / 'full' / 'earth'
 EXPORT = ROOT / 'runs' / 'experiments' / 'public' / 'earth-full'
 CARDS = ROOT / 'runs' / 'experiments' / 'public' / 'cards'
+STAGE = ROOT / 'runs' / 'experiments' / 'public' / 'models'   # cleaned copies of small files
 PREFIX = 'tiny-aya-earth-langsafe'   # LSAL section 2: no kit names in repo names
 CHECKPOINT_FILES = {'config.json', 'generation_config.json', 'tokenizer.json', 'tokenizer_config.json',
                     'chat_template.jinja', 'special_tokens_map.json', 'lexsi_provenance.json', 'model.safetensors',
@@ -79,7 +81,33 @@ def checkpoint_folder(model: str) -> str:
     return model.replace('\\', '/').rstrip('/').split('/')[-1]
 
 
-def plan(namespace: str, run: Path = RUN, export: Path = EXPORT, cards: Path = CARDS) -> tuple[list[Repo], list[str]]:
+LOCAL_PATH = re.compile(r'lexsi hackathon|LEXSI-Hackathon-Project|\b[A-Za-z]:[\\/]|/Users/|/home/', re.I)
+
+
+def relative(value):
+    """Turn an absolute path inside the project into a project-relative one, recursively through JSON values."""
+    if isinstance(value, dict):
+        return {key: relative(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [relative(item) for item in value]
+    if isinstance(value, str) and re.match(r'^(?:[A-Za-z]:[\\/]|/)', value):
+        parts = value.replace('\\', '/').split('/')
+        anchor = ROOT.name
+        if anchor in parts:
+            return '/'.join(parts[parts.index(anchor) + 1:])
+    return value
+
+
+def sanitised_provenance(source: Path, stage: Path) -> Path:
+    """A copy of lexsi_provenance.json with the laptop's absolute paths made relative; hashes are kept as they are."""
+    stage.mkdir(parents=True, exist_ok=True)
+    target = stage / source.name
+    target.write_text(json.dumps(relative(read_json(source)), indent=2) + '\n', encoding='utf-8', newline='\n')
+    return target
+
+
+def plan(namespace: str, run: Path = RUN, export: Path = EXPORT, cards: Path = CARDS,
+         stage: Path = STAGE) -> tuple[list[Repo], list[str]]:
     report, selection = read_json(run / 'report.json'), read_json(run / 'selection.json')
     repos, private = [], []
     manifest = export / 'EXPORT_MANIFEST.json'
@@ -115,11 +143,13 @@ def plan(namespace: str, run: Path = RUN, export: Path = EXPORT, cards: Path = C
         for path in sorted(folder.rglob('*')) if folder.is_dir() else []:
             if not path.is_file():
                 continue
-            relative = path.relative_to(folder).as_posix()
-            if relative in allowed:
-                files[relative] = path
+            name_in_repo = path.relative_to(folder).as_posix()
+            if name_in_repo == 'lexsi_provenance.json':
+                path = sanitised_provenance(path, stage / tag)
+            if name_in_repo in allowed:
+                files[name_in_repo] = path
             else:
-                problems.append(f'unexpected file left out: {relative}')
+                problems.append(f'unexpected file left out: {name_in_repo}')
         if not files:
             problems.append(f'no files found in {folder}')
         repo = Repo(name, 'model', files, cards / f'model_card-{tag}.md',
@@ -137,6 +167,14 @@ def plan(namespace: str, run: Path = RUN, export: Path = EXPORT, cards: Path = C
         for path in checked:
             if is_private(path.relative_to(ROOT) if path.is_relative_to(ROOT) else path):
                 repo.problems.append(f'refused: {path} is under a private folder')
+        # Small text files must not carry the laptop's paths (the export scans its own files for this already).
+        for name, path in repo.files.items():
+            if repo.repo_type == 'model' and path.suffix in ('.json', '.jinja', '.txt', '.md') and path.is_file() \
+                    and path.stat().st_size < 50_000_000 and name != 'tokenizer.json' \
+                    and LOCAL_PATH.search(path.read_text(encoding='utf-8', errors='replace')):
+                repo.problems.append(f'refused: {name} holds a local path')
+        if repo.card.is_file() and LOCAL_PATH.search(repo.card.read_text(encoding='utf-8', errors='replace')):
+            repo.problems.append('refused: the card holds a local path')
         if not repo.card.is_file():
             repo.problems.append(f'card missing: {repo.card}')
     return repos, private
@@ -168,15 +206,91 @@ def execute(repos: list[Repo], expected: str) -> None:
                 if not problem.startswith('unexpected file left out')]
     if blocking:
         raise SystemExit('Not publishing:\n' + '\n'.join(blocking))
+    from huggingface_hub import CommitOperationAdd
+
     api = HfApi()
     for repo in repos:
-        api.create_repo(repo.repo_id, repo_type=repo.repo_type, private=False, exist_ok=True)
-        for name, path in repo.files.items():
-            api.upload_file(path_or_fileobj=str(path), path_in_repo=name, repo_id=repo.repo_id, repo_type=repo.repo_type,
-                            commit_message=f'Add {name}')
-        api.upload_file(path_or_fileobj=str(repo.card), path_in_repo='README.md', repo_id=repo.repo_id,
-                        repo_type=repo.repo_type, commit_message='Add card')
-        print(f'published https://huggingface.co/{"datasets/" if repo.repo_type == "dataset" else ""}{repo.repo_id}')
+        with_retries(lambda: api.create_repo(repo.repo_id, repo_type=repo.repo_type, private=False, exist_ok=True))
+        wanted = [*repo.files.items(), ('README.md', repo.card)]   # the card goes last, once the files are there
+        done = with_retries(lambda: unchanged(api, repo.repo_id, repo.repo_type, dict(wanted)))
+        groups = batches([(name, path) for name, path in wanted if name not in done])
+        # Few commits per repo: the Hub allows 128 commits an hour (a file-per-commit upload hit it), and small files
+        # travel inside the commit request itself, so one 93 MB commit of the whole dataset was cut off.
+        for number, group in enumerate(groups, 1):
+            operations = [CommitOperationAdd(path_in_repo=name, path_or_fileobj=str(path)) for name, path in group]
+            message = f'Publish {repo.repo_id.split("/")[-1]}' + (f' ({number}/{len(groups)})' if len(groups) > 1 else '')
+            with_retries(lambda: api.create_commit(repo.repo_id, repo_type=repo.repo_type, operations=operations,
+                                                   commit_message=message))
+        print(f'published https://huggingface.co/{"datasets/" if repo.repo_type == "dataset" else ""}{repo.repo_id}'
+              f'  ({len(wanted) - len(done)} sent in {len(groups)} commits, {len(done)} already there)', flush=True)
+
+
+INLINE_LIMIT = 10 * 2**20      # the Hub sends smaller files inside the commit request rather than as LFS/Xet objects
+
+
+def batches(files: list[tuple[str, Path]], limit: int = 20 * 2**20) -> list[list[tuple[str, Path]]]:
+    """Split files into commits whose inline payload stays under `limit`; large files ride in the first commit."""
+    groups, current, size = [], [], 0
+    for name, path in sorted(files, key=lambda item: item[1].stat().st_size < INLINE_LIMIT):   # stable: large first
+        inline = path.stat().st_size if path.stat().st_size < INLINE_LIMIT else 0
+        if size and size + inline > limit:
+            groups.append(current)
+            current, size = [], 0
+        current.append((name, path))
+        size += inline
+    return groups + [current] if current else groups
+
+
+def blob_id(path: Path) -> str:
+    data = path.read_bytes()
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    sha = hashlib.sha256()
+    with path.open('rb') as handle:
+        for chunk in iter(lambda: handle.read(2**24), b''):
+            sha.update(chunk)
+    return sha.hexdigest()
+
+
+def unchanged(api, repo_id: str, repo_type: str, files: dict[str, Path]) -> set[str]:
+    """Paths already on the Hub with the same bytes, so a re-run after a failure does not send them again."""
+    from huggingface_hub.hf_api import RepoFile
+
+    remote = {item.path: item for item in api.list_repo_tree(repo_id, repo_type=repo_type, recursive=True)
+              if isinstance(item, RepoFile)}
+    same = set()
+    for name, path in files.items():
+        item = remote.get(name)
+        if item is None or item.size != path.stat().st_size:
+            continue
+        if (item.lfs['sha256'] == file_sha256(path)) if item.lfs else (item.blob_id == blob_id(path)):
+            same.add(name)
+    return same
+
+
+def retryable(error: Exception) -> bool:
+    status = getattr(getattr(error, 'response', None), 'status_code', None)
+    if status is not None:
+        return status in (429, 500, 502, 503, 504)
+    import httpx
+    return isinstance(error, httpx.TransportError)    # dropped or timed-out connections
+
+
+def with_retries(call, waits: tuple[int, ...] = (300,) * 18):
+    """Retry a Hub call through the commit rate limit (HTTP 429), server errors and dropped connections, every five
+    minutes for up to 90 minutes. Anything else (a refused file, a missing permission) fails at once."""
+    import time
+
+    for wait in (*waits, None):
+        try:
+            return call()
+        except Exception as error:
+            if wait is None or not retryable(error):
+                raise
+            print(f'{type(error).__name__}: {str(error)[:120]}; retrying in {wait // 60} minutes', flush=True)
+            time.sleep(wait)
 
 
 def main(argv=None) -> int:

@@ -104,3 +104,99 @@ def test_the_digest_follows_the_files(setup):
     assert first == publish.digest(publish.plan('team', run=run, export=export, cards=cards)[0])
     (run / 'quantized' / 'earth-merge_back-0p5-q4_k_m.gguf').write_text('a different gguf', encoding='utf-8')
     assert first != publish.digest(publish.plan('team', run=run, export=export, cards=cards)[0])
+
+
+def test_provenance_paths_are_made_relative_and_hashes_kept(tmp_path):
+    root = publish.ROOT.name
+    source = tmp_path / 'lexsi_provenance.json'
+    windows_path = chr(92).join(['D:', 'somewhere', root, 'runs', 'x', 'merged-scores.json'])
+    source.write_text(json.dumps({'params': {'scores': windows_path,
+                                             'scores_sha256': 'abc', 'strength': 0.5},
+                                  'inputs': [{'ref': 'CohereLabs/tiny-aya-earth'}]}), encoding='utf-8')
+    clean = json.loads(publish.sanitised_provenance(source, tmp_path / 'stage').read_text(encoding='utf-8'))
+    assert clean['params'] == {'scores': 'runs/x/merged-scores.json', 'scores_sha256': 'abc', 'strength': 0.5}
+    assert clean['inputs'] == [{'ref': 'CohereLabs/tiny-aya-earth'}]
+
+
+def test_a_checkpoint_file_with_a_local_path_is_refused(setup, tmp_path):
+    run, export, cards = setup
+    (run / 'checkpoints' / 'earth-resta-a0.1' / 'config.json').write_text('{"_name_or_path": "C:\\Users\\me\\model"}',
+                                                                          encoding='utf-8')
+    repos, _ = publish.plan('team', run=run, export=export, cards=cards, stage=tmp_path / 'stage')
+    resta = next(repo for repo in repos if repo.repo_id.endswith('resta-0p1'))
+    assert any('config.json holds a local path' in problem for problem in resta.problems)
+
+
+def test_rate_limits_are_retried_and_other_errors_are_not():
+    from types import SimpleNamespace
+
+    class Limited(Exception):
+        response = SimpleNamespace(status_code=429)
+
+    class Broken(Exception):
+        response = SimpleNamespace(status_code=403)
+
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise Limited()
+        return 'done'
+
+    assert publish.with_retries(flaky, waits=(0, 0, 0)) == 'done' and len(calls) == 3
+    with pytest.raises(Broken):
+        publish.with_retries(lambda: (_ for _ in ()).throw(Broken()), waits=(0,))
+    with pytest.raises(Limited):
+        publish.with_retries(lambda: (_ for _ in ()).throw(Limited()), waits=(0,))
+
+
+def test_a_dropped_connection_is_retried():
+    import httpx
+
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.ReadError('connection reset')
+        return 'done'
+
+    assert publish.with_retries(flaky, waits=(0,)) == 'done' and len(calls) == 2
+
+
+def test_small_files_are_split_into_commits_and_large_files_go_first(tmp_path):
+    files = []
+    for index in range(5):
+        path = tmp_path / f'small{index}.jsonl'
+        path.write_bytes(b'x' * 400)
+        files.append((path.name, path))
+    big = tmp_path / 'model.safetensors'
+    big.write_bytes(b'')
+    with big.open('r+b') as handle:
+        handle.truncate(publish.INLINE_LIMIT + 1)
+    groups = publish.batches(files + [(big.name, big)], limit=1000)
+    assert groups[0][0][0] == 'model.safetensors'
+    assert [len(group) for group in groups] == [3, 2, 1]          # 400 + 400 fit under 1000, a third does not
+    assert sorted(name for group in groups for name, _ in group) == sorted([big.name] + [name for name, _ in files])
+    assert groups[-1][-1][0] == 'small4.jsonl'                   # order kept, so the card (listed last) lands last
+    assert publish.batches([]) == []
+
+
+def test_files_already_on_the_hub_with_the_same_bytes_are_not_sent_again(tmp_path):
+    from huggingface_hub.hf_api import RepoFile
+
+    same, edited, new, large = (tmp_path / name for name in ('same.json', 'edited.json', 'new.json', 'w.safetensors'))
+    for path, text in ((same, b'{"a": 1}'), (edited, b'{"b": 2}'), (new, b'{}'), (large, b'weights')):
+        path.write_bytes(text)
+    remote = [RepoFile(path='same.json', size=same.stat().st_size, oid=publish.blob_id(same)),
+              RepoFile(path='edited.json', size=edited.stat().st_size, oid='0' * 40),
+              RepoFile(path='w.safetensors', size=large.stat().st_size, oid='pointer',
+                       lfs={'size': large.stat().st_size, 'oid': publish.file_sha256(large), 'pointerSize': 130})]
+
+    class Api:
+        def list_repo_tree(self, repo_id, repo_type, recursive):
+            return remote
+
+    files = {path.name: path for path in (same, edited, new, large)}
+    assert publish.unchanged(Api(), 'team/x', 'dataset', files) == {'same.json', 'w.safetensors'}

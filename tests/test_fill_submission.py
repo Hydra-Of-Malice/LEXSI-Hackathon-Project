@@ -395,3 +395,16 @@ def test_stability_waits_for_all_six_circuits(tmp_path):
     (run / 'circuits' / 'earth-circuit__bn' / 'summary.json').unlink()
     values = fill_submission.measured(run)
     assert 'CIRC_STABILITY_SENTENCE' not in values and 'CIRC_BASE_E_BN' not in values and 'CIRC_BASE_G_EN' in values
+
+
+def test_a_selection_override_fills_the_card_for_another_arm(tmp_path):
+    """release_cards.py fills one model card per arm by handing measured() that arm as the selected one."""
+    data = report()
+    data['models']['earth-merge_back-0p5'] = model(0.8, 0.45)
+    data['thresholds']['earth-merge_back-0p5/none'] = gate()
+    run = write_run(tmp_path, data)
+    assert fill_submission.measured(run)['ARM_NAME'] == 'ReSta'
+    override = dict(SELECTION, selected_for_quantization={'arm': 'merge_back', 'knob': 0.5, 'tag': 'earth-merge_back-0p5'})
+    values = fill_submission.measured(run, override)
+    assert values['ARM_NAME'] == 'Merge-back' and values['KNOB_VALUE'] == '0.5'
+    assert json.loads((run / 'selection.json').read_text())['selected_for_quantization']['arm'] == 'resta'
