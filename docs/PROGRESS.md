@@ -20,6 +20,24 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 11 November 2026
+- **11:26** **The Kaggle T4 repeated the NF4 run and got the same results: the hardware does not change the NF4
+  findings.**
+  - **The run:** two free Kaggle sessions. The first stopped itself at the 11.5-hour cap after 8 of 17 stages. The
+    second resumed from the synced output at 05:44 and finished all 17 stages at 11:18.
+  - **Against the A10G run:**
+    - Answers: 83% to 84% are word for word identical.
+    - Content labels: the same for 98.1% to 98.7% of harmful-prompt answers.
+    - Content-safe rates: all 42 (3 models, 7 languages, 2 conditions) are within 1.7 points; the median gap is 0.6.
+      Earth's Javanese NF4 rate is 70.5% on both.
+    - Gates: every pass-or-fail decision is the same, and the repair fails on both.
+  - **Written:** `FULL_RUN_HARDWARE_SENTENCE` and `COMPUTE_SUMMARY` now say this.
+  - **D12 of the decision list is now unblocked.** The private bundle repo is no longer needed and can be deleted on
+    Aditya's word.
+  - **Also new:** `scripts/publish_hf.py`, the release plan for D3 and D4.
+    - **Dry run by default.** It lists 7 public repos and 29.1 GB: the dataset, four weight arms, the selected arm's
+      GGUF and the steering direction. The controls stay private.
+    - **Publishing** needs the reviewed plan's digest, and it refuses while a card is missing. The six kit PRs already
+      have full descriptions in `docs/upstream_patches/README.md`.
 - **03:13** **The full run is finished, and the final report covers full precision, Q4 and NF4 with no validation
   gaps. No repair held at 4-bit, and 4-bit itself breaks Earth's Javanese.**
   - **The chain:** it ended at 02:59. Q4 was evaluated for all three models. The NF4 step then stopped at the file
