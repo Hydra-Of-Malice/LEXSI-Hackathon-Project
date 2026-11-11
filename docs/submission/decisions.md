@@ -105,11 +105,11 @@ with descriptions I draft, and link them in the article.
 
 ## Housekeeping
 
-**D12. When do we delete the private bundle repo?** Recommend: delete `HydraOfMalice/lexsi-nf4-private` once the Kaggle
-cross-check finishes, by Saturday at the latest.
+**D12. When do we delete the private bundle repo?** Recommend: delete `HydraOfMalice/lexsi-nf4-private` now. Nothing
+needs it any more.
 - **Why delete it:** it holds the harmful prompts, the models' answers and the repair checkpoint.
-- **Why wait:** the Kaggle T4 run reads from it. Its first session ends about 05:30 today, and a second, free session
-  finishes the job.
+- **Why it's safe now:** the Kaggle T4 cross-check finished at 11:18 and matched the A10G run, and both runs' results
+  are on the laptop.
 - **Deleting is permanent,** so it waits for Aditya's word.
 
 **D13. The ROI page's open inputs.** Recommend: give me the cost assumptions (product name, licence and running costs
@@ -141,3 +141,6 @@ a buffer.
 - **Article:** 554 values are filled. Only the links, the reader labels and D7 and D8 remain.
 - **Public copy:** rebuilt, and tests pass twice in both repos.
 - **Mentor summary:** the one-pager is written.
+- **NF4 cross-check:** repeated on a Kaggle T4. Every rate is within 1.7 points of the A10G's, and every
+  pass-or-fail decision is the same.
+- **Release plan:** ready in `scripts/publish_hf.py`: 7 repos and 29.1 GB, a dry run until you approve.
