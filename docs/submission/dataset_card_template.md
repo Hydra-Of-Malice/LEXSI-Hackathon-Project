@@ -93,6 +93,13 @@ Total: {{N_PROMPTS_TOTAL}} prompts, with {{N_PROMPTS_HELDOUT}} held out and {{N_
 
 `kind` comes from the source dataset. We did not relabel any prompt. XSTest's safe prompts are `benign`, and its contrast prompts are `harmful`. All Aya red-teaming and MultiJail prompts are `harmful`.
 
+### Circuits
+
+`circuits/` holds the layer-level release of the refusal circuits behind the circuit repairs: each circuit's layer list,
+per-layer score mass and summary metrics, the editing mask the repairs used, and the settings of every
+circuit-restricted checkpoint. Node-level score files are not included. Researchers can ask us for them, and the SHA-256
+values in `circuits/` identify the exact files. `circuits/README.md` explains each file.
+
 ## Sources and licences
 
 | Source | Revision | Licence | What we took | Used for |
@@ -182,6 +189,7 @@ Keep `heldout` for testing only. Tune on `repair`. Split by `group` if you make 
 - Model answers to any prompt in this set.
 - Judge verdicts that quote model answers.
 - Human review sheets. They contain model text.
+- Node-level circuit scores. They are available to researchers on request.
 
 ## Licence
 
