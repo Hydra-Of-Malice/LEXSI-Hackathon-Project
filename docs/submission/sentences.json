@@ -45,6 +45,9 @@
     "DATASET_URL": "https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval",
     "RESULTS_URL": "https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/reports",
     "LOGS_URL": "https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/provenance",
-    "HF_USERNAME_ADITYA": "HydraOfMalice"
+    "HF_USERNAME_ADITYA": "HydraOfMalice",
+    "CIRCUIT_RELEASE_DECISION_SENTENCE": "We publish the circuits' layers, summary metrics and the editing mask, which are enough to reproduce every repair. We keep the node-level scores private and share them with researchers on request.",
+    "CIRCUIT_SCORES_URL": "https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/circuits",
+    "PRIOR_WORK_STATEMENT": "Our earlier project Kavach (HackIndia AgentVerse '26, MIT licence) also kept a hash-chained run log. No code from it is reused here."
   }
 }

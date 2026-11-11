@@ -8,6 +8,25 @@ results export has passed its safety scan, and a clean public copy of the repo i
 for the two of us. Each item has a recommendation and the date it has to be settled by. `checklist.md` keeps the full
 background.
 
+## Where the decisions stand (Wed 11 Nov, 19:00 IST)
+
+| Item | Decision | State |
+|---|---|---|
+| D1, D2 | Public copy as a new repo, contents as built | **Done.** https://github.com/Hydra-Of-Malice/langsafe |
+| D3 | Publish the export as a dataset | **Done.** https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval |
+| D4 | Five arms in FP16, the selected arm's GGUF, the steering vector; controls private | **Done.** Six model repos, all in the models collection |
+| D5 | Links and usernames | Links filled. **Pallab's HF username still needed** |
+| D6 | Ask readers now; provisional if none by Fri noon | Aditya asks for Javanese and Thai readers |
+| D7 | Layers, summary metrics and editing mask public; node-level scores on request | Export being built; goes into the dataset's `circuits/` |
+| D8 | One line on Kavach, worded to be true either way | In the article. Delete it if you prefer |
+| D9 | Command A on the 1,680 sample (about $6) and the 32B check of the 4-bit models (about $1) | 32B check running. Command A being priced first |
+| D10 | Build the demo Space | Being built; goes public only after a review |
+| D11 | Open the six kit PRs from Aditya's account | Patches being re-applied to today's `main` (all four kits moved) |
+| D12 | Delete the private bundle repo | **Done** |
+| D13 | ROI inputs | Open |
+| D14 to D16 | Billing check, mentor one-pager, organiser ticket | Aditya |
+| D17 | Aditya submits, Fri 13 Nov evening IST | Agreed |
+
 ## Suggested order
 
 | Wed 11 (today) | Thu 12 (publish) | Fri 13 (finish) | Sat 14 (buffer) |
@@ -16,7 +35,7 @@ background.
 
 ## Needed for a valid submission
 
-The rules require public code and public artifacts on Hugging Face. Nothing is public yet.
+The rules require public code and public artifacts on Hugging Face. Both are now public (see the table above).
 
 **D1. How do we publish the code?** Recommend: publish the clean public copy as a new public GitHub repo, and keep the
 working repo private.

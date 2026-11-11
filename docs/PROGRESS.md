@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060, 1.2 TB free) | Full Earth run finished (FP16, Q4, NF4); final report built. Kaggle T4 NF4 cross-check running | The report with Q4 and NF4, the last sentences and tests, about Wed 05:00 to 07:00 |
+| Aditya's laptop (RTX 4060) | Code, data and models published; 32B check of the 4-bit models, circuit export, Space and kit PRs in progress | Command A judging, article final read, submit Fri 13 evening |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
@@ -20,6 +20,24 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
   team's call. Raw model outputs stay out of it either way.
 
 ## 11 November 2026
+- **19:00** **The code, data and models are public.**
+  - **Code:** https://github.com/Hydra-Of-Malice/langsafe (one commit under the noreply address).
+  - **Data:** https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval (prompts, labels,
+    aggregate reports, provenance; no model text).
+  - **Models:** the five repair arms in FP16, the selected arm (circuit merge 0.5) as Q4_K_M GGUF, and the steering
+    vector, each with its own card. The three random-layer controls stay private. All are in two collections:
+    [checkpoints](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5)
+    and [evaluation data](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-evaluation-data-6af426d23fff746c25ca1e1e).
+  - **The private bundle repo is deleted** (D12).
+  - **Upload lesson:** the Hub allows 128 commits an hour, and small files go inside the commit request.
+    `scripts/publish_hf.py` now batches files into about 20 MB commits, skips files already there, and retries.
+  - **Decisions taken** (see `docs/submission/decisions.md`): circuit layers, metrics and mask go public, node-level
+    scores stay private (D7); a one-line Kavach note (D8); Command A and the 32B check of the 4-bit models (D9); build
+    the Space (D10); open the six kit PRs (D11); Aditya submits Friday evening (D17).
+  - **Running now:** the 32B check of the 4-bit models, the circuit export, the Space, Command A pricing, and the
+    kit patches re-applied to today's `main`.
+  - **Still needed from people:** Pallab's HF username, native readers, the ROI inputs, the billing check, the mentor
+    one-pager and the organiser ticket.
 - **11:26** **The Kaggle T4 repeated the NF4 run and got the same results: the hardware does not change the NF4
   findings.**
   - **The run:** two free Kaggle sessions. The first stopped itself at the 11.5-hour cap after 8 of 17 stages. The
