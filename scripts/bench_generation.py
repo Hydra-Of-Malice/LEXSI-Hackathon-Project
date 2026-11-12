@@ -101,10 +101,25 @@ def server_run(gguf: Path, prompts: list[list[int]], slots: int, slot_tokens: in
             except (OSError, ValueError):
                 time.sleep(1)
 
+        def prefill(index: int) -> int:
+            # One new token and no prompt cache, so the time is almost all prompt processing.
+            reply = post({"prompt": prompts[index], "n_predict": 1, "temperature": 0, "top_k": 1, "seed": 0,
+                          "cache_prompt": False})
+            return reply.get("timings", {}).get("prompt_n") or len(prompts[index])
+
+        started = time.perf_counter()
+        with ThreadPoolExecutor(slots) as pool:
+            prompt_tokens = sum(pool.map(prefill, range(len(prompts))))
+        prefill_seconds = time.perf_counter() - started
+
+        latencies = {}
+
         def one(index: int) -> int:
             body = {"prompt": prompts[index], "n_predict": max_new, "temperature": 0, "top_k": 1, "seed": 0,
-                    "cache_prompt": True, "return_tokens": True}
+                    "cache_prompt": False, "return_tokens": True}
+            sent = time.perf_counter()
             reply = post(body)
+            latencies[index] = time.perf_counter() - sent
             answers[index] = reply.get("tokens") or []
             return reply["tokens_predicted"]
 
@@ -112,7 +127,12 @@ def server_run(gguf: Path, prompts: list[list[int]], slots: int, slot_tokens: in
         with ThreadPoolExecutor(slots) as pool:
             generated = sum(pool.map(one, range(len(prompts))))
         seconds = time.perf_counter() - started
-        row.update(seconds=round(seconds, 1), tokens=generated, tokens_per_second=round(generated / seconds, 1))
+        ordered = sorted(latencies.values())
+        row.update(seconds=round(seconds, 1), tokens=generated, tokens_per_second=round(generated / seconds, 1),
+                   prefill_tokens=prompt_tokens, prefill_seconds=round(prefill_seconds, 2),
+                   prefill_tokens_per_second=round(prompt_tokens / prefill_seconds, 1),
+                   latency_p50_seconds=round(ordered[len(ordered) // 2], 2),
+                   latency_p95_seconds=round(ordered[min(len(ordered) - 1, int(0.95 * len(ordered)))], 2))
     except Exception as error:                     # a slot count that doesn't fit is a result, not a crash
         row["failed"] = repr(error)[:200]
     finally:

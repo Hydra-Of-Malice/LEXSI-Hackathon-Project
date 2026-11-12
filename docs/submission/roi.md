@@ -29,13 +29,13 @@ Type: **Measured** means we measured it. **Public** means a published price. **A
 | H | Hours in a month | 730 | Assumption, as in Hugging Face's own examples |
 | k | Peak-to-average traffic ratio | 3 | Assumption |
 | f | Closed-model tokens per Tiny Aya token | 1.0 | Assumption. To measure: {{FERTILITY_AR}} (Arabic), {{FERTILITY_SW}} (Swahili), {{FERTILITY_JV}} (Javanese), {{FERTILITY_BN}} (Bengali), {{FERTILITY_TH}} (Thai), {{FERTILITY_KO}} (Korean) |
-| TPS | Sustained batched output tokens per second | {{TPS_BATCHED_GPU}} on {{TPS_GPU_NAME}} | To measure |
-| TPS_in | Prompt tokens per second under the same load | {{TPS_PREFILL_GPU}} | To measure |
-| P95 | 95th-percentile latency at that load | {{P95_LATENCY}} | To measure |
+| TPS | Sustained batched output tokens per second | {{TPS_BATCHED_GPU}} on {{TPS_GPU_NAME}} | Measured 6 Nov; 164 on 12 Nov with 96 prompts |
+| TPS_in | Prompt tokens per second under the same load | {{TPS_PREFILL_GPU}} | Measured 12 Nov, `scripts/bench_generation.py` |
+| P95 | 95th-percentile latency at that load | {{P95_LATENCY}} | Measured 12 Nov, same run |
 | U | Share of a GPU's peak throughput we can safely plan on | {{UTILISATION}} | To measure |
 | C_ops | Engineering and operations per month | {{OPS_COST_MONTH}} | Assumption, to be set by the team |
 | C_lic | Commercial licences per month | {{LICENCE_COST_MONTH}} | Unknown. Needs quotes from Cohere and Lexsi Labs |
-| C_rep | One-time cost of the repair and its evaluation | {{REPAIR_COST}} from {{REPAIR_GPU_HOURS}} GPU hours | To measure |
+| C_rep | One-time cost of the repair and its evaluation | {{REPAIR_COST}} from {{REPAIR_GPU_HOURS}} GPU hours | Run ledger, 7 to 10 Nov, gaps over 6 hours counted as idle |
 
 The volume is a mid-sized service chosen for illustration, with no real customer behind it. Costs scale linearly, so section 7 shows other volumes.
 

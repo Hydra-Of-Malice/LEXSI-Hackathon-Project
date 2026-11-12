@@ -50,6 +50,12 @@
     "CIRCUIT_SCORES_URL": "https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/circuits",
     "PRIOR_WORK_STATEMENT": "Our earlier project Kavach (HackIndia AgentVerse '26, MIT licence) also kept a hash-chained run log. No code from it is reused here.",
     "COMMAND_A_SENTENCE": "To check, we had Command A judge 1,680 of the same answers (Global, Earth and the selected repair; 20 from every language, prompt type and preamble cell) with our rubric, not its safety mode. It was stricter than our judges. Of the harmful-prompt answers both could label, it called 94.5% of Global's safe and 90.7% of Earth's, where our local pair said 98.9% and 97.0%, so the gap on this sample was 3.8 points rather than 1.9. In Javanese it was 15.1 points (35 of 37 against 31 of 39) rather than 10.1. Its refusal labels agreed with the local pair at kappa 0.59 to 0.97 per language (median 0.85) and with the 32B pair at 0.68 to 1.00 (median 0.91). With about 40 answers per language and model, the sample is too small for per-language tests. On it, the report's judge made Earth's gaps larger, not smaller.",
-    "SCALE_JUDGE_AFTER": "On the sample: 3.8 points with Command A, 1.9 with our judges"
+    "SCALE_JUDGE_AFTER": "On the sample: 3.8 points with Command A, 1.9 with our judges",
+    "REPAIR_GPU_HOURS": "about 67",
+    "REPAIR_COST": "About $18 to $40 for the whole 16-model study, at RunPod Secure rates ($0.27 to $0.59 an hour),",
+    "LICENCE_COST_MONTH": "unknown",
+    "TPS_PREFILL_GPU": "about 3,000 (3,030 measured with 12 requests at once)",
+    "P95_LATENCY": "9.0 seconds (median 5.9) for a 382-token prompt and up to 96 new tokens, with 12 requests at once",
+    "TPS_RUNTIME": "llama.cpp llama-server, FP16 GGUF, 12 parallel slots of 768 tokens, greedy decoding"
   }
 }
