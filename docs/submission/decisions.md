@@ -8,7 +8,7 @@ results export has passed its safety scan, and a clean public copy of the repo i
 for the two of us. Each item has a recommendation and the date it has to be settled by. `checklist.md` keeps the full
 background.
 
-## Where the decisions stand (Wed 11 Nov, 19:00 IST)
+## Where the decisions stand (Thu 12 Nov, 10:00 IST)
 
 | Item | Decision | State |
 |---|---|---|
@@ -17,13 +17,13 @@ background.
 | D4 | Five arms in FP16, the selected arm's GGUF, the steering vector; controls private | **Done.** Six model repos, all in the models collection |
 | D5 | Links and usernames | Links filled. **Pallab's HF username still needed** |
 | D6 | Ask readers now; provisional if none by Fri noon | Aditya asks for Javanese and Thai readers |
-| D7 | Layers, summary metrics and editing mask public; node-level scores on request | Export being built; goes into the dataset's `circuits/` |
+| D7 | Layers, summary metrics and editing mask public; node-level scores on request | **Done.** In the dataset's `circuits/` folder, described in its card |
 | D8 | One line on Kavach, worded to be true either way | In the article. Delete it if you prefer |
-| D9 | Command A on the 1,680 sample (about $6) and the 32B check of the 4-bit models (about $1) | 32B check running. Command A being priced first |
-| D10 | Build the demo Space | Being built; goes public only after a review |
-| D11 | Open the six kit PRs from Aditya's account | Patches being re-applied to today's `main` (all four kits moved) |
+| D9 | Command A on the 1,680 sample (about $6) and the 32B check of the 4-bit models (about $1) | **Done**, about $5.60 in all. Both results are in the article. Credits spent: about $15 |
+| D10 | Build the demo Space | **Built** and tested: a results explorer with no model and no text box. **Needs your review, then a go-ahead to deploy** (free CPU) |
+| D11 | Open the six kit PRs from Aditya's account | **Ready**: re-applied to today's `main`, tests pass twice. **Waiting on Pallab's agreement to the licence grant** |
 | D12 | Delete the private bundle repo | **Done** |
-| D13 | ROI inputs | Open |
+| D13 | ROI inputs | Measured: prefill speed, p95 latency, repair compute. **Still needed:** utilisation, operations cost, and a yes or no on the tokenizer download |
 | D14 to D16 | Billing check, mentor one-pager, organiser ticket | Aditya |
 | D17 | Aditya submits, Fri 13 Nov evening IST | Agreed |
 

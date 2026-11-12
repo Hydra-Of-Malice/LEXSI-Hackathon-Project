@@ -7,7 +7,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060) | Code, data and models published; 32B check of the 4-bit models, circuit export, Space and kit PRs in progress | Command A judging, article final read, submit Fri 13 evening |
+| Aditya's laptop (RTX 4060) | Code, data, models and circuit detail published; Command A and 32B checks done; Space and kit PRs ready | Space review and deploy, kit PRs after Pallab agrees, article final read, submit Fri 13 evening |
 | Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
 | Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
 
@@ -18,6 +18,25 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 - A go-ahead before anything is published to Hugging Face, and the final submission form.
 - The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
   team's call. Raw model outputs stay out of it either way.
+
+## 12 November 2026
+- **10:00** **Command A, the Tiny Aya report's own judge, makes Earth's gap larger, not smaller.**
+  - **Command A** judged the same 1,680-answer sample as the 32B check (about $4.60). It is stricter than our local
+    judges: on harmful-prompt answers both could label, Global minus Earth is 3.8 points with Command A against 1.9
+    with ours, and in Javanese 15.1 against 10.1. About 40 answers per language and model, so no per-language tests.
+    Refusal kappa with the local pair 0.59 to 0.97 (median 0.85), with the 32B pair 0.68 to 1.00 (median 0.91).
+  - **The 32B judges on the three Q4_K_M models** agree with the local pair as well as at full precision: refusal
+    kappa 0.87 to 1.00 (median 0.96), content labels 95% to 100% the same (about $1).
+  - **Circuit detail (D7)** is public in the dataset's `circuits/` folder: layer lists, per-layer score mass, summary
+    metrics, the editing mask and every circuit repair's settings. Node-level scores stay private, identified by hash.
+  - **The demo Space (D10)** is rebuilt as a results explorer for the final run: aggregates only, no model, no text
+    box. It is not deployed; it needs a review first (`cache/space-venv/Scripts/python.exe space/app.py`).
+  - **The six kit PRs (D11)** are re-applied to today's `main` of all four kits and pass their tests twice. The
+    AuditKIT scorer now reports empty answers as not measured and ignores `<think>` reasoning, as upstream does. They
+    wait for Pallab's agreement to the licence grant.
+  - **ROI (D13):** on the laptop, about 3,000 prompt tokens a second and p95 latency 9.0 s at 12 requests at once. The
+    whole study took about 67 GPU hours. Utilisation and operations cost still need the team.
+  - **Credits spent:** about $15 of $20.
 
 ## 11 November 2026
 - **19:00** **The code, data and models are public.**
