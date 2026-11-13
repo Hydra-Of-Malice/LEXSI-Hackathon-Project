@@ -90,7 +90,7 @@ test were frozen in [SPEC.md](SPEC.md) before the full run.
 | Other repair arms | [resta-0p1](https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-resta-0p1) · [circuit-0p1](https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-circuit-0p1) · [merge-back-0p5](https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-merge-back-0p5) · [steer-1p0](https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-steer-1p0) |
 | Evaluation data, reports, provenance logs, circuit summaries | [tiny-aya-earth-langsafe-eval](https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval) |
 | Judge checks (32B and Command A samples) | [docs/judge_checks](docs/judge_checks/README.md) |
-| Patches for the Lexsi kits | [docs/upstream_patches](docs/upstream_patches/README.md) |
+| Pull requests to the Lexsi kits | [SafeTune#86](https://github.com/Lexsi-Labs/SafeTune/pull/86) · [SafeTune#87](https://github.com/Lexsi-Labs/SafeTune/pull/87) · [AuditKIT#47](https://github.com/Lexsi-Labs/AuditKIT/pull/47) · [AuditKIT#48](https://github.com/Lexsi-Labs/AuditKIT/pull/48) · [CuratorKIT#53](https://github.com/Lexsi-Labs/CuratorKIT/pull/53) · [CircuitKIT#48](https://github.com/Lexsi-Labs/CircuitKIT/pull/48) ([patches](docs/upstream_patches/README.md)) |
 | Results explorer (no model, no text box) | [space/](space/README.md) |
 
 ## Reproduce

@@ -33,8 +33,8 @@ Findings:
   ours.
 
 We release six model repos (four weight arms, the steering vector and a GGUF of the selected arm), an evaluation
-dataset with reports, provenance logs and circuit summaries, the code with a reproduction notebook, and six upstream
-kit patches. No released file holds a model's answer to a harmful prompt. The main run used one laptop RTX 4060. The NF4 checks and one baseline ran on rented GPUs, for about
+dataset with reports, provenance logs and circuit summaries, the code with a reproduction notebook, and six pull requests
+to the kits. No released file holds a model's answer to a harmful prompt. The main run used one laptop RTX 4060. The NF4 checks and one baseline ran on rented GPUs, for about
 $15 of Hugging Face credits.
 
 Team: Aditya Arnav (HydraOfMalice) and Pallab Das (PDGamerSG). Track 2b, problem 2. Also fits Track 2a, problem 4.

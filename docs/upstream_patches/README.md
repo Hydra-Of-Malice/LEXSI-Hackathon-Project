@@ -1,8 +1,10 @@
 # Upstream patches for the Lexsi kits
 
-Six patches for the starred items in `docs/UPSTREAM.md`. **Status, 13 Nov:** all six are re-applied to
-the kits' current `main` and ready to open as pull requests. No fork, push, pull request or GitHub
-comment has been made: they wait for both copyright holders to agree to the licence grant (below).
+Six patches for the starred items in `docs/UPSTREAM.md`. **Status, 13 Nov:** both copyright holders agreed to the
+licence grant, and all six are open as pull requests from the PDGamerSG forks, rebased onto the kits' `main` of 13 Nov:
+[SafeTune#86](https://github.com/Lexsi-Labs/SafeTune/pull/86), [SafeTune#87](https://github.com/Lexsi-Labs/SafeTune/pull/87),
+[AuditKIT#47](https://github.com/Lexsi-Labs/AuditKIT/pull/47), [AuditKIT#48](https://github.com/Lexsi-Labs/AuditKIT/pull/48),
+[CuratorKIT#53](https://github.com/Lexsi-Labs/CuratorKIT/pull/53) and [CircuitKIT#48](https://github.com/Lexsi-Labs/CircuitKIT/pull/48).
 
 | # | Patch | Target repo | Branch to push | Base (`main`, 12 Nov) | Commit | Applied |
 |---|---|---|---|---|---|---|

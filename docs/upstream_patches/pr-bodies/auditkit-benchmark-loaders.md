@@ -31,9 +31,9 @@ Windows 11, Python 3.12, `pip install -e ".[dev,transformers]"` (the CI install)
 
 When this change was first written against `71316da`, the loaders were also run against the real datasets at their pinned revisions: MultiJail 3,150 samples, XSTest 450 (250 safe, 200 unsafe), Global-MMLU-Lite 400 per language, and Global-MMLU `sw` dev 285. That run was not repeated on the current `main`.
 
+Rebased on 13 November onto `main` at `556eb48`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/test_benchmark_loaders.py`: 34 passed.
+
 ## Licence
 
 This contribution is made under AuditKIT's LSAL v1.2. As `LICENSE.md` section 5 says, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 The code was first written for our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
-

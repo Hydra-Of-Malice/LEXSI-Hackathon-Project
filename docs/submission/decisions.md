@@ -21,7 +21,7 @@ background.
 | D8 | One line on Kavach, worded to be true either way | In the article. Delete it if you prefer |
 | D9 | Command A on the 1,680 sample (about $6) and the 32B check of the 4-bit models (about $1) | **Done**, about $5.60 in all. Both results are in the article. Credits spent: about $15 |
 | D10 | Build the demo Space | **Built** and tested: a results explorer with no model and no text box. **Needs your review, then a go-ahead to deploy** (free CPU) |
-| D11 | Open the six kit PRs from Aditya's account | **Ready**: re-applied to today's `main`, tests pass twice. **Waiting on Pallab's agreement to the licence grant** |
+| D11 | Open the six kit PRs | **Done** 13 Nov, from PDGamerSG: SafeTune#86, #87; AuditKIT#47, #48; CuratorKIT#53; CircuitKIT#48 |
 | D12 | Delete the private bundle repo | **Done** |
 | D13 | ROI inputs | Measured: prefill speed, p95 latency, repair compute. **Still needed:** utilisation, operations cost, and a yes or no on the tokenizer download |
 | D14 to D16 | Billing check, mentor one-pager, organiser ticket | Aditya |

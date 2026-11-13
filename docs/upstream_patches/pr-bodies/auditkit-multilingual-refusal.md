@@ -36,9 +36,9 @@ Windows 11, Python 3.12, `pip install -e ".[dev,transformers]"` (the CI install)
 
 **Native-speaker review needed.** The Hindi, Hinglish, Bengali, Tamil, Arabic and Swahili test sentences, and the patterns themselves, were written for this change and have not been reviewed by native speakers. A review of those strings would be welcome.
 
+Rebased on 13 November onto `main` at `556eb48`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/test_refusal_multilingual.py tests/test_redteam.py`: 104 passed.
+
 ## Licence
 
 This contribution is made under AuditKIT's LSAL v1.2. As `LICENSE.md` section 5 says, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 The patterns were first written for our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
-

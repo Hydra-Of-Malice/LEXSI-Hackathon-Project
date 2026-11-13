@@ -46,11 +46,11 @@ Windows 11, Python 3.12, `pip install -e ".[dev]"`, branch based on `main` at `2
 
 When this change was first written against `3901a9f`, both loaders were also run against the real datasets: Aya Red-teaming gave 7,419 rows across 8 languages, and MultiJail 3,150 rows. That run was not repeated on the current `main`.
 
+Rebased on 13 November onto `main` at `cc3de5f`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/runtime/test_multilingual_benchmarks.py`: 18 passed.
+
 ## Licence
 
 This contribution is made under SafeTune's LSAL v1.2. As `LICENSE.md` section 6 and `CONTRIBUTING.md` say, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 The code was first written for our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
 
 The benchmarks themselves are not copied into the repo; the loaders read them from the Hub under their own licences (MultiJail is MIT, Aya Red-teaming is Apache-2.0).
-

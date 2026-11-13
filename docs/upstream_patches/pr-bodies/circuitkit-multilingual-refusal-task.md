@@ -46,6 +46,8 @@ None.
 
 Not verified: no model was loaded, so no circuit has been discovered with this task through EAP-IG yet, and non-English pairs were tested only with fakes.
 
+Rebased on 13 November onto `main` at `6e9782b`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/unit/test_multilingual_refusal.py`: 43 passed.
+
 ## Code Quality
 
 - [x] My code follows the project's code style
@@ -73,8 +75,6 @@ Not verified: no model was loaded, so no circuit has been discovered with this t
 ## Additional Context
 
 **Licence.** This contribution is made under CircuitKIT's LSAL v1.2. As `LICENSE.md` section 6 and `CONTRIBUTING.md` say, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 It was first written for our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
 
 The non-English default openers were written for this task and have not been reviewed by native speakers.
-

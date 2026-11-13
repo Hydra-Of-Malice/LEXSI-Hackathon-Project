@@ -41,9 +41,9 @@ Windows 11, Python 3.12, `pip install -e . pytest pytest-asyncio pytest-cov` (th
 - `ruff check .`: all checks passed. The two new files are also `ruff format`-clean.
 - `python scripts/check_version_consistency.py`: OK.
 
+Rebased on 13 November onto `main` at `ed45ae3`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/unit`: 626 passed, 18 skipped, and `ruff check .` is clean.
+
 ## Licence
 
 This contribution is made under CuratorKIT's LSAL v1.1. As `LICENSE.md` section 6 says, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 The idea and parts of the code come from our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
-

@@ -47,9 +47,9 @@ Windows 11, Python 3.12, `pip install -e ".[dev]"`, branch based on `main` at `2
 
 The test scores are synthetic, shaped like the Tiny Aya case: 36 layers of 16 heads and an MLP, where 7 layers hold nearly all the score and 23 others hold one node just inside the top 20%.
 
+Rebased on 13 November onto `main` at `cc3de5f`, with no conflicts. Re-run there on macOS, Python 3.12: `pytest tests/safety/test_circuit_kit.py tests/runtime/test_interop.py`: 43 passed.
+
 ## Licence
 
 This contribution is made under SafeTune's LSAL v1.2. As `LICENSE.md` section 6 and `CONTRIBUTING.md` say, it grants Lexsi Labs a perpetual, worldwide, royalty-free right to use, modify, distribute and license it under any terms, including commercial ones, and I have the right to submit it.
-<!-- Team lead: keep the next sentence only once both copyright holders have agreed to the grant; otherwise delete it. -->
 The code was first written for our MIT-licensed project langsafe, and both of its copyright holders (Aditya Arnav and Pallab Das) agree to this grant.
-

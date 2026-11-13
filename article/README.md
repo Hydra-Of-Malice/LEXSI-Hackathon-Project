@@ -135,15 +135,15 @@ Our package, `langsafe`, adds group-aware splits and a leakage check, translatio
 
 | Kit | Gap | What we did | Upstream |
 |---|---|---|---|
-| AuditKIT | Refusal detector is English-only. Its `can'?t` pattern misses the curly apostrophe | Multilingual scorer for en, hi, Hinglish, bn, ta, ar, sw. Javanese, Thai and Korean are not covered yet | Planned. Patch ready in `docs/upstream_patches/` |
-| AuditKIT | No XSTest, MultiJail or Global-MMLU loaders | Our own loaders | Planned. Patch ready in `docs/upstream_patches/` |
+| AuditKIT | Refusal detector is English-only. Its `can'?t` pattern misses the curly apostrophe | Multilingual scorer for en, hi, Hinglish, bn, ta, ar, sw. Javanese, Thai and Korean are not covered yet | Pull request [AuditKIT#47](https://github.com/Lexsi-Labs/AuditKIT/pull/47) |
+| AuditKIT | No XSTest, MultiJail or Global-MMLU loaders | Our own loaders | Pull request [AuditKIT#48](https://github.com/Lexsi-Labs/AuditKIT/pull/48) |
 | AuditKIT | HF model identity ignores quantisation, so base and NF4 runs share a fingerprint | An explicit `variant` on each run | Reported here |
-| SafeTune | `circuit_info_from_node_scores` turned a top-20% node set into 30 of 36 layers | Rank layers by total node score | Planned. Patch ready in `docs/upstream_patches/` |
+| SafeTune | `circuit_info_from_node_scores` turned a top-20% node set into 30 of 36 layers | Rank layers by total node score | Pull request [SafeTune#86](https://github.com/Lexsi-Labs/SafeTune/pull/86) |
 | SafeTune | Default ReSta alpha of 1.0 and steering alpha of 20 break Tiny Aya | Every knob set explicitly | Reported here |
-| SafeTune | No MultiJail or Aya red-teaming loaders | Our own loaders | Planned. Patch ready in `docs/upstream_patches/` |
-| CircuitKIT | No cross-language task and no refusal task for chat models | Translated minimal pairs with chat-template rendering | Planned. Patch ready in `docs/upstream_patches/` |
+| SafeTune | No MultiJail or Aya red-teaming loaders | Our own loaders | Pull request [SafeTune#87](https://github.com/Lexsi-Labs/SafeTune/pull/87) |
+| CircuitKIT | No cross-language task and no refusal task for chat models | Translated minimal pairs with chat-template rendering | Pull request [CircuitKIT#48](https://github.com/Lexsi-Labs/CircuitKIT/pull/48) |
 | CircuitKIT | The custom-data path applies no chat template, which causes a double BOS | Pre-render prompts and strip the BOS | Reported here |
-| CuratorKIT | No language ID and no group-aware split. Translations of one prompt can land in both splits | Our own split and leakage check | Planned. Patch ready in `docs/upstream_patches/` |
+| CuratorKIT | No language ID and no group-aware split. Translations of one prompt can land in both splits | Our own split and leakage check | Pull request [CuratorKIT#53](https://github.com/Lexsi-Labs/CuratorKIT/pull/53) |
 | CuratorKIT | `SchemaGate` counts words, so short Indic prompts fail | `min_tokens=1` | Reported here |
 
 ## 3. Models used and licences
