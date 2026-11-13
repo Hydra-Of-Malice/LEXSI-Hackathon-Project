@@ -49,7 +49,7 @@ except ImportError:
 !nvidia-smi --query-gpu=name,memory.total --format=csv
 """)
 code("""
-!git clone -q https://$GH_TOKEN@github.com/Hydra-Of-Malice/same-model-different-language.git project
+!git clone -q https://$GH_TOKEN@github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project.git project
 %cd project
 !bash scripts/install_kits.sh
 """)

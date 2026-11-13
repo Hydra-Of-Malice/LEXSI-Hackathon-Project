@@ -248,7 +248,7 @@ If you convert this model to GGUF, keep the generation end token (3). Tiny Aya's
 
 | Item | Value |
 |---|---|
-| Code | https://github.com/Hydra-Of-Malice/same-model-different-language, commit {{CODE_COMMIT}} |
+| Code | https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project, commit {{CODE_COMMIT}} |
 | Specification digest | bdabb7edab9eead8 |
 | Data manifest SHA-256 | 389b0882322ae47517dcec9bd428986e61a4e5f005937634f823b9310e37368f |
 | Checkpoint SHA-256 | {{CHECKPOINT_SHA256}} |

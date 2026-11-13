@@ -205,7 +205,7 @@ Keep `heldout` for testing only. Tune on `repair`. Split by `group` if you make 
 |---|---|
 | Data manifest SHA-256 | 389b0882322ae47517dcec9bd428986e61a4e5f005937634f823b9310e37368f |
 | Specification digest | bdabb7edab9eead8 |
-| Code | https://github.com/Hydra-Of-Malice/same-model-different-language, commit {{CODE_COMMIT}} |
+| Code | https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project, commit {{CODE_COMMIT}} |
 | Curation | CuratorKIT `dd9e835` |
 
 ## Citations

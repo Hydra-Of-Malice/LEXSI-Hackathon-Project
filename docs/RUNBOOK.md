@@ -15,8 +15,8 @@ We have three machines and no paid inference yet. Everything up to the final hea
 # Tools: Python 3.12, git, llama.cpp (Metal build)
 brew install python@3.12 git llama.cpp
 
-git clone https://github.com/Hydra-Of-Malice/same-model-different-language.git
-cd same-model-different-language
+git clone https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project.git
+cd LEXSI-Hackathon-Project
 python3.12 -m venv .venv && source .venv/bin/activate
 LANGSAFE_PYTHON=.venv/bin/python bash scripts/install_kits.sh --repair
 hf auth login                           # your own token (read access is enough); type it yourself

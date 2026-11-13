@@ -268,7 +268,7 @@ def numbers(value, prefix=""):
 
 code(r'''
 """Get the code at a fixed commit. The token stays in the environment, so it never reaches a command line or .git."""
-REPO_URL = "https://github.com/Hydra-Of-Malice/same-model-different-language.git"
+REPO_URL = "https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project.git"
 REPO_COMMIT = "{{REPO_COMMIT}}"
 
 if "{{" in REPO_URL:

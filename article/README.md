@@ -234,8 +234,8 @@ Collection: https://huggingface.co/collections/HydraOfMalice/same-model-differen
 | Evaluation set | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval | Prompts and labels only |
 | Aggregate results | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/reports | Per-language rates, intervals, paired tests, judge agreement |
 | Run logs | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/provenance | Hashes, settings, provenance and scores, with all model text removed |
-| Code and notebook | https://github.com/Hydra-Of-Malice/same-model-different-language, https://github.com/Hydra-Of-Malice/same-model-different-language/blob/main/notebooks/01_reproduce_results.ipynb | Pipeline and reproduction steps |
-| Demo | https://github.com/Hydra-Of-Malice/same-model-different-language/tree/main/space | A results explorer built from the aggregate reports. It loads no model and has no text box, so it cannot show model text. Run it with `python space/app.py` |
+| Code and notebook | https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project, https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project/blob/main/notebooks/01_reproduce_results.ipynb | Pipeline and reproduction steps |
+| Demo | https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project/tree/main/space | A results explorer built from the aggregate reports. It loads no model and has no text box, so it cannot show model text. Run it with `python space/app.py` |
 
 No released file contains a model's answer to a harmful prompt.
 

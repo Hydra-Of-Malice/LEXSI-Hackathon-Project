@@ -19,7 +19,7 @@ Everything except the private run outputs is in this repo or public on Hugging F
 | Published article | https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety (published 13 Nov). Source: `article/README.md`, moved from `docs/submission/filled/article.md` on 13 Nov and edited there since. Edit both together |
 | ROI page and cards, filled with every measured value | `docs/submission/filled/` (`remaining.md` lists the 12 open article values). These are generated: edit `docs/submission/article.md` or `sentences.json`, then run `scripts/fill_submission.py` on Aditya's laptop, or mark changes in the filled copy and Aditya folds them in |
 | Decisions still open | `docs/submission/decisions.md`, table at the top |
-| Public code | This repo, to be made public before the deadline: https://github.com/Hydra-Of-Malice/same-model-different-language. The 11 Nov snapshot at https://github.com/Hydra-Of-Malice/langsafe is superseded |
+| Public code | This repo, to be made public before the deadline (a rename to same-model-different-language is planned): https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project. The 11 Nov snapshot at https://github.com/Hydra-Of-Malice/langsafe is superseded |
 | Public data, circuit detail and models | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval and the [checkpoints collection](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5) |
 | Demo Space, not deployed | `space/`. Run it with `pip install -r space/requirements.txt`, then `python space/app.py` |
 | Six kit PRs, ready to open | `docs/upstream_patches/` (patches re-applied to 12 Nov `main`, PR texts in `pr-bodies/`) |
