@@ -4,6 +4,8 @@
 
 Lexsi Labs AI Safety & Alignment Hackathon · Track 2b, *repairing safety drift without retraining*
 
+[![tests](https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project/actions/workflows/tests.yml)
+
 **[Article](https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety)** ·
 **[Models](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5)** ·
 **[Data](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-evaluation-data-6af426d23fff746c25ca1e1e)** ·
@@ -95,7 +97,7 @@ test were frozen in [SPEC.md](SPEC.md) before the full run.
 
 ## Reproduce
 
-Setup and tests (Python 3.12):
+Setup and tests (Python 3.12). The suite also runs on every push, in [GitHub Actions](.github/workflows/tests.yml):
 
 ```bash
 uv venv --python 3.12 .venv
