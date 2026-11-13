@@ -7,17 +7,41 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060) | Code, data, models and circuit detail published; Command A and 32B checks done; Space and kit PRs ready | Space review and deploy, kit PRs after Pallab agrees, article final read, submit Fri 13 evening |
-| Pallab's M1 Max | Free | Please pull `main`, and don't start another full run: this one owns the frozen spec |
-| Aditya | Send the brief to mentors (hold it until the note below is read) | Native readers (HF credits now pay for the remote NF4 run and the router check) |
+| Aditya's laptop (RTX 4060) | Everything published and pushed. Holds the only copy of the run folder (`runs/`) | Space deploy and kit PRs once agreed; submit the form (D17) |
+| Pallab | Please pull `main` | Final read of `docs/submission/filled/article.md`; agree or not to the kit PR licence grant (D11); send your HF username (D5) |
+
+## Picking up the work (13 Nov)
+
+Everything except the private run outputs is in this repo or public on Hugging Face.
+
+| What | Where |
+|---|---|
+| Article, ROI page and cards, filled with every measured value | `docs/submission/filled/` (`remaining.md` lists the 12 open article values). These are generated: edit `docs/submission/article.md` or `sentences.json`, then run `scripts/fill_submission.py` on Aditya's laptop, or mark changes in the filled copy and Aditya folds them in |
+| Decisions still open | `docs/submission/decisions.md`, table at the top |
+| Public code | https://github.com/Hydra-Of-Malice/langsafe (a snapshot from 11 Nov; this repo is newer) |
+| Public data, circuit detail and models | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval and the [checkpoints collection](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5) |
+| Demo Space, not deployed | `space/`. Run it with `pip install -r space/requirements.txt`, then `python space/app.py` |
+| Six kit PRs, ready to open | `docs/upstream_patches/` (patches re-applied to 12 Nov `main`, PR texts in `pr-bodies/`) |
+| Judge checks (32B on 4-bit, Command A) | `docs/judge_checks/`, aggregates only |
+| Run outputs: answers, verdicts, checkpoints | Aditya's laptop only, under `runs/`. They hold harmful model text, so they never go in git or on a public repo |
 
 ## Still needs a person
-- Native readers for Javanese first, then Bengali, Arabic, Swahili, Thai and Korean, to review translations and hand-label
-  a sample. Javanese matters most, because the main result depends on it.
-- HF credits, for the 32B judges that verify the free local judges.
-- A go-ahead before anything is published to Hugging Face, and the final submission form.
-- The rules ask for a public demo or repo by 14 Nov, so this repo must go public before the deadline. That's the
-  team's call. Raw model outputs stay out of it either way.
+- **Native readers (D6):** none beyond the blind reads in Thai and Javanese. Without more, the judge-accuracy values
+  stay provisional, as the article already says.
+- **Pallab:** agree or not to the licence grant in the six kit PRs (D11), and send your HF username (D5).
+- **The team:** utilisation and monthly operations cost for the ROI page, and whether to download the public
+  tokenizer file for its token ratios (D13).
+- **Aditya:** check the billing page (D14), send the mentor one-pager (D15), the organiser ticket (D16), review and
+  deploy the Space (D10), and submit the form (D17).
+
+## 13 November 2026
+- **18:30** **Everything is pushed for Pallab to pick up.** New in the repo:
+  - the filled article, ROI page and cards (`docs/submission/filled/`);
+  - the six kit patches re-applied to the kits' 12 Nov `main`, each checked to apply cleanly, with their PR texts
+    (`docs/upstream_patches/`);
+  - the judge-check aggregates (`docs/judge_checks/`).
+
+  See "Picking up the work" above for where everything else is.
 
 ## 12 November 2026
 - **10:00** **Command A, the Tiny Aya report's own judge, makes Earth's gap larger, not smaller.**

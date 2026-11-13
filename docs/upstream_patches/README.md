@@ -1,27 +1,53 @@
 # Upstream patches for the Lexsi kits
 
-Six patches for the starred items in `docs/UPSTREAM.md`. They are prepared for review only. No
-pull request, fork, push or GitHub comment was made; opening them is the team's decision.
+Six patches for the starred items in `docs/UPSTREAM.md`. **Status, 13 Nov:** all six are re-applied to
+the kits' current `main` and ready to open as pull requests. No fork, push, pull request or GitHub
+comment has been made: they wait for both copyright holders to agree to the licence grant (below).
 
-| # | Patch | Target repo | Base commit | New tests |
-|---|---|---|---|---|
-| 1 | `safetune-layer-ranking.patch` | Lexsi-Labs/SafeTune | `3901a9f` | 17 |
-| 2 | `auditkit-multilingual-refusal.patch` | Lexsi-Labs/AuditKIT | `71316da` | 67 |
-| 3 | `auditkit-benchmark-loaders.patch` | Lexsi-Labs/AuditKIT | `71316da` | 34 |
-| 4 | `safetune-multilingual-benchmarks.patch` | Lexsi-Labs/SafeTune | `3901a9f` | 18 |
-| 5 | `curatorkit-group-split.patch` | Lexsi-Labs/CuratorKIT | `dd9e835` | 29 |
-| 6 | `circuitkit-multilingual-refusal-task.patch` | Lexsi-Labs/CircuitKIT | `e71d5e1` | 43 |
+| # | Patch | Target repo | Branch to push | Base (`main`, 12 Nov) | Commit | Applied |
+|---|---|---|---|---|---|---|
+| 1 | `safetune-layer-ranking.patch` | Lexsi-Labs/SafeTune | `fix/circuit-kit-layer-fraction` | `263ea24` | `6349f6f` | Conflicts resolved; keeps upstream's file validation from #50 |
+| 2 | `auditkit-multilingual-refusal.patch` | Lexsi-Labs/AuditKIT | `feat/multilingual-refusal` | `1444ba5` | `f449cac` | Conflicts resolved; reuses upstream's `fold_apostrophes` and `strip_thinking` |
+| 3 | `auditkit-benchmark-loaders.patch` | Lexsi-Labs/AuditKIT | `feat/multilingual-benchmark-loaders` | `1444ba5` | `01403fc` | Clean |
+| 4 | `safetune-multilingual-benchmarks.patch` | Lexsi-Labs/SafeTune | `feat/multilingual-benchmarks` | `263ea24` | `8707fd5` | Clean |
+| 5 | `curatorkit-group-split.patch` | Lexsi-Labs/CuratorKIT | `feat/group-aware-splits` | `1ceea1f` | `aca07d8` | Clean |
+| 6 | `circuitkit-multilingual-refusal-task.patch` | Lexsi-Labs/CircuitKIT | `feat/multilingual-refusal-task` | `e3501bc` | `250e219` | Clean |
 
-**Nothing was skipped.** On 2026-11-05 all four pinned commits were still the tip of `main`, and no
-open pull request covers any item. The nearest, AuditKIT #18 and CircuitKIT #25, touch other code.
+Each patch is one commit, authored as Aditya Arnav with the GitHub noreply address. Patches 1 and 4,
+and patches 2 and 3, apply in either order. The PR text for each is in `pr-bodies/<patch>.md`; each
+has an HTML comment above the consent sentence, to keep the sentence only once both of you agree.
 
-Each patch is one commit on `main`. Patches 1 and 4, and patches 2 and 3, apply in either order.
-Each was re-applied with `git am` to a clean `main` and matched the commit that was tested.
+**Tests, run twice on Windows, Python 3.12:**
+- **SafeTune:** `tests/safety/test_circuit_kit.py` 19 passed (16 fail on `main`). Patch 4's
+  multilingual benchmark tests: 18 passed.
+- **AuditKIT:**
+  - Patch 2's four test files: 122 passed.
+  - Patch 3's loaders: 34 passed.
+  - Full suite: everything passes except `test_agent_endpoint::test_default_round_trip`, a timing
+    test that fails on `main` too.
+- **CuratorKIT:** `pytest tests/unit` 626 passed, 18 skipped; `ruff check .` clean.
+- **CircuitKIT:** the new task's 43 tests passed. The wider unit run has the same 29 Windows-only
+  failures as `main`.
+
+**What changed in the re-apply (12 Nov):**
+- **AuditKIT, patch 2:**
+  - Upstream already fixed curly apostrophes in `RefusalDetector` (#23), so that claim is gone.
+  - The scorer now reports an empty answer, or one that is only `<think>` reasoning, as not
+    measured instead of a refusal, matching upstream #25 and #40.
+- **SafeTune, patch 1:** merged with upstream's stricter score-file validation (#50).
+
+**To open one:**
+1. Fork the kit to `Hydra-Of-Malice`.
+2. Apply the patch to its `main` with `git am`, on the branch named in the table.
+3. Push the branch.
+4. Open the pull request:
+   `gh pr create -R Lexsi-Labs/<repo> --head Hydra-Of-Malice:<branch> --title "<first line of the commit>" --body-file pr-bodies/<patch>.md`
+
+The re-applied clones and their test environments are also on Aditya's laptop, in the `upstream` folder next to
+this repo.
 
 ## Before you submit
 
-- **Set a real author.** The commits use the placeholder `Upstream Contributor
-  <contributor@example.invalid>`. After `git am`, run `git commit --amend --reset-author --no-edit`.
 - **Have the copyright holders submit.** All four licences say a contribution grants Lexsi Labs a
   perpetual, royalty-free right to use and relicense it under any terms, including commercial ones,
   and that you have the right to make it. These patches come from `langsafe`, which is MIT and

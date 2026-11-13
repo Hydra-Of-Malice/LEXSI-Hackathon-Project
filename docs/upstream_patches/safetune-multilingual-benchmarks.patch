@@ -1,6 +1,6 @@
-From 4249721acff1ef04b78ad58a57493cf5a69d327a Mon Sep 17 00:00:00 2001
-From: Upstream Contributor <contributor@example.invalid>
-Date: Thu, 5 Nov 2026 12:37:35 +0530
+From 8707fd59a01115138c0d47bd9c2ddc97fa5f70dc Mon Sep 17 00:00:00 2001
+From: Aditya Arnav <140049169+Hydra-Of-Malice@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 19:01:48 +0530
 Subject: [PATCH] feat(eval): add MultiJail and Aya Red-teaming benchmarks
 
 Every built-in safety benchmark is English, so there is no way to measure
@@ -20,23 +20,24 @@ This adds data only. The refusal string lists are English and the default
 judge has not been validated on these languages, and a refusal a judge
 can't read counts as an attack success. The docs and the registry
 descriptions say so.
+
 ---
  CHANGELOG.md                                  |   8 +
  docs/reference/references.md                  |   2 +-
  docs/user-guide/evaluate/benchmarks/index.md  |  17 +-
- src/safetune/core/eval/pipeline/loaders.py    |  33 +++-
+ src/safetune/core/eval/pipeline/loaders.py    |  44 ++++-
  src/safetune/data/dataset_ids.py              |   4 +
  src/safetune/data/loaders/__init__.py         |   4 +
- src/safetune/data/loaders/benchmarks.py       |  72 +++++++++
+ src/safetune/data/loaders/benchmarks.py       |  93 ++++++++++
  .../evaluate/suite/benchmarks.py              |  23 +++
  tests/runtime/test_eval_reliability.py        |   5 +
- tests/runtime/test_multilingual_benchmarks.py | 151 ++++++++++++++++++
+ tests/runtime/test_multilingual_benchmarks.py | 170 ++++++++++++++++++
  tests/runtime/test_runtime_config.py          |   5 +
- 11 files changed, 320 insertions(+), 4 deletions(-)
+ 11 files changed, 371 insertions(+), 4 deletions(-)
  create mode 100644 tests/runtime/test_multilingual_benchmarks.py
 
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 893a08e..e30e43a 100644
+index 8338e54..55fc56a 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
@@ -55,10 +56,10 @@ index 893a08e..e30e43a 100644
  
  - Code rewards (`code_execution`, `code_correctness`, `mbpp_reward`) no longer trust the output
 diff --git a/docs/reference/references.md b/docs/reference/references.md
-index 4c330e5..e84a17f 100644
+index 5dfcbe8..fe32095 100644
 --- a/docs/reference/references.md
 +++ b/docs/reference/references.md
-@@ -144,7 +144,7 @@ Inference-time wrappers and decoding processors that steer model behaviour witho
+@@ -146,7 +146,7 @@ Inference-time wrappers and decoding processors that steer model behaviour witho
  | `evaluate` | — (SafeTune infra) | — | — | — | End-to-end evaluation pipeline that runs a model against benchmarks and aggregates judge scores. | benchmarks + judge | metric dict |
  | `TamperBenchEvaluator` | TamperBench | — | [2602.06911](https://arxiv.org/abs/2602.06911) | — | Thin wrapper over the official `tamperbench` package; delegates the tamper-resistance metric to that harness. | `tamperbench` package + responses | ASR |
  | Pareto utilities | — (SafeTune infra) | — | — | — | Computes the safety/utility Pareto front across a set of (safety, utility) metric pairs. | metric pairs | Pareto front |
@@ -68,7 +69,7 @@ index 4c330e5..e84a17f 100644
  ## Interpret
  
 diff --git a/docs/user-guide/evaluate/benchmarks/index.md b/docs/user-guide/evaluate/benchmarks/index.md
-index 8453cd8..016a2e1 100644
+index 0273c41..2ee8d63 100644
 --- a/docs/user-guide/evaluate/benchmarks/index.md
 +++ b/docs/user-guide/evaluate/benchmarks/index.md
 @@ -1,6 +1,6 @@
@@ -109,7 +110,7 @@ index 8453cd8..016a2e1 100644
  ## API
  
 diff --git a/src/safetune/core/eval/pipeline/loaders.py b/src/safetune/core/eval/pipeline/loaders.py
-index 83c32cb..7b4f64b 100644
+index de76b44..b24d8b4 100644
 --- a/src/safetune/core/eval/pipeline/loaders.py
 +++ b/src/safetune/core/eval/pipeline/loaders.py
 @@ -14,8 +14,8 @@ We keep the loader API uniform across benchmarks so the same Generator can
@@ -123,7 +124,7 @@ index 83c32cb..7b4f64b 100644
  :mod:`safetune.data.loaders.benchmarks`; the functions here only shape the rows.
  WildJailbreak keeps its load_prompts() defaults: adversarial_harmful rows only,
  at most 500.
-@@ -295,6 +295,33 @@ def load_jailbreakbench(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+@@ -318,6 +318,44 @@ def load_jailbreakbench(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
      ]
  
  
@@ -132,9 +133,14 @@ index 83c32cb..7b4f64b 100644
 +    ``cfg["languages"]``: a code or a list, default all ten. ``behavior_id`` is
 +    ``<id>-<language>``; ``multijail_id`` links a prompt's translations."""
 +    return [
-+        {"source": "multijail", "behavior_id": f"{item['id']}-{item['language']}",
-+         "prompt": item["prompt"], "language": item["language"],
-+         "multijail_id": item["id"], "multijail_category": item["category"]}
++        {
++            "source": "multijail",
++            "behavior_id": f"{item['id']}-{item['language']}",
++            "prompt": item["prompt"],
++            "language": item["language"],
++            "multijail_id": item["id"],
++            "multijail_category": item["category"],
++        }
 +        for item in _take(B.load_multijail(cfg.get("languages"), **_spec(cfg)), cfg)
 +    ]
 +
@@ -146,10 +152,16 @@ index 83c32cb..7b4f64b 100644
 +    rows: List[Dict[str, Any]] = []
 +    for item in _take(B.load_aya_redteaming(cfg.get("languages"), **_spec(cfg)), cfg):
 +        lang = item["language"]
-+        rows.append({"source": "aya_redteaming", "behavior_id": f"{lang}-{seen[lang]}",
-+                     "prompt": item["prompt"], "language": lang,
-+                     "aya_category": item["category"],
-+                     "aya_global_or_local": item["global_or_local"]})
++        rows.append(
++            {
++                "source": "aya_redteaming",
++                "behavior_id": f"{lang}-{seen[lang]}",
++                "prompt": item["prompt"],
++                "language": lang,
++                "aya_category": item["category"],
++                "aya_global_or_local": item["global_or_local"],
++            }
++        )
 +        seen[lang] += 1
 +    return rows
 +
@@ -157,7 +169,7 @@ index 83c32cb..7b4f64b 100644
  def load_muse(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
      """MUSE (Shi et al., arXiv:2407.06460): ``cfg["domain"]`` ``"news"`` (default)
      or ``"books"``; default config ``verbmem``, split ``forget``. The passage is
-@@ -349,6 +376,8 @@ LOADERS: Dict[str, LoaderFn] = {
+@@ -373,6 +411,8 @@ LOADERS: Dict[str, LoaderFn] = {
      "airbench": load_airbench,
      "saladbench": load_saladbench,
      "jailbreakbench": load_jailbreakbench,
@@ -167,10 +179,10 @@ index 83c32cb..7b4f64b 100644
      "rwku": load_rwku,
      "safedialbench": load_safedialbench,
 diff --git a/src/safetune/data/dataset_ids.py b/src/safetune/data/dataset_ids.py
-index 7cb38de..a4e844f 100644
+index f0baccc..1688711 100644
 --- a/src/safetune/data/dataset_ids.py
 +++ b/src/safetune/data/dataset_ids.py
-@@ -66,6 +66,10 @@ DATASETS: dict[str, dict] = {
+@@ -75,6 +75,10 @@ DATASETS: dict[str, dict] = {
      "jailbreakbench": {"source": "JailbreakBench/JBB-Behaviors", "config": "behaviors",
                         "split": "harmful", "prompt_col": "Goal"},
      "xstest":         {"source": "walledai/XSTest", "split": "test"},
@@ -208,10 +220,10 @@ index e45d2bb..358c98c 100644
      "load_beavertails",
      "load_star1",
 diff --git a/src/safetune/data/loaders/benchmarks.py b/src/safetune/data/loaders/benchmarks.py
-index 0d3b783..7b1d653 100644
+index 067cb9a..266cd86 100644
 --- a/src/safetune/data/loaders/benchmarks.py
 +++ b/src/safetune/data/loaders/benchmarks.py
-@@ -11,8 +11,15 @@ dataset-table fields (``source``, ``config``, ``split``, ``where``, ...) to
+@@ -11,8 +11,23 @@ dataset-table fields (``source``, ``config``, ``split``, ``where``, ...) to
  """
  from __future__ import annotations
  
@@ -221,13 +233,21 @@ index 0d3b783..7b1d653 100644
  from safetune.data.dataset_ids import load, spec
  
 +MULTIJAIL_LANGUAGES = ("en", "zh", "it", "vi", "ar", "ko", "th", "bn", "sw", "jv")
-+AYA_REDTEAMING_SPLITS = {"ar": "arabic", "en": "english", "es": "spanish", "fr": "french",
-+                         "hi": "hindi", "ru": "russian", "sr": "serbian", "tl": "filipino"}
++AYA_REDTEAMING_SPLITS = {
++    "ar": "arabic",
++    "en": "english",
++    "es": "spanish",
++    "fr": "french",
++    "hi": "hindi",
++    "ru": "russian",
++    "sr": "serbian",
++    "tl": "filipino",
++}
 +
  
  # ── Safety benchmarks ──────────────────────────────────────────────────────────
  # Sources, configs and splits come from safetune.data.dataset_ids (overridable via
-@@ -151,6 +158,71 @@ def load_xstest(split: str = None, **overrides):
+@@ -160,6 +175,84 @@ def load_xstest(split: str = None, **overrides):
      return load("xstest", split=split, **overrides)
  
  
@@ -263,14 +283,21 @@ index 0d3b783..7b1d653 100644
 +    ``MULTIJAIL_LANGUAGES``.
 +    """
 +    from datasets import Dataset
++
 +    selected = _select_languages(languages, MULTIJAIL_LANGUAGES, "MultiJail")
 +    rows = []
 +    for ex in load("multijail", split=split, **overrides):
 +        for lang in selected:
 +            text = (ex.get(lang) or "").strip()
 +            if text:
-+                rows.append({"prompt": text, "language": lang, "id": str(ex.get("id", "")),
-+                             "category": _category_text(ex.get("tags"))})
++                rows.append(
++                    {
++                        "prompt": text,
++                        "language": lang,
++                        "id": str(ex.get("id", "")),
++                        "category": _category_text(ex.get("tags")),
++                    }
++                )
 +    return Dataset.from_list(rows)
 +
 +
@@ -284,15 +311,21 @@ index 0d3b783..7b1d653 100644
 +    that split, which suits a local copy; 'language' then comes from its rows.
 +    """
 +    from datasets import Dataset
++
 +    split = split or spec("aya_redteaming").get("split")
 +    selected = _select_languages(languages, AYA_REDTEAMING_SPLITS, "Aya Red-teaming")
 +    parts = [("", split)] if split else [(k, AYA_REDTEAMING_SPLITS[k]) for k in selected]
 +    rows = []
 +    for lang, part in parts:
 +        for ex in load("aya_redteaming", split=part, **overrides):
-+            rows.append({"prompt": ex["prompt"], "language": lang or ex.get("language") or "",
-+                         "category": _category_text(ex.get("harm_category")),
-+                         "global_or_local": ex.get("global_or_local") or ""})
++            rows.append(
++                {
++                    "prompt": ex["prompt"],
++                    "language": lang or ex.get("language") or "",
++                    "category": _category_text(ex.get("harm_category")),
++                    "global_or_local": ex.get("global_or_local") or "",
++                }
++            )
 +    return Dataset.from_list(rows)
 +
 +
@@ -300,10 +333,10 @@ index 0d3b783..7b1d653 100644
      """BeaverTails (PKU-Alignment)."""
      return load("beavertails", split=split)
 diff --git a/src/safetune/instrumentation/evaluate/suite/benchmarks.py b/src/safetune/instrumentation/evaluate/suite/benchmarks.py
-index 0615fb6..2057b1c 100644
+index 0bfde5f..0e5db21 100644
 --- a/src/safetune/instrumentation/evaluate/suite/benchmarks.py
 +++ b/src/safetune/instrumentation/evaluate/suite/benchmarks.py
-@@ -200,6 +200,29 @@ _BENCHMARKS: List[BenchmarkSpec] = [
+@@ -203,6 +203,29 @@ _BENCHMARKS: List[BenchmarkSpec] = [
          ),
          tags=["jailbreak", "asr", "community-standard"],
      ),
@@ -334,7 +367,7 @@ index 0615fb6..2057b1c 100644
          name="muse",
          display_name="MUSE",
 diff --git a/tests/runtime/test_eval_reliability.py b/tests/runtime/test_eval_reliability.py
-index dedf4c1..6ef743a 100644
+index fe956dc..39d07f5 100644
 --- a/tests/runtime/test_eval_reliability.py
 +++ b/tests/runtime/test_eval_reliability.py
 @@ -51,6 +51,9 @@ FIXTURES = {
@@ -365,11 +398,12 @@ index dedf4c1..6ef743a 100644
  
 diff --git a/tests/runtime/test_multilingual_benchmarks.py b/tests/runtime/test_multilingual_benchmarks.py
 new file mode 100644
-index 0000000..ff66374
+index 0000000..277d21d
 --- /dev/null
 +++ b/tests/runtime/test_multilingual_benchmarks.py
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,170 @@
 +"""MultiJail and Aya Red-teaming: languages, row shape and dataset-table overrides. Offline."""
++
 +import pytest
 +from datasets import Dataset
 +
@@ -389,8 +423,12 @@ index 0000000..ff66374
 +
 +
 +def _aya(text):
-+    return {"prompt": text, "language": "Hindi", "harm_category": '["Bullying", "Graphic"]',
-+            "global_or_local": "local"}
++    return {
++        "prompt": text,
++        "language": "Hindi",
++        "harm_category": '["Bullying", "Graphic"]',
++        "global_or_local": "local",
++    }
 +
 +
 +@pytest.fixture(autouse=True)
@@ -401,6 +439,7 @@ index 0000000..ff66374
 +@pytest.fixture
 +def hub(monkeypatch):
 +    """``hub.rows`` is what every load returns, or a {split: rows} dict; calls are recorded."""
++
 +    class Hub:
 +        rows, calls = [], []
 +
@@ -413,6 +452,7 @@ index 0000000..ff66374
 +            def load(self):
 +                rows = Hub.rows[split] if isinstance(Hub.rows, dict) else Hub.rows
 +                return Dataset.from_list(rows)
++
 +        return _Loader()
 +
 +    monkeypatch.setattr(ids.LoaderResolver, "resolve", staticmethod(resolve))
@@ -453,8 +493,10 @@ index 0000000..ff66374
 +    def test_each_language_loads_its_own_split(self, hub):
 +        hub.rows = {"hindi": [_aya("hi one")], "arabic": [_aya("ar one"), _aya("ar two")]}
 +        ds = load_aya_redteaming(["hi", "ar"])
-+        assert hub.calls == [("CohereLabs/aya_redteaming", "hindi"),
-+                             ("CohereLabs/aya_redteaming", "arabic")]
++        assert hub.calls == [
++            ("CohereLabs/aya_redteaming", "hindi"),
++            ("CohereLabs/aya_redteaming", "arabic"),
++        ]
 +        assert ds["prompt"] == ["hi one", "ar one", "ar two"]
 +        assert ds["language"] == ["hi", "ar", "ar"]
 +
@@ -462,7 +504,15 @@ index 0000000..ff66374
 +        hub.rows = [_aya("x")]
 +        load_aya_redteaming()
 +        assert sorted(split for _, split in hub.calls) == [
-+            "arabic", "english", "filipino", "french", "hindi", "russian", "serbian", "spanish"]
++            "arabic",
++            "english",
++            "filipino",
++            "french",
++            "hindi",
++            "russian",
++            "serbian",
++            "spanish",
++        ]
 +
 +    def test_keeps_every_category(self, hub):
 +        hub.rows = [_aya("x")]
@@ -477,7 +527,8 @@ index 0000000..ff66374
 +    def test_a_split_in_the_table_loads_only_that_split(self, hub):
 +        """A local single-file copy has one split, so the language loop must not run on it."""
 +        safetune.configure(
-+            datasets={"aya_redteaming": {"source": "aya_hi.jsonl", "split": "train"}})
++            datasets={"aya_redteaming": {"source": "aya_hi.jsonl", "split": "train"}}
++        )
 +        hub.rows = [_aya("x")]
 +        ds = load_aya_redteaming()
 +        assert hub.calls == [("aya_hi.jsonl", "train")]
@@ -511,6 +562,7 @@ index 0000000..ff66374
 +
 +def test_both_are_registered_as_multilingual_jailbreak_benchmarks():
 +    from safetune.evaluate.suite.benchmarks import get_benchmark
++
 +    for name in ("multijail", "aya_redteaming"):
 +        spec = get_benchmark(name)
 +        assert spec.category == "jailbreak"
@@ -521,7 +573,7 @@ index 0000000..ff66374
 +def test_the_splits_cover_the_languages_the_card_lists():
 +    assert set(AYA_REDTEAMING_SPLITS) == {"ar", "en", "es", "fr", "hi", "ru", "sr", "tl"}
 diff --git a/tests/runtime/test_runtime_config.py b/tests/runtime/test_runtime_config.py
-index f6b3588..60c43e2 100644
+index 8395b6a..8560520 100644
 --- a/tests/runtime/test_runtime_config.py
 +++ b/tests/runtime/test_runtime_config.py
 @@ -161,6 +161,8 @@ DATASET_DEFAULTS = {
@@ -543,3 +595,6 @@ index f6b3588..60c43e2 100644
          (B.load_beavertails, [(BT, None, "30k_train")]),
          (B.load_star1, [("UCSC-VLAA/STAR-1", None, "train")]),
          (B.load_mmlu, [("cais/mmlu", "all", "test")]),
+-- 
+2.53.0.windows.2
+

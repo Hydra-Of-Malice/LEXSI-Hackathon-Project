@@ -1,6 +1,6 @@
-From a332085dd126912beb976a5a4c3adc7c737922d9 Mon Sep 17 00:00:00 2001
-From: Upstream Contributor <contributor@example.invalid>
-Date: Thu, 5 Nov 2026 12:58:09 +0530
+From 250e2190caceb775d05508f77d8fad543b1e22a0 Mon Sep 17 00:00:00 2001
+From: Aditya Arnav <140049169+Hydra-Of-Malice@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 19:01:49 +0530
 Subject: [PATCH] Add a multilingual refusal minimal-pair task
 
 There is no cross-language task and no refusal task for chat models, and
@@ -23,6 +23,7 @@ The guard for a missing template accepts a dict or list as well as a
 string. _chat._has_chat_template accepts only a string, and Tiny Aya's
 chat_template is a dict of named templates. That helper is left unchanged
 here, because fixing it changes "auto" for every other task.
+
 ---
  CHANGELOG.md                                  |   6 +
  docs/advanced/chat-templates.md               |   1 +
@@ -31,13 +32,13 @@ here, because fixing it changes "auto" for every other task.
  src/circuitkit/tasks/builtins/README.md       |   1 +
  src/circuitkit/tasks/builtins/__init__.py     |   2 +
  .../tasks/builtins/multilingual_refusal.py    | 393 ++++++++++++++++++
- tests/unit/test_multilingual_refusal.py       | 312 ++++++++++++++
- 8 files changed, 751 insertions(+), 1 deletion(-)
+ tests/unit/test_multilingual_refusal.py       | 338 +++++++++++++++
+ 8 files changed, 777 insertions(+), 1 deletion(-)
  create mode 100644 src/circuitkit/tasks/builtins/multilingual_refusal.py
  create mode 100644 tests/unit/test_multilingual_refusal.py
 
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 44dcbd1..536ed79 100644
+index d5d7488..dbd138d 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
@@ -578,10 +579,10 @@ index 0000000..6e4d93d
 +        }
 diff --git a/tests/unit/test_multilingual_refusal.py b/tests/unit/test_multilingual_refusal.py
 new file mode 100644
-index 0000000..4e12612
+index 0000000..665f40d
 --- /dev/null
 +++ b/tests/unit/test_multilingual_refusal.py
-@@ -0,0 +1,312 @@
+@@ -0,0 +1,338 @@
 +"""
 +Test suite for the multilingual_refusal task.
 +
@@ -650,8 +651,13 @@ index 0000000..4e12612
 +
 +
 +def _cfg(tmp_path, **data_params):
-+    return {"algorithm": "eap-ig", "level": "node", "batch_size": 2, "cache_dir": str(tmp_path),
-+            "data_params": {"num_examples": 4, **data_params}}
++    return {
++        "algorithm": "eap-ig",
++        "level": "node",
++        "batch_size": 2,
++        "cache_dir": str(tmp_path),
++        "data_params": {"num_examples": 4, **data_params},
++    }
 +
 +
 +def _rows(spec, cfg, model):
@@ -666,8 +672,10 @@ index 0000000..4e12612
 +
 +@pytest.fixture
 +def hindi_pairs(tmp_path):
-+    return _pairs_file(tmp_path / "pairs_hi.csv", [
-+        (f"हानिकारक अनुरोध {i}", f"सुरक्षित अनुरोध {i}") for i in range(10)])
++    return _pairs_file(
++        tmp_path / "pairs_hi.csv",
++        [(f"हानिकारक अनुरोध {i}", f"सुरक्षित अनुरोध {i}") for i in range(10)],
++    )
 +
 +
 +def test_registered_as_a_builtin():
@@ -725,8 +733,14 @@ index 0000000..4e12612
 +        with pytest.raises(ValueError, match="needs a chat model"):
 +            spec.build_dataloader(FakeModel(chat_template=template), _cfg(tmp_path), "cpu")
 +
-+    @pytest.mark.parametrize("template", ["{{ messages }}", {"default": "{{ messages }}"},
-+                                          [{"name": "default", "template": "{{ messages }}"}]])
++    @pytest.mark.parametrize(
++        "template",
++        [
++            "{{ messages }}",
++            {"default": "{{ messages }}"},
++            [{"name": "default", "template": "{{ messages }}"}],
++        ],
++    )
 +    def test_a_named_template_counts_as_a_chat_model(self, spec, tmp_path, template):
 +        """Tiny Aya's tokenizer holds a dict of named templates, not a string."""
 +        model = FakeModel(chat_template=template)
@@ -742,7 +756,9 @@ index 0000000..4e12612
 +
 +
 +class TestAnswers:
-+    def test_clean_scores_the_refusal_and_corrupted_the_compliance(self, spec, tmp_path, hindi_pairs):
++    def test_clean_scores_the_refusal_and_corrupted_the_compliance(
++        self, spec, tmp_path, hindi_pairs
++    ):
 +        model = FakeModel()
 +        df, _ = _rows(spec, _cfg(tmp_path, language="hi", pairs_path=hindi_pairs), model)
 +        refuse, comply = DEFAULT_OPENERS["hi"]
@@ -757,8 +773,13 @@ index 0000000..4e12612
 +
 +    def test_a_multi_token_opener_is_scored_on_its_first_token(self, spec, tmp_path, hindi_pairs):
 +        model = FakeModel()
-+        cfg = _cfg(tmp_path, language="hi", pairs_path=hindi_pairs,
-+                   refuse="मैं नहीं कर सकता", comply="ज़रूर यह")
++        cfg = _cfg(
++            tmp_path,
++            language="hi",
++            pairs_path=hindi_pairs,
++            refuse="मैं नहीं कर सकता",
++            comply="ज़रूर यह",
++        )
 +        df, _ = _rows(spec, cfg, model)
 +        assert set(df["correct_idx"]) == {model.tokenizer.encode("मैं")[0]}
 +
@@ -798,8 +819,9 @@ index 0000000..4e12612
 +
 +class TestPartition:
 +    def _prompts(self, spec, tmp_path, pairs, partition):
-+        cfg = _cfg(tmp_path, language="hi", pairs_path=pairs, data_partition=partition,
-+                   num_examples=100)
++        cfg = _cfg(
++            tmp_path, language="hi", pairs_path=pairs, data_partition=partition, num_examples=100
++        )
 +        return set(_rows(spec, cfg, FakeModel())[0]["clean"])
 +
 +    def test_discovery_and_eval_are_disjoint_and_cover_the_pairs(self, spec, tmp_path, hindi_pairs):
@@ -822,7 +844,9 @@ index 0000000..4e12612
 +        second, _ = spec._get_or_generate_csv(cfg, FakeModel())
 +        assert first == second and first.stat().st_mtime_ns == stamp
 +
-+    def test_editing_the_pairs_or_openers_does_not_reuse_a_stale_file(self, spec, tmp_path, hindi_pairs):
++    def test_editing_the_pairs_or_openers_does_not_reuse_a_stale_file(
++        self, spec, tmp_path, hindi_pairs
++    ):
 +        cfg = _cfg(tmp_path, language="hi", pairs_path=hindi_pairs)
 +        path, _ = spec._get_or_generate_csv(cfg, FakeModel())
 +        edited = _cfg(tmp_path, language="hi", pairs_path=hindi_pairs, refuse="नहीं")
@@ -866,7 +890,9 @@ index 0000000..4e12612
 +
 +    def test_kl_is_available(self, spec):
 +        logits = t.zeros(1, 3, 5)
-+        assert spec.metric_fn("kl")(logits, logits, t.tensor([3]), None).item() == pytest.approx(0.0)
++        assert spec.metric_fn("kl")(logits, logits, t.tensor([3]), None).item() == pytest.approx(
++            0.0
++        )
 +
 +
 +class TestValidation:
@@ -877,8 +903,9 @@ index 0000000..4e12612
 +        with pytest.raises(ValueError):
 +            spec.validate_discovery_config({**_cfg(tmp_path), "algorithm": "ibcircuit"})
 +
-+    @pytest.mark.parametrize("key,value,match", [("level", "edge", "level"),
-+                                                 ("batch_size", 0, "batch_size")])
++    @pytest.mark.parametrize(
++        "key,value,match", [("level", "edge", "level"), ("batch_size", 0, "batch_size")]
++    )
 +    def test_bad_settings_are_rejected(self, spec, tmp_path, key, value, match):
 +        with pytest.raises(ValueError, match=match):
 +            spec.validate_discovery_config({**_cfg(tmp_path), key: value})
@@ -894,3 +921,6 @@ index 0000000..4e12612
 +        assert meta["data_source"] == hindi_pairs
 +        assert meta["n_samples"] == 4
 +        assert meta["chat_template_mode"] == "on"
+-- 
+2.53.0.windows.2
+

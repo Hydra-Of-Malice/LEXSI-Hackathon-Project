@@ -1,6 +1,6 @@
-From 803a0e7c4ed77c7badf131e6e14878f1a49929bc Mon Sep 17 00:00:00 2001
-From: Upstream Contributor <contributor@example.invalid>
-Date: Thu, 5 Nov 2026 12:44:23 +0530
+From aca07d84584b603a6edd7e1414f3c7775ce11446 Mon Sep 17 00:00:00 2001
+From: Aditya Arnav <140049169+Hydra-Of-Malice@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 19:01:49 +0530
 Subject: [PATCH] feat: add group-aware splits and a leakage check
 
 output_split shuffles sample by sample, so the translations or paraphrases
@@ -20,26 +20,27 @@ when it finds any. It compares prompts, not prompt plus answer, because one
 prompt with two answers still leaks.
 
 Language ID is not part of this change.
+
 ---
  CHANGELOG.md                    |   7 +
- curatorkit/cli.py               |  27 ++--
+ curatorkit/cli.py               |  27 +--
  curatorkit/config.py            |   1 +
  curatorkit/curator.py           |  42 ++---
- curatorkit/splits.py            | 216 ++++++++++++++++++++++++++
- docs/guides/exporters.md        |  27 ++++
+ curatorkit/splits.py            | 215 ++++++++++++++++++++++
+ docs/guides/exporters.md        |  27 +++
  docs/reference/architecture.md  |   1 +
  docs/reference/cli.md           |   1 +
  docs/reference/configuration.md |   1 +
- tests/unit/test_splits.py       | 261 ++++++++++++++++++++++++++++++++
- 10 files changed, 545 insertions(+), 39 deletions(-)
+ tests/unit/test_splits.py       | 315 ++++++++++++++++++++++++++++++++
+ 10 files changed, 598 insertions(+), 39 deletions(-)
  create mode 100644 curatorkit/splits.py
  create mode 100644 tests/unit/test_splits.py
 
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 95977c4..b5ee815 100644
+index 6dfbf18..50e1598 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -23,6 +23,13 @@ All notable changes to CuratorKIT are documented here. The format follows
+@@ -33,6 +33,13 @@ All notable changes to CuratorKIT are documented here. The format follows
    from/value instead of being copied through as-is.
  
  ### Added
@@ -124,7 +125,7 @@ index 535172f..e5f12e0 100644
      write_hf_readme: bool = True
  
 diff --git a/curatorkit/curator.py b/curatorkit/curator.py
-index 4fb49f6..17e1456 100644
+index 7b780d5..38ff6e7 100644
 --- a/curatorkit/curator.py
 +++ b/curatorkit/curator.py
 @@ -250,6 +250,9 @@ class CuratorConfig:
@@ -137,7 +138,7 @@ index 4fb49f6..17e1456 100644
      # Also write README.md (dataset card + load_dataset configs). An existing
      # README.md that curatorkit did not write is never overwritten.
      write_hf_readme: bool = True
-@@ -1704,48 +1707,34 @@ class Curator:
+@@ -1706,48 +1709,34 @@ class Curator:
          self, samples: list, output_dir: Path, formats: list[str] | None = None
      ) -> None:
          """Split accepted samples and export each split to suffixed files."""
@@ -198,7 +199,7 @@ index 4fb49f6..17e1456 100644
      def _write_provenance(self, result, output_dir: Path, steps: list | None = None) -> None:
          from curatorkit.manifest import (
              DatasetCardGenerator,
-@@ -1773,6 +1762,7 @@ class Curator:
+@@ -1775,6 +1764,7 @@ class Curator:
                      {s.task_type for s in result.passed}
                  ),
                  "output_split": cfg.output_split,
@@ -208,10 +209,10 @@ index 4fb49f6..17e1456 100644
          )
 diff --git a/curatorkit/splits.py b/curatorkit/splits.py
 new file mode 100644
-index 0000000..cc4d6e8
+index 0000000..a64995f
 --- /dev/null
 +++ b/curatorkit/splits.py
-@@ -0,0 +1,216 @@
+@@ -0,0 +1,215 @@
 +"""Train/val/test splits, kept apart by group, and a check for leakage between them.
 +
 +A per-sample shuffle can put the translations or paraphrases of one item on both sides of
@@ -312,8 +313,7 @@ index 0000000..cc4d6e8
 +    total = sum(fractions.values())
 +    if abs(total - 1.0) > 1e-6:
 +        raise ValueError(
-+            f"output_split fractions must sum to 1.0, got {total:.4f}. "
-+            f"Adjust your split ratios."
++            f"output_split fractions must sum to 1.0, got {total:.4f}. Adjust your split ratios."
 +        )
 +    rows = list(samples)
 +    if group_key:
@@ -429,10 +429,10 @@ index 0000000..cc4d6e8
 +        )
 +    return report
 diff --git a/docs/guides/exporters.md b/docs/guides/exporters.md
-index fbab6f3..ebd1fcd 100644
+index 574ec1e..26cc0de 100644
 --- a/docs/guides/exporters.md
 +++ b/docs/guides/exporters.md
-@@ -152,6 +152,33 @@ CuratorConfig(
+@@ -156,6 +156,33 @@ CuratorConfig(
  )
  ```
  
@@ -491,7 +491,7 @@ index 908f428..717b22a 100644
  ### Reader types
  
 diff --git a/docs/reference/configuration.md b/docs/reference/configuration.md
-index eaa42a9..1efa5cd 100644
+index c8f73cc..0b64a24 100644
 --- a/docs/reference/configuration.md
 +++ b/docs/reference/configuration.md
 @@ -117,6 +117,7 @@ for full usage examples.
@@ -504,10 +504,10 @@ index eaa42a9..1efa5cd 100644
  ---
 diff --git a/tests/unit/test_splits.py b/tests/unit/test_splits.py
 new file mode 100644
-index 0000000..3e96326
+index 0000000..ee766fb
 --- /dev/null
 +++ b/tests/unit/test_splits.py
-@@ -0,0 +1,261 @@
+@@ -0,0 +1,315 @@
 +"""Tests for group-aware splits and the leakage check."""
 +
 +from __future__ import annotations
@@ -531,12 +531,15 @@ index 0000000..3e96326
 +
 +def _sample(text, group=None, **fields):
 +    metadata = {} if group is None else {"group": group}
-+    return DataSample(source_uri="test", instruction=text, output="An answer.", metadata=metadata,
-+                      **fields)
++    return DataSample(
++        source_uri="test", instruction=text, output="An answer.", metadata=metadata, **fields
++    )
 +
 +
 +def _translated(groups=300, languages=("en", "hi", "bn")):
-+    return [_sample(f"item {g} in {lang}", group=f"g{g}") for g in range(groups) for lang in languages]
++    return [
++        _sample(f"item {g} in {lang}", group=f"g{g}") for g in range(groups) for lang in languages
++    ]
 +
 +
 +def _membership(splits):
@@ -574,11 +577,18 @@ index 0000000..3e96326
 +    def test_a_per_sample_shuffle_would_have_leaked_here(self):
 +        splits = split_samples(_translated(), FRACTIONS)
 +        assert leakage_report(splits, group_key="group", near_dup_threshold=None)[
-+            "groups_in_multiple_splits"]
++            "groups_in_multiple_splits"
++        ]
 +
 +    def test_sizes_approximate_the_fractions(self):
-+        sizes = Counter({k: len(v) for k, v in split_samples(
-+            _translated(2000, ("en",)), FRACTIONS, group_key="group").items()})
++        sizes = Counter(
++            {
++                k: len(v)
++                for k, v in split_samples(
++                    _translated(2000, ("en",)), FRACTIONS, group_key="group"
++                ).items()
++            }
++        )
 +        assert sizes["train"] == pytest.approx(1600, abs=80)
 +        assert sizes["val"] == pytest.approx(200, abs=60)
 +        assert sum(sizes.values()) == 2000
@@ -606,7 +616,10 @@ index 0000000..3e96326
 +    def test_group_values_need_not_be_strings(self):
 +        samples = [_sample("a", 7), _sample("b", 7), _sample("c", 0)]
 +        splits = split_samples(samples, {"x": 0.5, "y": 0.5}, group_key="group")
-+        assert len({name for name, rows in splits.items() for s in rows if s.metadata["group"] == 7}) == 1
++        assert (
++            len({name for name, rows in splits.items() for s in rows if s.metadata["group"] == 7})
++            == 1
++        )
 +        assert sum(len(rows) for rows in splits.values()) == 3
 +
 +    def test_a_key_no_sample_has_is_an_error(self):
@@ -625,15 +638,26 @@ index 0000000..3e96326
 +            split_samples([_sample("a", "only")], FRACTIONS, group_key="group")
 +
 +    def test_no_samples_is_not_an_error(self):
-+        assert split_samples([], FRACTIONS, group_key="group") == {"train": [], "val": [], "test": []}
++        assert split_samples([], FRACTIONS, group_key="group") == {
++            "train": [],
++            "val": [],
++            "test": [],
++        }
 +
 +
 +class TestLeakageReport:
 +    def test_clean_splits(self):
-+        splits = {"train": [_sample("first prompt here", "a")], "test": [_sample("another one", "b")]}
++        splits = {
++            "train": [_sample("first prompt here", "a")],
++            "test": [_sample("another one", "b")],
++        }
 +        report = leakage_report(splits, group_key="group")
-+        assert report == {"groups_in_multiple_splits": [], "exact_duplicates": [],
-+                          "near_duplicates": [], "ok": True}
++        assert report == {
++            "groups_in_multiple_splits": [],
++            "exact_duplicates": [],
++            "near_duplicates": [],
++            "ok": True,
++        }
 +
 +    def test_a_group_on_both_sides(self):
 +        splits = {"train": [_sample("in English", "g")], "test": [_sample("auf Deutsch", "g")]}
@@ -661,7 +685,9 @@ index 0000000..3e96326
 +        assert leakage_report({"train": [a], "test": [b]})["exact_duplicates"] == [(a.id, b.id)]
 +
 +    def test_a_duplicate_inside_one_split_is_not_a_leak(self):
-+        assert leakage_report({"train": [_sample("same"), _sample("same")], "test": []})["ok"] is True
++        assert (
++            leakage_report({"train": [_sample("same"), _sample("same")], "test": []})["ok"] is True
++        )
 +
 +    def test_near_duplicates_are_found_with_their_similarity(self):
 +        text = "Explain how a bicycle stays upright while it is moving down a long straight road"
@@ -673,14 +699,18 @@ index 0000000..3e96326
 +        assert similarity >= 0.8
 +
 +    def test_unrelated_text_and_tiny_prompts_are_not_near_duplicates(self):
-+        splits = {"train": [_sample("How do tides work near the coast of Norway"), _sample("a")],
-+                  "test": [_sample("Write a poem about a quiet library in autumn"), _sample("b")]}
++        splits = {
++            "train": [_sample("How do tides work near the coast of Norway"), _sample("a")],
++            "test": [_sample("Write a poem about a quiet library in autumn"), _sample("b")],
++        }
 +        assert leakage_report(splits)["near_duplicates"] == []
 +
 +    def test_a_templated_corpus_stays_linear(self):
 +        """All pairs here would be about 40,000, and quadratic work on a large corpus."""
-+        rows = [_sample(f"Explain topic number {i} in a few clear and simple sentences please")
-+                for i in range(400)]
++        rows = [
++            _sample(f"Explain topic number {i} in a few clear and simple sentences please")
++            for i in range(400)
++        ]
 +        report = leakage_report({"train": rows[:200], "test": rows[200:]}, num_perm=16)
 +        assert 0 < len(report["near_duplicates"]) < 400 * 16
 +        assert report["ok"] is False
@@ -705,11 +735,16 @@ index 0000000..3e96326
 +    with open(path, "w", encoding="utf-8") as f:
 +        for g in range(groups):
 +            for lang in ("en", "hi"):
-+                f.write(json.dumps({
-+                    "instruction": f"number {g} {_words((g, lang))}",
-+                    "output": _words((g, lang, "output")),
-+                    "group": f"g{g}",
-+                }) + "\n")
++                f.write(
++                    json.dumps(
++                        {
++                            "instruction": f"number {g} {_words((g, lang))}",
++                            "output": _words((g, lang, "output")),
++                            "group": f"g{g}",
++                        }
++                    )
++                    + "\n"
++                )
 +
 +
 +def _groups_per_split(out, names):
@@ -728,10 +763,16 @@ index 0000000..3e96326
 +        out = tmp_path / "out"
 +        with warnings.catch_warnings():
 +            warnings.simplefilter("error", UserWarning)  # no leak warning on a clean split
-+            Curator(CuratorConfig(
-+                dataset=str(seed), output_dir=str(out), export_formats=["alpaca"], dedup=False,
-+                output_split={"train": 0.75, "test": 0.25}, output_split_group="group",
-+            )).run()
++            Curator(
++                CuratorConfig(
++                    dataset=str(seed),
++                    output_dir=str(out),
++                    export_formats=["alpaca"],
++                    dedup=False,
++                    output_split={"train": 0.75, "test": 0.25},
++                    output_split_group="group",
++                )
++            ).run()
 +        seen = _groups_per_split(out, ["train", "test"])
 +        assert len(seen) == 40
 +        assert all(len(names) == 1 for names in seen.values())
@@ -747,7 +788,9 @@ index 0000000..3e96326
 +            f"readers:\n- type: jsonl\n  path: {seed.as_posix()}\n"
 +            "exporters:\n- type: alpaca\n"
 +            "output_split: {train: 0.75, test: 0.25}\n"
-+            "output_split_group: group\n", encoding="utf-8")
++            "output_split_group: group\n",
++            encoding="utf-8",
++        )
 +        out = tmp_path / "out"
 +        result = CliRunner().invoke(app, ["run", str(tmp_path / "p.yaml"), "-o", str(out)])
 +        assert result.exit_code == 0, result.output
@@ -759,13 +802,27 @@ index 0000000..3e96326
 +        seed = tmp_path / "seed.jsonl"
 +        with open(seed, "w", encoding="utf-8") as f:
 +            for g in range(40):
-+                f.write(json.dumps({
-+                    "instruction": "The very same prompt repeated under a different group id each time.",
-+                    "output": f"Answer number {g} is written out here in several plain words for you.",
-+                    "group": f"g{g}",
-+                }) + "\n")
++                f.write(
++                    json.dumps(
++                        {
++                            "instruction": "The very same prompt repeated under a different group id each time.",
++                            "output": f"Answer number {g} is written out here in several plain words for you.",
++                            "group": f"g{g}",
++                        }
++                    )
++                    + "\n"
++                )
 +        with pytest.warns(UserWarning, match="output_split leakage"):
-+            Curator(CuratorConfig(
-+                dataset=str(seed), output_dir=str(tmp_path / "out"), export_formats=["alpaca"],
-+                dedup=False, output_split={"train": 0.5, "test": 0.5}, output_split_group="group",
-+            )).run()
++            Curator(
++                CuratorConfig(
++                    dataset=str(seed),
++                    output_dir=str(tmp_path / "out"),
++                    export_formats=["alpaca"],
++                    dedup=False,
++                    output_split={"train": 0.5, "test": 0.5},
++                    output_split_group="group",
++                )
++            ).run()
+-- 
+2.53.0.windows.2
+

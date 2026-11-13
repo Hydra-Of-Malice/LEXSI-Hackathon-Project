@@ -1,0 +1,57 @@
+[
+  {
+    "tags": "global,earth,earth-circuit_merge-0p5",
+    "per_cell": 20,
+    "pilot": 4,
+    "usage": {
+      "CohereLabs/aya-expanse-32b:cohere": {
+        "calls": 48,
+        "prompt_tokens": 24942,
+        "completion_tokens": 1796
+      },
+      "Qwen/Qwen3-32B": {
+        "calls": 50,
+        "prompt_tokens": 26476,
+        "completion_tokens": 1821
+      }
+    }
+  },
+  {
+    "tags": "global,earth,earth-circuit_merge-0p5",
+    "per_cell": 20,
+    "pilot": null,
+    "usage": {
+      "CohereLabs/aya-expanse-32b:cohere": {
+        "calls": 16526,
+        "prompt_tokens": 9559584,
+        "completion_tokens": 575514
+      },
+      "Qwen/Qwen3-32B": {
+        "calls": 16064,
+        "prompt_tokens": 8697068,
+        "completion_tokens": 532075
+      }
+    }
+  },
+  {
+    "correction": "The full-sample entry above over-counts: its counter wrapped the request function per call while 8 threads ran, so wrappers stacked and calls were counted several times. The cache holds 5000 rows, one per billed call (answers identical across tags were judged once). Per counted call the averages were aya 578 prompt / 35 completion tokens and qwen 541 / 33, so the real usage is about 2500 calls per judge: about $0.85 (aya, $0.50/$1.50 per M) + $0.13 (qwen, $0.08/$0.28 per M), about $1.0. The HF billing page is the authority.",
+    "cache_rows": 5000
+  },
+  {
+    "tags": "global-q4,earth-q4,earth-circuit_merge-0p5-q4",
+    "per_cell": 20,
+    "pilot": null,
+    "usage": {
+      "CohereLabs/aya-expanse-32b:cohere": {
+        "calls": 2487,
+        "prompt_tokens": 1449175,
+        "completion_tokens": 88139
+      },
+      "Qwen/Qwen3-32B": {
+        "calls": 2487,
+        "prompt_tokens": 1368297,
+        "completion_tokens": 84001
+      }
+    }
+  }
+]

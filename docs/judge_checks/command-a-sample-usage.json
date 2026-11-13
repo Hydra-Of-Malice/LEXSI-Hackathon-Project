@@ -1,0 +1,28 @@
+[
+  {
+    "judge_set": "command-a",
+    "tags": "global,earth,earth-circuit_merge-0p5",
+    "per_cell": 20,
+    "pilot": 2,
+    "usage": {
+      "CohereLabs/c4ai-command-a-03-2025:cohere": {
+        "calls": 6,
+        "prompt_tokens": 3534,
+        "completion_tokens": 238
+      }
+    }
+  },
+  {
+    "judge_set": "command-a",
+    "tags": "global,earth,earth-circuit_merge-0p5",
+    "per_cell": 20,
+    "pilot": null,
+    "usage": {
+      "CohereLabs/c4ai-command-a-03-2025:cohere": {
+        "calls": 2494,
+        "prompt_tokens": 1474638,
+        "completion_tokens": 92409
+      }
+    }
+  }
+]

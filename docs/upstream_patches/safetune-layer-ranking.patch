@@ -1,6 +1,6 @@
-From 8baf4eb8e090ef4d9fa99887ee6fabbb480107fd Mon Sep 17 00:00:00 2001
-From: Upstream Contributor <contributor@example.invalid>
-Date: Thu, 5 Nov 2026 12:14:50 +0530
+From 6349f6f1f7ca6d3ae19a86b680769d5ca8968967 Mon Sep 17 00:00:00 2001
+From: Aditya Arnav <140049169+Hydra-Of-Malice@users.noreply.github.com>
+Date: Wed, 11 Nov 2026 19:01:48 +0530
 Subject: [PATCH] fix(circuit-kit): rank layers by total node score with
  layer_fraction
 
@@ -17,22 +17,23 @@ The argument is opt-in, so existing results do not change. When it is set
 on a file that has node_scores, it replaces the safety_units and
 layer_suggestions keys, because CircuitKIT 0.2 writes those with the
 unranked selection and they would otherwise win.
+
 ---
  CHANGELOG.md                                  |   6 +
- .../circuit-info/circuit-info-object.md       |  19 ++-
+ .../circuit-info/circuit-info-object.md       |  21 ++-
  src/safetune/core/circuit_kit/__init__.py     |   4 +
- src/safetune/core/circuit_kit/adapter.py      |  99 +++++++++++++--
- tests/safety/test_circuit_kit.py              | 117 ++++++++++++++++++
- 5 files changed, 231 insertions(+), 14 deletions(-)
+ src/safetune/core/circuit_kit/adapter.py      | 118 ++++++++++++---
+ tests/safety/test_circuit_kit.py              | 143 ++++++++++++++++++
+ 5 files changed, 273 insertions(+), 19 deletions(-)
 
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 893a08e..edfe68c 100644
+index 8338e54..4d03970 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
-   ASFT, SAP, DOOR, Lookahead, Antibody, Surgery, SaLoRA, RepNoise, CTRAP, SEAL, SOMF, Safe LoRA,
-   Safe Delta, FLAT and others), with a regression test for each under `tests/audit/`. Contributed
-   by Deeraj.
+@@ -132,6 +132,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+   method's own rate, so results from earlier runs that relied on 5e-5 will differ.
+ - `make_provenance` records the immediate parent as `base_model` (the ref of the first model input), as the
+   shared provenance schema defines it. It recorded that input's own base model.
 +- `layer_subset` from CircuitKIT scores could cover nearly the whole model: a layer counted when it
 +  held any top-20% node, which selected 30 of 36 layers on Tiny Aya, so a circuit-restricted edit
 +  restricted little. `layer_fraction=` on `circuit_info_from_node_scores`,
@@ -43,7 +44,7 @@ index 893a08e..edfe68c 100644
  ### Changed
  
 diff --git a/docs/user-guide/interpret/circuit-info/circuit-info-object.md b/docs/user-guide/interpret/circuit-info/circuit-info-object.md
-index a10bd96..54b4848 100644
+index 9d08243..235f9ca 100644
 --- a/docs/user-guide/interpret/circuit-info/circuit-info-object.md
 +++ b/docs/user-guide/interpret/circuit-info/circuit-info-object.md
 @@ -49,10 +49,27 @@ print(targeting.layer_subset)    # layers the circuit's safety units span
@@ -75,6 +76,12 @@ index a10bd96..54b4848 100644
  ## When to use
  
  CircuitInfo is the bridge between Interpret and Steer/Recover. Every method
+@@ -72,4 +89,4 @@ methods can consume.
+ - **Saving:** numpy / torch scalars are written as plain numbers, dict keys as strings; a NaN or infinite value raises
+   `ValueError` and no file is written. `raw_output_path` is not saved.
+ - **`CircuitInfoProvider`** is a typing `Protocol` that nothing implements; `get_circuit_info` is a file loader that ignores
+-  `model_name` and every keyword except `top_fraction`.
++  `model_name` and every keyword except `top_fraction` and `layer_fraction`.
 diff --git a/src/safetune/core/circuit_kit/__init__.py b/src/safetune/core/circuit_kit/__init__.py
 index e09b2e4..6ceb753 100644
 --- a/src/safetune/core/circuit_kit/__init__.py
@@ -101,7 +108,7 @@ index e09b2e4..6ceb753 100644
  
  # ── Top-level re-export ──────────────────────────────────────────────────────
 diff --git a/src/safetune/core/circuit_kit/adapter.py b/src/safetune/core/circuit_kit/adapter.py
-index fdaaa9e..a6fdaff 100644
+index 8aa0a96..aa0742c 100644
 --- a/src/safetune/core/circuit_kit/adapter.py
 +++ b/src/safetune/core/circuit_kit/adapter.py
 @@ -7,9 +7,10 @@ the adapter returns None and SafeTune works without circuits.
@@ -136,20 +143,21 @@ index fdaaa9e..a6fdaff 100644
 +    file, because CircuitKIT 0.2 writes those with every layer holding a top node.
 +    Without "node_scores" it can't apply: the file's keys are used and a warning logged.
 +
-     Raises ``ValueError`` when the file has none of these keys.
-     """
-     path = Path(filepath)
-@@ -52,7 +60,8 @@ def load_circuit_info_from_file(filepath: str, *, top_fraction: float = 0.2) ->
-         logger.warning(f"Failed to parse circuit file {filepath}: {e}")
-         return None
- 
+     A missing file returns ``None`` (with a warning). Any unreadable or invalid file raises
+     ``ValueError`` naming the path and the reason: it cannot be parsed, it is not a mapping (an
+     empty file, a list, a scalar), it has an unknown key inside ``safety_units`` /
+@@ -60,7 +68,9 @@ def load_circuit_info_from_file(filepath: str, *, top_fraction: float = 0.2) ->
+             f"Circuit file {filepath} must hold a mapping of circuit keys, got "
+             f"{'nothing (empty file)' if data is None else type(data).__name__}."
+         )
 -    return _dict_to_circuit_info(data, raw_output_path=filepath, top_fraction=top_fraction)
-+    return _dict_to_circuit_info(data, raw_output_path=filepath, top_fraction=top_fraction,
-+                                 layer_fraction=layer_fraction)
++    return _dict_to_circuit_info(
++        data, raw_output_path=filepath, top_fraction=top_fraction, layer_fraction=layer_fraction
++    )
  
  
  # CircuitKIT node names: "A3.5" (layer 3, head 5), "MLP 3" (node) or "L3.42" (neuron).
-@@ -63,10 +72,55 @@ _ATTN_PROJ = ("q_proj", "k_proj", "v_proj", "o_proj")
+@@ -71,10 +81,56 @@ _ATTN_PROJ = ("q_proj", "k_proj", "v_proj", "o_proj")
  _MLP_PROJ = ("gate_proj", "up_proj", "down_proj")
  
  
@@ -176,7 +184,8 @@ index fdaaa9e..a6fdaff 100644
 +    if not mass:
 +        raise ValueError(
 +            "CircuitKIT node_scores: no node has a recognised name "
-+            f"(A<layer>.<head>, 'MLP <layer>' or L<layer>.<neuron>); got {list(node_scores)[:5]}")
++            f"(A<layer>.<head>, 'MLP <layer>' or L<layer>.<neuron>); got {list(node_scores)[:5]}"
++        )
 +    return mass
 +
 +
@@ -205,7 +214,7 @@ index fdaaa9e..a6fdaff 100644
      layers_path: str = "model.layers",
      attn_module: str = "self_attn",
      mlp_module: str = "mlp",
-@@ -78,11 +132,21 @@ def circuit_info_from_node_scores(
+@@ -86,11 +142,21 @@ def circuit_info_from_node_scores(
      by score become ``safety_units`` (``activation_correlation`` = score / top score)
      and ``layer_suggestions`` (their layers, and the projections of the node kinds
      selected). Mirrors CircuitKIT 0.2's ``interop_fields``. Raises ``ValueError``
@@ -229,7 +238,7 @@ index fdaaa9e..a6fdaff 100644
      for name, score in top:
          m = _HEAD.match(name) or _MLP.match(name)
          if not m:
-@@ -101,6 +165,8 @@ def circuit_info_from_node_scores(
+@@ -109,6 +175,8 @@ def circuit_info_from_node_scores(
      priority = {p: w for kind, w in kinds.items()
                  for p in (attn_proj if kind == "attn" else mlp_proj)}
      meta = {"source": "circuitkit node_scores", "top_fraction": top_fraction}
@@ -238,7 +247,7 @@ index fdaaa9e..a6fdaff 100644
      return CircuitInfo(
          safety_units=SafetyRelevantUnits(
              layer_indices=sorted(layers),
-@@ -116,7 +182,8 @@ def circuit_info_from_node_scores(
+@@ -152,7 +220,8 @@ def _check_section(sec: Dict[str, Any], allowed: set, name: str, where: str,
  
  
  def _dict_to_circuit_info(data: Dict[str, Any], raw_output_path: Optional[str] = None,
@@ -246,9 +255,9 @@ index fdaaa9e..a6fdaff 100644
 +                          top_fraction: float = 0.2,
 +                          layer_fraction: Optional[float] = None) -> CircuitInfo:
      """Convert dict (e.g. from JSON/YAML) to CircuitInfo."""
-     safety_units = None
-     su = data.get("safety_units") or data.get("safety_relevant_units")
-@@ -139,16 +206,21 @@ def _dict_to_circuit_info(data: Dict[str, Any], raw_output_path: Optional[str] =
+     where = f"Circuit data {raw_output_path}" if raw_output_path else "Circuit data"
+     if not isinstance(data, dict):
+@@ -187,16 +256,26 @@ def _dict_to_circuit_info(data: Dict[str, Any], raw_output_path: Optional[str] =
              metadata=ls.get("metadata", {}),
          )
  
@@ -261,8 +270,11 @@ index fdaaa9e..a6fdaff 100644
 +    no_keys = safety_units is None and layer_suggestions is None
 +    if data.get("node_scores") and (no_keys or layer_fraction is not None):
 +        info = circuit_info_from_node_scores(
-+            data["node_scores"], top_fraction=top_fraction, layer_fraction=layer_fraction,
-+            raw_output_path=raw_output_path)
++            data["node_scores"],
++            top_fraction=top_fraction,
++            layer_fraction=layer_fraction,
++            raw_output_path=raw_output_path,
++        )
 +        info.metadata = data.get("metadata", {})
 +        return info
 +    if no_keys:
@@ -271,26 +283,51 @@ index fdaaa9e..a6fdaff 100644
              "'safety_units', 'layer_suggestions' or CircuitKIT 'node_scores'; "
              f"found keys {sorted(data) if isinstance(data, dict) else type(data).__name__}")
 +    if layer_fraction is not None:
-+        logger.warning("layer_fraction ignored: %s has no node_scores to rank layers by",
-+                       raw_output_path or "the circuit data")
++        logger.warning(
++            "layer_fraction ignored: %s has no node_scores to rank layers by",
++            raw_output_path or "the circuit data",
++        )
  
      return CircuitInfo(
          safety_units=safety_units,
-@@ -177,7 +249,8 @@ def get_circuit_info(
+@@ -214,14 +293,15 @@ def get_circuit_info(
+     """
+     Get circuit info from a file path.
+ 
+-    Only ``source`` and the ``top_fraction`` keyword are used. ``model_name`` and every other
+-    keyword are accepted and IGNORED (there is no API lookup); this function is not a
+-    :class:`CircuitInfoProvider` implementation.
++    Only ``source`` and the ``top_fraction`` and ``layer_fraction`` keywords are used.
++    ``model_name`` and every other keyword are accepted and IGNORED (there is no API lookup);
++    this function is not a :class:`CircuitInfoProvider` implementation.
+ 
+     Args:
+         source: Path to a CircuitKIT-format file, or None to return None.
+         model_name: ignored.
+-        **kwargs: only ``top_fraction`` (for ``node_scores`` files) is read.
++        **kwargs: only ``top_fraction`` and ``layer_fraction`` (for ``node_scores`` files)
++            are read.
+ 
+     Returns:
+         CircuitInfo; ``None`` for no source or a missing file. An unreadable or invalid file
+@@ -230,7 +310,11 @@ def get_circuit_info(
      if not source:
          return None
-     # Warns and returns None when the file is missing; raises when it has no circuit keys.
+     # Warns and returns None when the file is missing; raises when it is unreadable or invalid.
 -    return load_circuit_info_from_file(source, top_fraction=kwargs.get("top_fraction", 0.2))
-+    return load_circuit_info_from_file(source, top_fraction=kwargs.get("top_fraction", 0.2),
-+                                       layer_fraction=kwargs.get("layer_fraction"))
++    return load_circuit_info_from_file(
++        source,
++        top_fraction=kwargs.get("top_fraction", 0.2),
++        layer_fraction=kwargs.get("layer_fraction"),
++    )
  
  
  # ── Writer ──────────────────────────────────────────────────────────────────
 diff --git a/tests/safety/test_circuit_kit.py b/tests/safety/test_circuit_kit.py
-index 6812ccf..9d1b449 100644
+index 6812ccf..7952bb2 100644
 --- a/tests/safety/test_circuit_kit.py
 +++ b/tests/safety/test_circuit_kit.py
-@@ -21,3 +21,120 @@ def test_adapter_load_json():
+@@ -21,3 +21,146 @@ def test_adapter_load_json():
  def test_get_circuit_info_none():
      from safetune.core.circuit_kit import get_circuit_info
      assert get_circuit_info(source=None) is None
@@ -317,6 +354,7 @@ index 6812ccf..9d1b449 100644
 +
 +def test_default_keeps_every_layer_holding_a_top_node():
 +    from safetune.core.circuit_kit import circuit_info_from_node_scores
++
 +    info = circuit_info_from_node_scores(_spread_scores())
 +    assert len(info.safety_units.unit_ids) == 122
 +    assert info.layer_suggestions.layer_subset == [k for k in range(36) if k not in QUIET_LAYERS]
@@ -325,6 +363,7 @@ index 6812ccf..9d1b449 100644
 +
 +def test_layer_fraction_ranks_layers_by_total_score():
 +    from safetune.core.circuit_kit import circuit_info_from_node_scores
++
 +    info = circuit_info_from_node_scores(_spread_scores(), layer_fraction=0.2)
 +    assert info.layer_suggestions.layer_subset == STRONG_LAYERS
 +    assert info.safety_units.layer_indices == STRONG_LAYERS
@@ -334,6 +373,7 @@ index 6812ccf..9d1b449 100644
 +
 +def test_a_top_node_outside_the_ranked_layers_leaves_units_to_pick_from():
 +    from safetune.core.circuit_kit import circuit_info_from_node_scores
++
 +    scores = {"A0.0": 10.0, "A1.0": 6.0, "A1.1": 6.0}  # layer 1 outweighs the top node
 +    info = circuit_info_from_node_scores(scores, top_fraction=0.34, layer_fraction=0.5)
 +    assert info.layer_suggestions.layer_subset == [1]
@@ -342,34 +382,44 @@ index 6812ccf..9d1b449 100644
 +
 +def test_layer_mass_adds_absolute_scores_and_skips_nodes_without_a_layer():
 +    from safetune.core.circuit_kit import layer_mass
++
 +    scores = {"A0.0": -2.0, "A0.1": 1.0, "MLP 1": 1.5, "L1.7": 0.5, "input": 9.0, "logits": 9.0}
 +    assert layer_mass(scores) == {0: 3.0, 1: 2.0}
 +
 +
 +def test_top_layers_keeps_at_least_one_and_breaks_ties_low():
 +    from safetune.core.circuit_kit import top_layers
++
 +    assert top_layers({"A0.0": 1.0, "A1.0": 1.0}, 0.01) == [0]
 +    assert top_layers({"A0.0": 1.0, "A1.0": 2.0, "A2.0": 3.0}, 1.0) == [0, 1, 2]
 +
 +
 +def test_top_layers_never_selects_a_layer_with_no_score():
 +    from safetune.core.circuit_kit import top_layers
++
 +    assert top_layers({"A0.0": 1.0, "A1.0": 0.0}, 1.0) == [0]
 +
 +
 +@pytest.mark.parametrize("fraction", [0, -0.1, 1.5, float("nan")])
 +def test_top_layers_rejects_a_fraction_outside_the_range(fraction):
 +    from safetune.core.circuit_kit import top_layers
++
 +    with pytest.raises(ValueError, match="layer_fraction"):
 +        top_layers({"A0.0": 1.0}, fraction)
 +
 +
-+@pytest.mark.parametrize("scores,match", [({"A0.0": 0.0}, "every score is zero"),
-+                                          ({"A0.0": float("nan")}, "has the score"),
-+                                          ({"blocks.0.hook_z": 1.0}, "recognised name"),
-+                                          ({}, "recognised name")])
++@pytest.mark.parametrize(
++    "scores,match",
++    [
++        ({"A0.0": 0.0}, "every score is zero"),
++        ({"A0.0": float("nan")}, "has the score"),
++        ({"blocks.0.hook_z": 1.0}, "recognised name"),
++        ({}, "recognised name"),
++    ],
++)
 +def test_top_layers_refuses_scores_it_cannot_rank(scores, match):
 +    from safetune.core.circuit_kit import top_layers
++
 +    with pytest.raises(ValueError, match=match):
 +        top_layers(scores, 0.5)
 +
@@ -383,20 +433,29 @@ index 6812ccf..9d1b449 100644
 +def test_layer_fraction_replaces_the_keys_circuitkit_02_writes(tmp_path):
 +    """CircuitKIT 0.2 stores the unranked selection, so a real file must not win here."""
 +    from safetune.core.circuit_kit import get_circuit_info, load_circuit_info_from_file
-+    path = _write(tmp_path, {"node_scores": _spread_scores(),
-+                             "layer_suggestions": {"target_modules": ["q_proj"],
-+                                                   "layer_subset": list(range(30))}})
++
++    path = _write(
++        tmp_path,
++        {
++            "node_scores": _spread_scores(),
++            "layer_suggestions": {"target_modules": ["q_proj"], "layer_subset": list(range(30))},
++        },
++    )
 +    assert load_circuit_info_from_file(path).layer_suggestions.layer_subset == list(range(30))
-+    assert load_circuit_info_from_file(
-+        path, layer_fraction=0.2).layer_suggestions.layer_subset == STRONG_LAYERS
++    assert (
++        load_circuit_info_from_file(path, layer_fraction=0.2).layer_suggestions.layer_subset
++        == STRONG_LAYERS
++    )
 +    ranked = get_circuit_info(path, layer_fraction=0.2)
 +    assert ranked.layer_suggestions.layer_subset == STRONG_LAYERS
 +
 +
 +def test_layer_fraction_without_node_scores_warns_and_keeps_the_file(tmp_path, caplog):
 +    from safetune.core.circuit_kit import load_circuit_info_from_file
-+    path = _write(tmp_path, {"layer_suggestions": {"target_modules": ["q_proj"],
-+                                                   "layer_subset": [3]}})
++
++    path = _write(
++        tmp_path, {"layer_suggestions": {"target_modules": ["q_proj"], "layer_subset": [3]}}
++    )
 +    with caplog.at_level("WARNING", logger="safetune.core.circuit_kit.adapter"):
 +        info = load_circuit_info_from_file(path, layer_fraction=0.2)
 +    assert info.layer_suggestions.layer_subset == [3]
@@ -404,10 +463,17 @@ index 6812ccf..9d1b449 100644
 +
 +
 +def test_ranked_selection_survives_a_save_and_load(tmp_path):
-+    from safetune.core.circuit_kit import (circuit_info_from_node_scores,
-+                                           load_circuit_info_from_file,
-+                                           save_circuit_info_to_file)
++    from safetune.core.circuit_kit import (
++        circuit_info_from_node_scores,
++        load_circuit_info_from_file,
++        save_circuit_info_to_file,
++    )
++
 +    path = tmp_path / "circuit.json"
 +    save_circuit_info_to_file(
-+        circuit_info_from_node_scores(_spread_scores(), layer_fraction=0.2), str(path))
++        circuit_info_from_node_scores(_spread_scores(), layer_fraction=0.2), str(path)
++    )
 +    assert load_circuit_info_from_file(str(path)).layer_suggestions.layer_subset == STRONG_LAYERS
+-- 
+2.53.0.windows.2
+
