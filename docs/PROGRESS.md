@@ -7,8 +7,8 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 
 | Person / machine | Now | Next |
 |---|---|---|
-| Aditya's laptop (RTX 4060) | Everything published and pushed. Holds the only copy of the run folder (`runs/`) | Space deploy and kit PRs once agreed; submit the form (D17) |
-| Pallab | Please pull `main` | Final read of `article/README.md`; agree or not to the kit PR licence grant (D11); send your HF username (D5) |
+| Aditya | Holds the only copy of the run folder (`runs/`). History was rewritten on 13 Nov: run `git fetch origin && git reset --hard origin/main` | Make this repo public (and rename it, if wanted) before the deadline |
+| Pallab | Article co-author on Hugging Face. Submission form filled up to the problem statements, not submitted | Pick the two problem statements, tick the consent boxes and submit once the repo is public |
 
 ## Picking up the work (13 Nov)
 
@@ -22,20 +22,28 @@ Everything except the private run outputs is in this repo or public on Hugging F
 | Public code | This repo, to be made public before the deadline (a rename to same-model-different-language is planned): https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project. The 11 Nov snapshot at https://github.com/Hydra-Of-Malice/langsafe is superseded |
 | Public data, circuit detail and models | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval and the [checkpoints collection](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5) |
 | Demo Space, not deployed | `space/`. Run it with `pip install -r space/requirements.txt`, then `python space/app.py` |
-| Six kit PRs, ready to open | `docs/upstream_patches/` (patches re-applied to 12 Nov `main`, PR texts in `pr-bodies/`) |
+| Six kit PRs, open since 13 Nov | SafeTune#86, #87; AuditKIT#47, #48; CuratorKIT#53; CircuitKIT#48. Patches and PR texts in `docs/upstream_patches/` |
 | Judge checks (32B on 4-bit, Command A) | `docs/judge_checks/`, aggregates only |
 | Run outputs: answers, verdicts, checkpoints | Aditya's laptop only, under `runs/`. They hold harmful model text, so they never go in git or on a public repo |
 
 ## Still needs a person
 - **Native readers (D6):** none beyond the blind reads in Thai and Javanese. Without more, the judge-accuracy values
   stay provisional, as the article already says.
-- **Pallab:** agree or not to the licence grant in the six kit PRs (D11), and send your HF username (D5).
+- **Repo public:** only Aditya's account can change the visibility. The rules need it public by Nov 15, 11:59 PM AoE.
+- **Kit PRs:** answer any maintainer comments on the six pull requests (PDGamerSG gets the notifications).
 - **The team:** utilisation and monthly operations cost for the ROI page, and whether to download the public
   tokenizer file for its token ratios (D13).
 - **Aditya:** check the billing page (D14), send the mentor one-pager (D15), the organiser ticket (D16), review and
   deploy the Space (D10), and submit the form (D17).
 
 ## 13 November 2026
+- **Evening** **Ready to submit, apart from making the repo public.**
+  - Article published on Hugging Face, with Pallab as co-author. Same text in `article/README.md`.
+  - The six model and dataset cards link the article and this repo.
+  - README rewritten around the findings. Team notes moved behind `docs/README.md`.
+  - The reproduction notebook's section 12 draws the published results.
+  - The six kit pull requests are open.
+  - Tests: environment-only checks now skip on a fresh clone, so `pytest` is green, and GitHub Actions runs it on every push.
 - **18:30** **Everything is pushed for Pallab to pick up.** New in the repo:
   - the filled article, ROI page and cards (`docs/submission/filled/`);
   - the six kit patches re-applied to the kits' 12 Nov `main`, each checked to apply cleanly, with their PR texts

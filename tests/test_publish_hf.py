@@ -152,7 +152,7 @@ def test_rate_limits_are_retried_and_other_errors_are_not():
 
 
 def test_a_dropped_connection_is_retried():
-    import httpx
+    httpx = pytest.importorskip('httpx', reason='huggingface_hub 1.x brings httpx; older hubs use requests')
 
     calls = []
 

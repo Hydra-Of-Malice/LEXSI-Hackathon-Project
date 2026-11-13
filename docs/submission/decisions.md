@@ -15,7 +15,7 @@ background.
 | D1, D2 | Public copy as a new repo, contents as built | **Done.** https://github.com/Hydra-Of-Malice/langsafe |
 | D3 | Publish the export as a dataset | **Done.** https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval |
 | D4 | Five arms in FP16, the selected arm's GGUF, the steering vector; controls private | **Done.** Six model repos, all in the models collection |
-| D5 | Links and usernames | Links filled. **Pallab's HF username still needed** |
+| D5 | Links and usernames | **Done**: links filled, Pallab is PDGamerSG on Hugging Face |
 | D6 | Ask readers now; provisional if none by Fri noon | Aditya asks for Javanese and Thai readers |
 | D7 | Layers, summary metrics and editing mask public; node-level scores on request | **Done.** In the dataset's `circuits/` folder, described in its card |
 | D8 | One line on Kavach, worded to be true either way | In the article. Delete it if you prefer |
@@ -25,7 +25,7 @@ background.
 | D12 | Delete the private bundle repo | **Done** |
 | D13 | ROI inputs | Measured: prefill speed, p95 latency, repair compute. **Still needed:** utilisation, operations cost, and a yes or no on the tokenizer download |
 | D14 to D16 | Billing check, mentor one-pager, organiser ticket | Aditya |
-| D17 | Aditya submits, Fri 13 Nov evening IST | Agreed |
+| D17 | Submit the form | Filled up to the problem statements on 13 Nov. Submit once the repo is public |
 
 ## Suggested order
 

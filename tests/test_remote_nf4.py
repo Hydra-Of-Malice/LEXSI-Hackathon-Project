@@ -1,6 +1,7 @@
 """Offline checks for the rented-GPU NF4 runner: no network, GPU or Hub call is made."""
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import json
 import shutil
@@ -108,7 +109,11 @@ def test_judge_cache_snapshot_is_a_readable_copy(remote, tmp_path):
 
 
 def test_constraints_pin_the_laptop_but_not_torch_or_the_kits(remote):
-    torch, lines, kits = remote.pins()
+    """Reads the installed environment, so it runs only where torch and all three kits come from their GitHub repos."""
+    try:
+        torch, lines, kits = remote.pins()
+    except (SystemExit, importlib.metadata.PackageNotFoundError) as missing:
+        pytest.skip(f'needs the run environment (torch and the Lexsi kits installed from GitHub): {str(missing)[:80]}')
     names = {line.split('==')[0] for line in lines}
     assert 'torch' not in names and not names & set(remote.KITS) and 'langsafe' not in names
     assert {'transformers', 'bitsandbytes', 'accelerate', 'datasets', 'numpy'} <= names
