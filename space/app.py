@@ -36,7 +36,7 @@ THREADS_ENV = 'LANGSAFE_N_THREADS'
 MAX_TOKENS_ENV = 'LANGSAFE_MAX_NEW_TOKENS'
 
 DATASET_URL = 'https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval'
-CODE_URL = 'https://github.com/Hydra-Of-Malice/langsafe'
+CODE_URL = 'https://github.com/Hydra-Of-Malice/same-model-different-language'
 BASE_MODEL_URLS = {'global': 'https://huggingface.co/CohereLabs/tiny-aya-global',
                    'earth': 'https://huggingface.co/CohereLabs/tiny-aya-earth'}
 _HF = 'https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-'

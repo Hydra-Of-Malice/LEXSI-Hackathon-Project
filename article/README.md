@@ -2,23 +2,10 @@
 
 *Measuring per-language safety in Tiny Aya Earth, and testing weight-space repairs with the Lexsi stack*
 
-> **DRAFT FOR THE TEAM. Delete this box before publishing.**
->
-> - A name in double braces marks a value we do not have yet. The appendix lists every one, with its source.
-> - **[ALT-A]** to **[END ALT-A]** is true only if the gap is confirmed. **[ALT-B]** to **[END ALT-B]** is true only if it is not. Keep one set. Delete the other set and all the markers.
-> - **[ALT-A1]** (an arm passes) and **[ALT-A2]** (no arm passes) sit inside ALT-A. Keep one.
-> - All text outside the markers is written to be true under either story. Reread it once the results are in.
-> - The rule for choosing is fixed by `SPEC.md` Amendments 13 and 17, and `report.json` applies it under `gap_confirmation`. Keep ALT-A if at least one language passes in at least one preamble condition: Global above Earth on the content-safe rate, full-precision weights, held-out items, a paired 95% CI above zero, and McNemar p below 0.05 divided by all the tests. Earth's seven languages in two conditions make 14 tests, so the bar is about 0.0036. Otherwise keep ALT-B.
-> - A repair claim applies only to a condition with a confirmed gap for the target language. Elsewhere the repair is exploratory. If the target language has no confirmed gap in either condition, every arm is exploratory: keep ALT-A2. `TARGET_CONFIRMATION_SENTENCE` and `TARGET_CONFIRMATION_PARAGRAPH` say so.
-> - `report.json` names the conditions with a confirmed gap for the target language under `confirmed_conditions`, and `empirical_repair_success` looks only at those. Each `thresholds` entry says whether it is `exploratory`.
-> - The target language comes from the repair split, and confirmed languages come from held-out items, so they can differ. `TARGET_LANGUAGE` and `CONFIRMED_CELLS` keep them apart.
-> - Section 7.3 is the only place with pilot numbers. They come from 4-bit weights, repair-split items and local 8B judges, so they are planning signals, not results. Keep that label, and never move one into sections 7.4 to 7.8.
-> - Unsafe answers and answers where the model breaks down are different failures (`SPEC.md` Amendment 15). Keep them apart everywhere. "Not safe" does not mean "harmful".
-> - Fire and Water ran on Earth's held-out items as comparisons (`SPEC.md` Amendment 21). They sit outside the 14 tests, so never call their gaps confirmed.
-
 **Summary**
 
 Tiny Aya Earth gives fewer safe answers to harmful requests than Tiny Aya Global in Javanese with the preamble, on held-out prompts with full-precision weights. In Thai, the language the repairs target, the content-safe rate with the preamble was 89.2% for Earth and 94.9% for Global. That gap did not pass our test (p = 0.0129 against a bar of 0.0036), so every repair result here is exploratory. Almost none of the Javanese gap is harmful content. With the preamble, Earth's 17 fewer safe answers there are 10 more broken answers and 7 more that the judges split on, and both judges called just 1 of 176 answers unsafe for each model.
+
 We tried five repairs. None met all our pre-set conditions. The arm chosen on the repair split, Circuit merge, failed on all three, with the preamble: it closed 10% of the Thai gap against the 50% required, refused 3 more of 142 benign Thai prompts (2.1 points, against a cap of 2), and got 5 more of 400 Swahili capability questions wrong (1.25 points, against a cap of 1). Merge-back, the same edit applied to the whole model, came nearest: it closed 90% of the gap but also missed on over-refusal and capability.
 
 ## 1. Problem statement and approach
@@ -66,7 +53,7 @@ The first half of the thesis did not hold as written. The one confirmed gap is i
 
 We entered Track 2b, problem 2: repairing safety drift without retraining.
 
-Tiny Aya Earth is the model under test and repair, and Tiny Aya Global is the reference. We test seven languages: Arabic and Swahili, from Earth's region; Javanese, Bengali, Thai and Korean, where our pilot found Earth weakest against Global; and English as the control. Tiny Aya Fire is a smaller comparison. Tiny Aya Water is a control still being run, so we state no Water result.
+Tiny Aya Earth is the model under test and repair, and Tiny Aya Global is the reference. We test seven languages: Arabic and Swahili, from Earth's region; Javanese, Bengali, Thai and Korean, where our pilot found Earth weakest against Global; and English as the control. Tiny Aya Fire and Tiny Aya Water are comparisons on the same held-out prompts. We measure them but do not repair them.
 
 1. **Build** a multilingual prompt set with strict separation between repair data and test data.
 2. **Confirm** the gap between Global and Earth on held-out prompts at full precision, per language, with two judges. Without a confirmed gap we make no repair claim.
@@ -148,15 +135,15 @@ Our package, `langsafe`, adds group-aware splits and a leakage check, translatio
 
 | Kit | Gap | What we did | Upstream |
 |---|---|---|---|
-| AuditKIT | Refusal detector is English-only. Its `can'?t` pattern misses the curly apostrophe | Multilingual scorer for en, hi, Hinglish, bn, ta, ar, sw. Javanese, Thai and Korean are not covered yet | {{PR_AUDITKIT_SCORER}} |
-| AuditKIT | No XSTest, MultiJail or Global-MMLU loaders | Our own loaders | {{PR_AUDITKIT_LOADERS}} |
+| AuditKIT | Refusal detector is English-only. Its `can'?t` pattern misses the curly apostrophe | Multilingual scorer for en, hi, Hinglish, bn, ta, ar, sw. Javanese, Thai and Korean are not covered yet | Planned. Patch ready in `docs/upstream_patches/` |
+| AuditKIT | No XSTest, MultiJail or Global-MMLU loaders | Our own loaders | Planned. Patch ready in `docs/upstream_patches/` |
 | AuditKIT | HF model identity ignores quantisation, so base and NF4 runs share a fingerprint | An explicit `variant` on each run | Reported here |
-| SafeTune | `circuit_info_from_node_scores` turned a top-20% node set into 30 of 36 layers | Rank layers by total node score | {{PR_SAFETUNE_TOP_LAYERS}} |
+| SafeTune | `circuit_info_from_node_scores` turned a top-20% node set into 30 of 36 layers | Rank layers by total node score | Planned. Patch ready in `docs/upstream_patches/` |
 | SafeTune | Default ReSta alpha of 1.0 and steering alpha of 20 break Tiny Aya | Every knob set explicitly | Reported here |
-| SafeTune | No MultiJail or Aya red-teaming loaders | Our own loaders | {{PR_SAFETUNE_LOADERS}} |
-| CircuitKIT | No cross-language task and no refusal task for chat models | Translated minimal pairs with chat-template rendering | {{PR_CIRCUITKIT_TASK}} |
+| SafeTune | No MultiJail or Aya red-teaming loaders | Our own loaders | Planned. Patch ready in `docs/upstream_patches/` |
+| CircuitKIT | No cross-language task and no refusal task for chat models | Translated minimal pairs with chat-template rendering | Planned. Patch ready in `docs/upstream_patches/` |
 | CircuitKIT | The custom-data path applies no chat template, which causes a double BOS | Pre-render prompts and strip the BOS | Reported here |
-| CuratorKIT | No language ID and no group-aware split. Translations of one prompt can land in both splits | Our own split and leakage check | {{PR_CURATORKIT_SPLIT}} |
+| CuratorKIT | No language ID and no group-aware split. Translations of one prompt can land in both splits | Our own split and leakage check | Planned. Patch ready in `docs/upstream_patches/` |
 | CuratorKIT | `SchemaGate` counts words, so short Indic prompts fail | `min_tokens=1` | Reported here |
 
 ## 3. Models used and licences
@@ -166,7 +153,7 @@ Our package, `langsafe`, adds group-aware splits and a leakage check, translatio
 | `CohereLabs/tiny-aya-earth` | Core model: the model under test and repair | CC-BY-NC 4.0 + Cohere Labs acceptable use policy |
 | `CohereLabs/tiny-aya-global` | Reference, repair donor and translator | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/tiny-aya-fire` | Comparison on Earth's held-out items | CC-BY-NC 4.0 + acceptable use policy |
-| `CohereLabs/tiny-aya-water` | Comparison on Earth's held-out items. So far only the 4-bit pilot in section 7.3 | CC-BY-NC 4.0 + acceptable use policy |
+| `CohereLabs/tiny-aya-water` | Comparison on Earth's held-out items, and the 4-bit pilot in section 7.3 | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/tiny-aya-base` | Source of the ReSta safety vector (Global minus Base) | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/aya-expanse-32b` | Judge named in the specification | CC-BY-NC 4.0 + acceptable use policy |
 | `CohereLabs/aya-expanse-8b` | Local judge | CC-BY-NC 4.0 + acceptable use policy |
@@ -247,8 +234,8 @@ Collection: https://huggingface.co/collections/HydraOfMalice/same-model-differen
 | Evaluation set | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval | Prompts and labels only |
 | Aggregate results | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/reports | Per-language rates, intervals, paired tests, judge agreement |
 | Run logs | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval/tree/main/provenance | Hashes, settings, provenance and scores, with all model text removed |
-| Code and notebook | https://github.com/Hydra-Of-Malice/langsafe, https://github.com/Hydra-Of-Malice/langsafe/blob/main/notebooks/01_reproduce_results.ipynb | Pipeline and reproduction steps |
-| Demo | {{SPACE_URL}} | {{DEMO_DESCRIPTION}} |
+| Code and notebook | https://github.com/Hydra-Of-Malice/same-model-different-language, https://github.com/Hydra-Of-Malice/same-model-different-language/blob/main/notebooks/01_reproduce_results.ipynb | Pipeline and reproduction steps |
+| Demo | https://github.com/Hydra-Of-Malice/same-model-different-language/tree/main/space | A results explorer built from the aggregate reports. It loads no model and has no text box, so it cannot show model text. Run it with `python space/app.py` |
 
 No released file contains a model's answer to a harmful prompt.
 
@@ -262,7 +249,7 @@ The development run used an Apple M1 Max (64 GB). The planning checks used a lap
 
 The specification names Aya Expanse 32B and Qwen3-32B. A credit-free local pair, Aya Expanse 8B and Qwen3-8B, stands in when credits run out. Local labels are stored separately. Agreement with the 32B pair on a shared sample was Cohen's kappa 0.79 to 1.00 per language on refusal labels (median 0.93). The sample was 1,680 held-out answers from Global, Earth and the selected repair, 20 from every language, harmful or benign, and preamble cell. Bengali, Javanese and Swahili were lowest. On content labels, where nearly every answer is safe, the two pairs gave the same label to 94% to 100% of the 780 harmful-prompt answers that both pairs could call. A second sample of the same design, from the three Q4_K_M models (Global, Earth and the selected repair), gave kappa 0.87 to 1.00 (median 0.96) on refusal labels and the same content label on 95% to 100% of 779 harmful-prompt answers.
 
-**Human checks.** Each model has its own sheet: a seeded audit of 200 rows, spread evenly over language and over harmful and benign prompts, plus at most 10 flagged rows per language. Harmful rows take a content label as well as a refusal label. This changes only which rows people read: every disagreement stays `unclear` or `disputed` and never counts as safe. {{HAND_LABELLED_ITEMS}} items were labelled, out of {{HAND_CHECK_QUEUE_TOTAL}} flagged rows, and judge accuracy against the audit labels was {{JUDGE_ACCURACY}}%.
+**Human checks.** Each model has its own sheet: a seeded audit of 200 rows, spread evenly over language and over harmful and benign prompts, plus at most 10 flagged rows per language. Harmful rows take a content label as well as a refusal label. This changes only which rows people read: every disagreement stays `unclear` or `disputed` and never counts as safe. No native reader had labelled these sheets by the deadline, so judge accuracy against hand labels is not measured yet. The blind reads and the 32B and Command A samples are the checks we have.
 
 **Blind audit.** We also repeat the blind read described in section 7.3 on held-out answers. It is a model reading, so it cannot replace the hand check. Section 7.4 gives what it found, next to the result.
 
@@ -345,7 +332,7 @@ Four reasons these checks cannot establish a gap:
 - **Judges.** The two judges agreed on 95% of rows, but they rarely agreed beyond chance, and most of the gap comes from Qwen, which the blind read found over-flags. If one judge's `safe` were enough, Earth's Javanese gap would fall from 9.9 to 2.3 points with the preamble, and from 16.8 to 6.9 without it. Earth's Javanese has the lowest agreement of any cell: AC1 of 0.77 with the preamble and 0.75 without, above the floor of 0.6.
 - **Not the report's profile.** Global's pilot rates differ from the report's by up to about 9 points in a language (Arabic, 96.2% against 87%). Its worst language here is Javanese, where the report's is Arabic, so the shared 87.0 is a coincidence.
 
-These checks changed the plan. Earth replaced Fire as the drifted model, and Javanese, Thai and Korean joined the languages under test, using MultiJail's own versions. The gap must now be confirmed at full precision on held-out items before any repair claim, in both preamble conditions, because only the no-preamble Javanese gap survived correction here and choosing a condition after seeing held-out data would be worse. Circuits are discovered without the preamble, because with it the run needs 54 GB of commit on the available CPU. Degenerate answers are labelled by rule and reported apart from unsafe ones. The reporting gate on content labels moved from kappa to AC1. Water's region covers Javanese, so if the region explains the loss, Water should not show this gap. That control is still being run, and we state no Water result here.
+These checks changed the plan. Earth replaced Fire as the drifted model, and Javanese, Thai and Korean joined the languages under test, using MultiJail's own versions. The gap must now be confirmed at full precision on held-out items before any repair claim, in both preamble conditions, because only the no-preamble Javanese gap survived correction here and choosing a condition after seeing held-out data would be worse. Circuits are discovered without the preamble, because with it the run needs 54 GB of commit on the available CPU. Degenerate answers are labelled by rule and reported apart from unsafe ones. The reporting gate on content labels moved from kappa to AC1. Water's region covers Javanese, so if the region explains the loss, Water should not show this gap. Section 7.4 checks this on held-out items.
 
 **Fourth check: an audit and a full-size build.** Before freezing the specification, an independent reviewer read the full-run path, and we built the full data set. Both found problems the small development runs could not show, and no full-run answer existed yet.
 
@@ -617,8 +604,8 @@ Everything above ran on one laptop with an RTX 4060 (8 GB), an Apple M1 Max for 
 | Report's judge | local 8B judges, and Command A on a 1,680-answer sample | Command A on every answer, in its contextual safety mode | Whether the difference from the report comes from the judge | 9.7 points | On the sample: 3.8 points with Command A, 1.9 with our judges |
 | Precision | Seven languages at full precision, all 10 only at 4-bit in a pilot | Full-precision run of all 10 MultiJail languages | Whether 4-bit weights move the gap, and whether it sits in a language we left out | Largest pilot gap: Javanese, 9.9 points with the preamble (4-bit, a planning signal) | To measure |
 | Full prompt set | 170 to 178 | All 315 MultiJail items in both preamble conditions | Tighter intervals per language | Gap intervals 4.7 to 11.4 points wide | To measure |
-| Judge quality | {{HAND_LABELLED_ITEMS}} hand-labelled items | 32B judges on every cell, and paid native reviewers | Judge accuracy per language | {{JUDGE_ACCURACY}}% | To measure |
-| More models | Earth | Fire and Water, with the same pipeline | Whether results hold across regional models | n/a | To measure |
+| Judge quality | No hand labels yet; blind model reads in Thai and Javanese | 32B judges on every cell, and paid native reviewers | Judge accuracy per language | Not measured | To measure |
+| More models | Earth repaired; Fire and Water measured only | Repairs for Fire and Water, with the same pipeline | Whether results hold across regional models | n/a | To measure |
 | More languages | Earth's seven | Hausa, Yoruba, Urdu, Amharic and Zulu | Coverage where safety data is thinnest | n/a | To measure |
 | Native benign prompts | Translated XSTest | Written by native speakers | True over-refusal outside English | +2.1 | To measure |
 | Wider capability | Global-MMLU-Lite | Full Global-MMLU, INCLUDE, a generation benchmark, and a real measure for Javanese and Thai | Whether edits cost more than multiple-choice shows | +1.3 | To measure |
@@ -630,8 +617,8 @@ We estimate these steps at about 300 laptop GPU hours and about $470 of judge ca
 
 ## 9. Team
 
-- Aditya Arnav: HydraOfMalice
-- Pallab Das: {{HF_USERNAME_PALLAB}}
+- Aditya Arnav: [@HydraOfMalice](https://huggingface.co/HydraOfMalice)
+- Pallab Das: [@PDGamerSG](https://huggingface.co/PDGamerSG)
 
 ## References
 

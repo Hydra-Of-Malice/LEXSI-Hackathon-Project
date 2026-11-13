@@ -1,6 +1,6 @@
 # Lexsi Labs – AI Safety and Alignment Hackathon: Official Brief
 
-Scraped 2026-11-02 from https://hackathon.lexsi.ai/ (all sections), https://hackathon.lexsi.ai/kickoff-slides/ (all 34 slides), and the Tally registration form. Raw text is in `raw/`.
+Scraped 2026-11-02 from https://hackathon.lexsi.ai/ (all sections), https://hackathon.lexsi.ai/kickoff-slides/ (all 34 slides), and the Tally registration form.
 
 ## 1. At a glance
 

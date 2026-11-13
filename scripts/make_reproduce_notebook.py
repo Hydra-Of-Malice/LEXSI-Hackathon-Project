@@ -16,9 +16,8 @@ from pathlib import Path
 
 OUTPUT = Path(__file__).resolve().parents[1] / "notebooks" / "01_reproduce_results.ipynb"
 
-# Everything still unknown. Double-blind judging is why the repository address is a placeholder here too.
+# Everything still unknown.
 PLACEHOLDERS = {
-    "REPO_URL": "Public clone address of this repository",
     "REPO_COMMIT": "Commit the notebook was last run at",
     "HF_REPO": "Hugging Face dataset holding the aggregate results, as owner/name",
     "HF_REVISION": "Commit of that dataset, so the figures stay reproducible",
@@ -269,7 +268,7 @@ def numbers(value, prefix=""):
 
 code(r'''
 """Get the code at a fixed commit. The token stays in the environment, so it never reaches a command line or .git."""
-REPO_URL = "{{REPO_URL}}"
+REPO_URL = "https://github.com/Hydra-Of-Malice/same-model-different-language.git"
 REPO_COMMIT = "{{REPO_COMMIT}}"
 
 if "{{" in REPO_URL:

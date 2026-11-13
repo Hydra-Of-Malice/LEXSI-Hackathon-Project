@@ -48,7 +48,7 @@ A research checkpoint derived from Tiny Aya Earth by weight arithmetic, built to
 
 **Why this exists.** The Tiny Aya technical report shows Tiny Aya Earth 9.5 points below Tiny Aya Global on MultiJail in its worst language (77.5% against 87.0% safe). With full-precision weights on held-out prompts, we confirmed a gap on the content-safe rate in Javanese with the preamble. In Thai, the language this edit targets, the rate with the preamble was 89.2% for Earth against 94.9% for Global. This checkpoint is one attempt to close that gap.
 
-Full write-up: {{ARTICLE_URL}}. Collection: https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5.
+Full write-up: https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety. Collection: https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5.
 
 ## Intended use
 
@@ -248,7 +248,7 @@ If you convert this model to GGUF, keep the generation end token (3). Tiny Aya's
 
 | Item | Value |
 |---|---|
-| Code | https://github.com/Hydra-Of-Malice/langsafe, commit {{CODE_COMMIT}} |
+| Code | https://github.com/Hydra-Of-Malice/same-model-different-language, commit {{CODE_COMMIT}} |
 | Specification digest | bdabb7edab9eead8 |
 | Data manifest SHA-256 | 389b0882322ae47517dcec9bd428986e61a4e5f005937634f823b9310e37368f |
 | Checkpoint SHA-256 | {{CHECKPOINT_SHA256}} |
@@ -262,4 +262,4 @@ If you convert this model to GGUF, keep the generation end token (3). Tiny Aya's
 
 ## Citation
 
-If you use this model, please cite the Tiny Aya technical report (arXiv:2603.11510) and {{ARTICLE_URL}}.
+If you use this model, please cite the Tiny Aya technical report (arXiv:2603.11510) and https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety.

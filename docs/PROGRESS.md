@@ -8,7 +8,7 @@ Newest entry first. Updated with every push, so anyone on the team can see what 
 | Person / machine | Now | Next |
 |---|---|---|
 | Aditya's laptop (RTX 4060) | Everything published and pushed. Holds the only copy of the run folder (`runs/`) | Space deploy and kit PRs once agreed; submit the form (D17) |
-| Pallab | Please pull `main` | Final read of `docs/submission/filled/article.md`; agree or not to the kit PR licence grant (D11); send your HF username (D5) |
+| Pallab | Please pull `main` | Final read of `article/README.md`; agree or not to the kit PR licence grant (D11); send your HF username (D5) |
 
 ## Picking up the work (13 Nov)
 
@@ -16,9 +16,10 @@ Everything except the private run outputs is in this repo or public on Hugging F
 
 | What | Where |
 |---|---|
-| Article, ROI page and cards, filled with every measured value | `docs/submission/filled/` (`remaining.md` lists the 12 open article values). These are generated: edit `docs/submission/article.md` or `sentences.json`, then run `scripts/fill_submission.py` on Aditya's laptop, or mark changes in the filled copy and Aditya folds them in |
+| Published article | https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety (published 13 Nov). Source: `article/README.md`, moved from `docs/submission/filled/article.md` on 13 Nov and edited there since. Edit both together |
+| ROI page and cards, filled with every measured value | `docs/submission/filled/` (`remaining.md` lists the 12 open article values). These are generated: edit `docs/submission/article.md` or `sentences.json`, then run `scripts/fill_submission.py` on Aditya's laptop, or mark changes in the filled copy and Aditya folds them in |
 | Decisions still open | `docs/submission/decisions.md`, table at the top |
-| Public code | https://github.com/Hydra-Of-Malice/langsafe (a snapshot from 11 Nov; this repo is newer) |
+| Public code | This repo, to be made public before the deadline: https://github.com/Hydra-Of-Malice/same-model-different-language. The 11 Nov snapshot at https://github.com/Hydra-Of-Malice/langsafe is superseded |
 | Public data, circuit detail and models | https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval and the [checkpoints collection](https://huggingface.co/collections/HydraOfMalice/same-model-different-language-repair-checkpoints-6af426d1cac578d29e4805e5) |
 | Demo Space, not deployed | `space/`. Run it with `pip install -r space/requirements.txt`, then `python space/app.py` |
 | Six kit PRs, ready to open | `docs/upstream_patches/` (patches re-applied to 12 Nov `main`, PR texts in `pr-bodies/`) |

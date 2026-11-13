@@ -2,7 +2,7 @@
 """Write the Hugging Face cards for the public release: one model card per published arm, a card for the selected arm's
 GGUF, and the dataset card. They go to runs/experiments/public/cards/, where scripts/publish_hf.py picks them up.
 
-    python scripts/release_cards.py --repo-url https://github.com/Hydra-Of-Malice/langsafe --code-commit ad1261c \
+    python scripts/release_cards.py --repo-url https://github.com/Hydra-Of-Malice/same-model-different-language --code-commit <commit> \
         --models-collection <url> --data-collection <url>
 
 The cards start from the same templates and the same run files as the article (scripts/fill_submission.py), filled for

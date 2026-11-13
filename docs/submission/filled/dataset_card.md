@@ -50,7 +50,7 @@ A multilingual prompt set for measuring content safety, refusal and benign over-
 
 **It contains prompts and labels only. It contains no model answers.** Machine-translated rows are model-generated translations of public prompts. They are prompts, and they are marked as such. No answer from any model to any prompt is included.
 
-Write-up: {{ARTICLE_URL}}. Collection: https://huggingface.co/collections/HydraOfMalice/same-model-different-language-evaluation-data-6af426d23fff746c25ca1e1e. Date of this build: 2026-11-07.
+Write-up: https://huggingface.co/blog/HydraOfMalice/same-model-different-language-different-safety. Collection: https://huggingface.co/collections/HydraOfMalice/same-model-different-language-evaluation-data-6af426d23fff746c25ca1e1e. Date of this build: 2026-11-07.
 
 ## What it is for
 
@@ -205,7 +205,7 @@ Keep `heldout` for testing only. Tune on `repair`. Split by `group` if you make 
 |---|---|
 | Data manifest SHA-256 | 389b0882322ae47517dcec9bd428986e61a4e5f005937634f823b9310e37368f |
 | Specification digest | bdabb7edab9eead8 |
-| Code | https://github.com/Hydra-Of-Malice/langsafe, commit {{CODE_COMMIT}} |
+| Code | https://github.com/Hydra-Of-Malice/same-model-different-language, commit {{CODE_COMMIT}} |
 | Curation | CuratorKIT `dd9e835` |
 
 ## Citations

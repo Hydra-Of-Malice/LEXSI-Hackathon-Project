@@ -8,8 +8,5 @@
 | [04_toolkit_capability_map.md](04_toolkit_capability_map.md) | The 6 repos in depth: features, Cohere support, integrations, bugs, gaps |
 | [05_past_winners_and_judging.md](05_past_winners_and_judging.md) | Past events (no prior Lexsi winners exist), proxy winners (Cohere Expedition Aya / Tiny Aya), what judges emphasise |
 | [06_idea_bank_and_ranking.md](06_idea_bank_and_ranking.md) | 15 scored ideas, top 3 in depth, recommendation, 12-day plan |
-| [07_discord_intel.md](07_discord_intel.md) | Discord scan: organiser clarifications, what other teams are building, re-ranked ideas, action items |
-| [08_kavach_crossover.md](08_kavach_crossover.md) | What our AgentVerse project Kavach can lend to the Lexsi build; options K1–K3 |
-| raw/ | Scraped slide text, site text, poster |
 
 Current pick after the Discord scan: **Candidate A**: regional-merge multilingual safety drift → CircuitKIT-located repair (SafeTune) → verified on 3 axes and after 4-bit quantisation (AuditKIT). Next step: validate it through a report_issues ticket, then run day-1 smoke tests.

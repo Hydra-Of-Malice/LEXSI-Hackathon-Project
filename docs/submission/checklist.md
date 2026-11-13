@@ -1,6 +1,6 @@
 # Submission checklist
 
-Updated on 6 November 2026 for the move to Tiny Aya Earth, against commit `63da69e`. Items the move did not touch were last checked on 5 November at commit `f09a5a1`. Sources: hackathon site and kickoff slides (`docs/research/01_official_brief.md`), Discord clarifications (`docs/research/07_discord_intel.md`), and a read of the code and repo state.
+Updated on 6 November 2026 for the move to Tiny Aya Earth, against commit `63da69e`. Items the move did not touch were last checked on 5 November at commit `f09a5a1`. Sources: hackathon site and kickoff slides (`docs/research/01_official_brief.md`), the organisers' answers on Discord, and a read of the code and repo state.
 
 **Deadline: 14 November, midnight AoE. That is 15 November, 17:30 IST.** Late or incomplete submissions may be excluded. An internal team checks validity before any judge reads the work: public artifacts, write-up, checklist, no duplicates.
 
@@ -91,9 +91,7 @@ The report refuses to claim success until these pass. They are separate from the
 
 The repo is private today, and all history goes public with it. No generation, judged-output or hand-check path has ever been committed, which is good. These items need a decision first.
 
-- [ ] `docs/research/07_discord_intel.md` names other participants and gives a competitive read of their projects. Remove it or move it out.
-- [ ] `docs/research/08_kavach_crossover.md` describes a private repo and a prior submission.
-- [ ] Removing a file does not remove it from history. Decide whether to rewrite history or start a clean public repo.
+- [x] Two private research notes and the organisers' raw material were removed from every commit before the repo went public (13 November). The rewrite kept every commit's author and dates.
 - [x] `SPEC.md`'s Thesis, Models, Languages, Metrics, Judging, Repair arms and Success thresholds sections still describe the Fire plan and refusal. Only its Target section and amendments carry the move. 9 November: the body stays as written, because it is the pre-registration. A table under "Reading order" now points each section to the amendments that change it, and says what is different. It changes no rule and gives no result. `README.md` and the mentor brief no longer state the gap as fact.
 - [x] `README.md` listed "compare" under AuditKIT, and nothing calls `compare_runs`. The claim is dropped in the working tree, for review.
 - [x] `README.md` said "all four repair arms" and quoted test counts from the development run. It now says five arms and a control, in the working tree, for review.
@@ -101,7 +99,7 @@ The repo is private today, and all history goes public with it. No generation, j
 - [x] `docs/CUDA_EVALUATION.md` says some source-tree details should stay private. Checked 9 November: that applies to the working-tree diff made at transfer time, which was never committed. `docs/CUDA_HANDOFF.patch` holds code only: no paths, hostnames, tokens or outputs. It is an old copy of changes already in the tree, which have been edited since, so it no longer applies. Dropping it from the public version loses nothing.
 - [x] `space/` and `docs/upstream_patches/` stay in the public version (D2). The fake `space/sample_report.json` is gone: `space/results.json` is built from the public export by `scripts/build_space_report.py`.
 - [x] Run a secret scan over the tree and history. Done 9 November over all 77 commits (461 files) and the working tree, for Hugging Face, OpenAI, Anthropic, OpenRouter, GitHub, AWS, Google, Slack and Discord tokens, private keys, and secret assignments. Nothing real: the one hit is a placeholder string in `space/test_app.py`. Run it again just before the repo goes public.
-- [ ] Commit history shows the authors' email addresses: 76 of 77 commits carry a personal Gmail address, which goes public with the history. Decide whether that is acceptable, or start the public repo clean.
+- [x] Commit history carried a personal Gmail address. Before the repo went public (13 November) every commit was rewritten to the GitHub noreply address, with the same author names and dates.
 - [x] `.gitignore` still blocks every output path. Checked 9 November: generations, judged files, hand-check sheets, calibration, AuditKIT files, pilots, every run folder (blind reads and review packets included), caches, checkpoints, GGUF files and `.env` are all ignored. Nothing under `runs/` except `runs/ledger.jsonl` has ever been committed. `exports/` is not ignored, because the sanitised export is meant to be published. Check again before the final push.
 
 ## Before anything goes on Hugging Face

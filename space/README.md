@@ -70,7 +70,7 @@ page and the published set can be compared directly.
 
 - Dataset (prompts, judge labels, aggregate reports, provenance; no model answers):
   [HydraOfMalice/tiny-aya-earth-langsafe-eval](https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval)
-- Code: [Hydra-Of-Malice/langsafe](https://github.com/Hydra-Of-Malice/langsafe)
+- Code: [Hydra-Of-Malice/same-model-different-language](https://github.com/Hydra-Of-Malice/same-model-different-language)
 - Models:
   - [circuit-merge-0p5](https://huggingface.co/HydraOfMalice/tiny-aya-earth-langsafe-circuit-merge-0p5): the selected
     repair, FP16
