@@ -19,8 +19,6 @@ OUTPUT = Path(__file__).resolve().parents[1] / "notebooks" / "01_reproduce_resul
 # Everything still unknown.
 PLACEHOLDERS = {
     "REPO_COMMIT": "Commit the notebook was last run at",
-    "HF_REPO": "Hugging Face dataset holding the aggregate results, as owner/name",
-    "HF_REVISION": "Commit of that dataset, so the figures stay reproducible",
     "T4_MEASURED_RUNTIME": "Wall-clock time of the first real T4 run, from section 11",
     "T4_MEASURED_DISK": "Peak disk growth of that run, from section 11",
 }
@@ -48,9 +46,9 @@ A reproduction notebook for our project in the Lexsi Labs AI Safety & Alignment 
 drift without retraining). It runs the whole pipeline on Tiny Aya Earth at small scale on one T4, then redraws the main
 figures.
 
-> **Status: AWAITING REAL RUNS.** Nobody has run this notebook on a T4 yet, and it holds no results. Result cells read
-> numbers that your own run produces, or published files that do not exist yet. The marker `AWAITING T4 RUN` shows each
-> place that will change after the first real run.
+> **Status.** Section 12 draws the published results of our full run, read from the Hugging Face dataset at a fixed
+> commit. The small T4 run in sections 2 to 11 is AWAITING REAL RUNS: nobody has run it on a T4 yet. The marker
+> `AWAITING T4 RUN` shows each place that will change after the first real run.
 
 | If you want to | Go to |
 |---|---|
@@ -865,11 +863,11 @@ md("""
 
 **This section stands alone.** It needs no GPU, no token and no setup, so you can run it by itself from here.
 
-> **AWAITING T4 RUN.** The real results are not published yet. Until `{{HF_REPO}}` is filled in, these cells say so. If you
-> ran the sections above, they draw your small run instead, labelled as such. That small run is not a result.
-
-The files planned for the dataset are `report.json`, `localisation.json` and `nf4-report.json`. They hold per-language
-rates, confidence intervals, paired tests and judge agreement. They hold no prompts and no model text.
+These cells read `reports/report.json` from the dataset
+[HydraOfMalice/tiny-aya-earth-langsafe-eval](https://huggingface.co/datasets/HydraOfMalice/tiny-aya-earth-langsafe-eval),
+pinned to one commit. It holds per-language rates, confidence intervals, paired tests and judge agreement for every model,
+including the Q4_K_M and NF4 ones. It holds no prompts and no model text. The circuit contrasts in figure 4 are not in
+the published files yet, so that figure draws only from a small run of your own.
 
 Each figure is followed by a table of the same numbers. A language whose judges agree too rarely shows "not measurable"
 instead of a number, following `SPEC.md`. That gate covers judged numbers only. Capability and the degenerate rate use no
@@ -902,15 +900,16 @@ from IPython.display import display
 pd.set_option("display.max_rows", None)         # by default pandas hides the middle of a long table
 pd.set_option("display.max_columns", None)
 
-HF_REPO = "{{HF_REPO}}"
-HF_REVISION = "{{HF_REVISION}}"
+HF_REPO = "HydraOfMalice/tiny-aya-earth-langsafe-eval"
+HF_REVISION = "c58ac48faa36dfb7b954db4217f3326bd0086f05"   # the dataset commit these figures were checked against
+PUBLISHED = {"report.json"}                                 # what the dataset holds under reports/
 
 
 def load_aggregate(name):
-    if "{{" not in HF_REPO:
-        address = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_REVISION}/{name}"
+    if name in PUBLISHED:
+        address = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_REVISION}/reports/{name}"
         with urllib.request.urlopen(address, timeout=60) as reply:
-            return json.load(reply), f"Published results, {HF_REPO}"
+            return json.load(reply), f"Published full run, {HF_REPO}"
     local = Path(globals().get("EXPORT", "missing")) / name
     if local.is_file():
         return json.loads(local.read_text(encoding="utf-8")), "Small integration run, not a result"
@@ -1285,7 +1284,7 @@ prompts themselves can differ a little. Hardware also differs: our runs used an 
 **Nobody can check labels against answers from published files alone.** Raw answers to harmful prompts are never
 published. To audit a label, you have to regenerate the answer yourself and keep it private.
 
-**The spec is a draft.** Its thresholds are proposals, and it is not frozen yet.
+**The spec is frozen.** It was frozen on 7 November 2026, before the full run. Later changes are dated amendments in `SPEC.md`.
 
 **A lost session loses the run.** `WORK` is scratch space that is not saved. Stages resume within a session, but a new
 session starts again from section 2.

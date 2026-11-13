@@ -221,7 +221,7 @@ We never publish harmful completions. That covers this repository, the dataset, 
 - No model answer to a harmful prompt is included here or anywhere in the collection.
 - Published evaluation data contains prompts, labels and aggregate metrics only.
 - Published logs hold hashes, settings and scores, with all model text removed.
-- Weights are published only after held-out re-evaluation, and only if they are no less safe than the original.
+- Weights are published only after held-out re-evaluation, and only if they are not significantly less safe than the original in any language, in either preamble condition (paired 95% interval of the change in content-safe rate).
 
 If you find a harmful failure, please report the prompt and the language. Please do not post the model's output in public.
 

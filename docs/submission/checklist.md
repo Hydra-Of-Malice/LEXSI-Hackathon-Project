@@ -1,6 +1,6 @@
 # Submission checklist
 
-Updated on 6 November 2026 for the move to Tiny Aya Earth, against commit `63da69e`. Items the move did not touch were last checked on 5 November at commit `f09a5a1`. Sources: hackathon site and kickoff slides (`docs/research/01_official_brief.md`), the organisers' answers on Discord, and a read of the code and repo state.
+Updated on 6 November 2026 for the move to Tiny Aya Earth, against commit `63da69e`. Items the move did not touch were last checked on 5 November at commit `f09a5a1`. Sources: hackathon site and kickoff slides, the organisers' answers on Discord, and a read of the code and repo state.
 
 **Deadline: 14 November, midnight AoE. That is 15 November, 17:30 IST.** Late or incomplete submissions may be excluded. An internal team checks validity before any judge reads the work: public artifacts, write-up, checklist, no duplicates.
 

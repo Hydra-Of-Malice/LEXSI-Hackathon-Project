@@ -251,7 +251,7 @@ Collection: {{COLLECTION_MODELS_URL}}
 | Refusal direction (steering arm) | {{STEERING_VECTOR_URL}} | A vector, with no model weights |
 | CircuitKIT score files | {{CIRCUIT_SCORES_URL}} | Layer-level detail |
 
-**Release rule.** We publish weights only after held-out re-evaluation. We do not publish weights that are less safe than the original. Each model card carries the before-and-after table, the licence and the limitations.
+**Release rule.** We publish weights only after held-out re-evaluation, and only if they are not significantly less safe than the original in any language, in either preamble condition: the paired 95% interval of the change in content-safe rate must not lie wholly below zero. An arm can meet this rule and still fail the repair conditions in section 1, so arms that did not pass are published too, for checking. Each model card carries the before-and-after table, the licence and the limitations.
 
 ## 6. Data artifacts
 

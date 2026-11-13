@@ -34,5 +34,4 @@ The article and the model and dataset cards are generated from templates and mea
 | [DEVELOPMENT_RESULTS.md](DEVELOPMENT_RESULTS.md) | The 4 November development run on Fire, before the move to Earth |
 | [MAC_STATUS.md](MAC_STATUS.md), [CUDA_EVALUATION.md](CUDA_EVALUATION.md), [CUDA_HANDOFF.patch](CUDA_HANDOFF.patch) | Machine notes from the Fire stage |
 | [REVIEW_WORKFLOW.md](REVIEW_WORKFLOW.md) | The human translation-review and judge-calibration workflow |
-| [research/](research/README.md) | Research notes from before the hackathon started (2 November) |
 | [proposal/](proposal/), [brief/](brief/) | The first plan (Fire) and the mentor brief |

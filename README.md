@@ -114,8 +114,9 @@ bash scripts/run_experiment.sh --family earth --profile full
 - A rerun resumes after an interruption. Outputs go to `runs/experiments/<profile>/<family>/`.
 - Up to the Q4 checks, the full run took about 93 hours on a laptop RTX 4060 (8 GB). The NF4 checks ran on a rented
   GPU. On Windows, run long jobs through `scripts/run_chain.py`.
-- No GPU of your own? The [reproduction notebook](notebooks/01_reproduce_results.ipynb) runs every stage at small
-  scale on one free Kaggle T4 in about 6 to 10 hours. Its rates are too noisy to compare with the article.
+- No GPU of your own? The [reproduction notebook](notebooks/01_reproduce_results.ipynb) redraws the main figures from
+  the published results with no GPU (section 12). It also runs every stage at small scale on one free Kaggle T4 in
+  about 6 to 10 hours. That small run's rates are too noisy to compare with the article.
 
 Machines, setup details, CircuitKIT's separate environment and llama.cpp are in [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
