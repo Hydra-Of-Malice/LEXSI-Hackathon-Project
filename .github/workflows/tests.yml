@@ -11,9 +11,14 @@ permissions:
 jobs:
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Install (CPU build of torch, no Lexsi kits)
+        run: |
+          uv venv --python 3.12
+          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install -e ".[dev,models]" requests nbformat
       - name: Run the test suite
-        run: uv run --python 3.12 --extra dev python -m pytest -q -rs
+        run: .venv/bin/python -m pytest -q -rs
