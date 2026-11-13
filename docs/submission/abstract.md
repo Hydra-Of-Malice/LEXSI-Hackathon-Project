@@ -37,4 +37,4 @@ dataset with reports, provenance logs and circuit summaries, the code with a rep
 to the kits. No released file holds a model's answer to a harmful prompt. The main run used one laptop RTX 4060. The NF4 checks and one baseline ran on rented GPUs, for about
 $15 of Hugging Face credits.
 
-Team: Aditya Arnav (HydraOfMalice) and Pallab Das (PDGamerSG). Track 2b, problem 2. Also fits Track 2a, problem 4.
+Team: Aditya Arnav (HydraOfMalice) and Pallab Das (PDGamerSG). Track 2b, problems 2, 4 and 5, and Track 2a, problem 4.

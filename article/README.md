@@ -2,11 +2,31 @@
 
 *Measuring per-language safety in Tiny Aya Earth, and testing weight-space repairs with the Lexsi stack*
 
-**Summary**
+**Claim.** On held-out prompts at full precision, Tiny Aya Earth is significantly less safe than Tiny Aya Global in only one of seven languages (Javanese, with the safety preamble), and none of five no-training repairs closed half of the Thai gap while keeping over-refusal and capability within pre-set limits.
+
+**Tracks and problem statements**
+
+- Track 2b, problem 2: Repairing safety drift without retraining (main entry)
+- Track 2b, problem 4: Inference-time safety steering (the steering arm)
+- Track 2b, problem 5: Locating where safety lives (CircuitKIT circuits choose the layers we edit)
+- Track 2a, problem 4: Multilingual and code-mixed safety (the per-language gap test)
+
+**Abstract**
 
 Tiny Aya Earth gives fewer safe answers to harmful requests than Tiny Aya Global in Javanese with the preamble, on held-out prompts with full-precision weights. In Thai, the language the repairs target, the content-safe rate with the preamble was 89.2% for Earth and 94.9% for Global. That gap did not pass our test (p = 0.0129 against a bar of 0.0036), so every repair result here is exploratory. Almost none of the Javanese gap is harmful content. With the preamble, Earth's 17 fewer safe answers there are 10 more broken answers and 7 more that the judges split on, and both judges called just 1 of 176 answers unsafe for each model.
 
 We tried five repairs. None met all our pre-set conditions. The arm chosen on the repair split, Circuit merge, failed on all three, with the preamble: it closed 10% of the Thai gap against the 50% required, refused 3 more of 142 benign Thai prompts (2.1 points, against a cap of 2), and got 5 more of 400 Swahili capability questions wrong (1.25 points, against a cap of 1). Merge-back, the same edit applied to the whole model, came nearest: it closed 90% of the gap but also missed on over-refusal and capability.
+
+**Headline, before → after.** Thai content-safe rate on held-out harmful prompts, FP16, with the preamble: Earth 89.2% → 89.8% with the selected repair (Circuit merge, λ = 0.5), and 89.2% → 94.3% with the closest arm (Merge-back, λ = 0.5). Global is 94.9%. Neither met all three repair conditions: Circuit merge closed 10% of the gap, and Merge-back raised over-refusal by 2.6 points and cost 1.5 points of capability.
+
+**Base model and method.** `CohereLabs/tiny-aya-earth` (3.35B, FP16, re-tested as Q4_K_M and NF4), repaired with no training: CircuitKIT (EAP-IG) ranks the layers that drive refusal, and SafeTune merges Earth's weights toward Tiny Aya Global in the top 7 of its 36 layers.
+
+> **For judges: one minute**
+>
+> - Is the gap there? Section 7.4. Confirmed only in Javanese, and mostly as broken answers, not harmful ones.
+> - Do the repairs work? Section 7.6. Five arms and a random-layer control. None met all three conditions.
+> - Does the circuit map help? Section 7.7. The circuits are faithful, but the circuit edit did no better than random layers.
+> - Does it survive 4-bit? Section 7.8. What did not work: section 7.10. How to reproduce: section 9.
 
 ## 1. Problem statement and approach
 
@@ -593,8 +613,6 @@ We did not test closed models on our safety axes, so this table compares cost al
 - Passing our checks does not make a model safe to deploy. These are measurements under the conditions we set.
 - All work is non-commercial, in line with CC-BY-NC 4.0, the Cohere Labs acceptable use policy and the Lexsi source-available licence.
 
-Our earlier project Kavach (HackIndia AgentVerse '26, MIT licence) also kept a hash-chained run log. No code from it is reused here.
-
 ## 8. With more credits
 
 Everything above ran on one laptop with an RTX 4060 (8 GB), an Apple M1 Max for the development run, and, for the last day, two GPUs rented through Hugging Face Jobs: an A10G for the NF4 checks and an L40S for one baseline, and a free Kaggle T4 that repeated the NF4 checks, with about $15 of Hugging Face credits. Credits would buy better measurement first, and scale second.
@@ -615,7 +633,47 @@ Everything above ran on one laptop with an RTX 4060 (8 GB), an Apple M1 Max for 
 
 We estimate these steps at about 300 laptop GPU hours and about $470 of judge calls. We would run them in table order, and we would report any result that overturns a finding above.
 
-## 9. Team
+## 9. Reproduction
+
+All of this runs from the code repo, https://github.com/Hydra-Of-Malice/LEXSI-Hackathon-Project. Its README and `docs/RUNBOOK.md` hold the full details.
+
+**Environment.** Python 3.12 and `uv`. We ran the full run on a laptop RTX 4060 with 8 GB of memory, and the small development run on an Apple M1 Max. The NF4 checks need CUDA, because bitsandbytes has no Mac backend. CircuitKIT runs in its own environment, and the GGUF checks use llama.cpp. The test suite runs on CPU, and GitHub Actions runs it on every push.
+
+**Repo layout.**
+
+| Path | Contents |
+|---|---|
+| `src/langsafe/` | The pipeline: data, generation, judging, statistics, circuits, repairs, quantisation, provenance |
+| `configs/` | `spec.yaml` (the frozen full run) and `development.yaml` (small integration run) |
+| `scripts/` | Entry points: `run_experiment.sh`, exports, release and audit tools |
+| `notebooks/` | Reproduction notebook and a day-1 smoke test |
+| `space/` | Results explorer built from the aggregate reports |
+| `article/` | This article as Markdown |
+| `docs/` | Spec amendments, runbook, kit gaps and submission material |
+| `tests/` | Test suite |
+
+**Run.** Set up and test, then run the small integration run and the full experiment:
+
+```bash
+uv venv --python 3.12 .venv
+LANGSAFE_PYTHON=.venv/bin/python bash scripts/install_kits.sh --repair
+.venv/bin/python -m pytest -q
+bash scripts/run_experiment.sh --family earth --profile development
+bash scripts/run_experiment.sh --family earth --profile full
+```
+
+Pass `--family earth` every time, because the script defaults to Fire. A rerun resumes after an interruption. Up to the Q4 checks, the full run took about 93 hours on the laptop RTX 4060.
+
+**Without a GPU.** Section 12 of `notebooks/01_reproduce_results.ipynb` redraws the main figures from the published reports, pinned to one dataset commit. Sections 2 to 11 run every stage at small scale on one free Kaggle T4 in about 6 to 10 hours. That small run's rates are too noisy to compare with this article.
+
+## 10. Work done outside the hackathon
+
+Everything in this article was built during the hackathon: the code, the data pipeline, every run and the write-up. The repository's first commit is dated 3 November 2026.
+
+- Our earlier project Kavach (HackIndia AgentVerse '26, MIT licence) also kept a hash-chained run log. No code from it is reused here.
+- The models, datasets and Lexsi kits we build on are other people's work. Sections 2 to 4 list each one with its licence.
+
+## 11. Team
 
 - Aditya Arnav: [@HydraOfMalice](https://huggingface.co/HydraOfMalice)
 - Pallab Das: [@PDGamerSG](https://huggingface.co/PDGamerSG)
